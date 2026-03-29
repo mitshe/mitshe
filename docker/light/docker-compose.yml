@@ -1,0 +1,48 @@
+# mitshe-light: Single container deployment (LOCAL MODE - no authentication)
+#
+# Quick start:
+#   docker compose up
+#
+# Or build locally:
+#   docker compose up --build
+#
+# This runs mitshe in LOCAL MODE:
+# - No Clerk authentication required
+# - Anonymous user access
+# - Perfect for local testing and demos
+
+services:
+  mitshe:
+    build:
+      context: ../..
+      dockerfile: docker/light/Dockerfile
+    image: ghcr.io/mitshe/light:latest
+    container_name: mitshe
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # Frontend
+      - "3001:3001"  # API
+    volumes:
+      - mitshe-data:/build/data
+    environment:
+      # Local mode - no authentication required
+      - AUTH_MODE=local
+
+      # Optional: Encryption key (auto-generated if not set)
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+
+      # Database (SQLite - built into container)
+      - DATABASE_URL=file:/build/data/mitshe.db
+
+      # Redis (built into container)
+      - REDIS_URL=redis://localhost:6379
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+volumes:
+  mitshe-data:
+    name: mitshe-data

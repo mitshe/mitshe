@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+.next
+out
+build
+
+# Development files
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Test
+coverage
+.nyc_output
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Docker
+Dockerfile*
+docker-compose*
+
+# CI/CD
+.github
+
+# Misc
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Storybook
+storybook-static

@@ -1,0 +1,16 @@
+# Ignore local node_modules - let Docker install fresh
+workflow-runner/node_modules
+workflow-runner/dist
+
+# IDE/Editor
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

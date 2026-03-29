@@ -1,0 +1,47 @@
+# Development infrastructure
+#
+# Start databases:
+#   docker compose -f docker/dev/docker-compose.yml up -d
+#
+# Then run apps on host with hot-reload:
+#   pnpm run dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mitshe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mitshe
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mitshe-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_dev:
+    name: mitshe-postgres-dev
+  redis_dev:
+    name: mitshe-redis-dev

@@ -1,0 +1,166 @@
+services:
+  # ===================
+  # Infrastructure
+  # ===================
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # ===================
+  # Cloudflare Tunnel
+  # ===================
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    networks:
+      - internal
+
+  # ===================
+  # Web (Next.js) - Blue/Green
+  # ===================
+  web-blue:
+    image: ${REGISTRY:-ghcr.io}/${WEB_IMAGE:-mitch-com/mitshe-web}:${WEB_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=${BACKEND_URL:-http://api-blue:3001}
+      - NEXT_PUBLIC_API_URL=${API_URL:?required}
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY:?required}
+    env_file:
+      - .env.web
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+    profiles:
+      - blue
+      - all
+
+  web-green:
+    image: ${REGISTRY:-ghcr.io}/${WEB_IMAGE:-mitch-com/mitshe-web}:${WEB_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=${BACKEND_URL:-http://api-green:3001}
+      - NEXT_PUBLIC_API_URL=${API_URL:?required}
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY:?required}
+    env_file:
+      - .env.web
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+    profiles:
+      - green
+      - all
+
+  # ===================
+  # API (NestJS) - Blue/Green
+  # ===================
+  api-blue:
+    image: ${REGISTRY:-ghcr.io}/${API_IMAGE:-mitch-com/mitshe-api}:${API_VERSION:-latest}
+    restart: unless-stopped
+    user: root  # Required for Docker socket access
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-app}
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - .env.api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # For task containers
+    networks:
+      internal:
+        aliases:
+          - api
+    profiles:
+      - blue
+      - all
+
+  api-green:
+    image: ${REGISTRY:-ghcr.io}/${API_IMAGE:-mitch-com/mitshe-api}:${API_VERSION:-latest}
+    restart: unless-stopped
+    user: root  # Required for Docker socket access
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-app}
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - .env.api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # For task containers
+    networks:
+      internal:
+        aliases:
+          - api
+    profiles:
+      - green
+      - all
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  internal:
+    driver: bridge
