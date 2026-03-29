@@ -114,8 +114,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build types package
+        run: pnpm --filter @mitshe/types run build
+
+      - name: Generate Prisma client
+        run: pnpm --filter @mitshe/api run db:generate
+
       - name: Build all packages
         run: pnpm run build
         env:
+          AUTH_MODE: local
+          NEXT_PUBLIC_AUTH_MODE: local
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
           NEXT_PUBLIC_API_URL: http://localhost:3001

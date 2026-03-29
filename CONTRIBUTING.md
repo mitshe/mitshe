@@ -322,6 +322,47 @@ We follow **Hexagonal Architecture** with **CQRS**:
 
 ---
 
+## Deployment Modes
+
+| Mode | Database | Redis | Auth | Use Case |
+|------|----------|-------|------|----------|
+| **Light** | SQLite (embedded) | Embedded | Local (anonymous) | Quick demos, single user |
+| **Dev** | PostgreSQL (Docker) | Docker | Local or Clerk | Local development |
+| **Prod** | PostgreSQL (external) | External | Clerk | Production, multi-user |
+
+### Authentication Modes
+
+Set via `AUTH_MODE` environment variable:
+
+| Mode | Value | Description |
+|------|-------|-------------|
+| Local | `local` | No auth, anonymous user. Default for light mode. |
+| Selfhosted | `selfhosted` | JWT-based email/password auth. |
+| Clerk | `clerk` | Full Clerk auth with organizations and RBAC. |
+
+### Environment Variables
+
+See `.env.example` for all options. Key variables:
+
+```bash
+AUTH_MODE=local                          # local | selfhosted | clerk
+DATABASE_URL=postgresql://...            # or file:./data/mitshe.db for SQLite
+REDIS_URL=redis://localhost:6379
+ENCRYPTION_KEY=<openssl rand -hex 32>    # for encrypting API keys
+```
+
+### Docker Images
+
+Built automatically by GitHub Actions on tag push (`v*`):
+
+- `ghcr.io/mitshe/light:latest` - All-in-one container
+- `ghcr.io/mitshe/api:latest` - API only
+- `ghcr.io/mitshe/web:latest` - Frontend only
+
+Build locally: `just light-build` | Push: `just docker-push`
+
+---
+
 ## Need Help?
 
 - **Questions**: Open a [Discussion](https://github.com/mitshe/mitshe/discussions)
