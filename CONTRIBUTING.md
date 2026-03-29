@@ -41,8 +41,6 @@ pnpm install
 
 # Copy environment file
 cp .env.example .env
-# Edit .env with your Clerk keys
-
 # Start databases
 just infra
 
@@ -50,8 +48,11 @@ just infra
 just db-generate
 just db-migrate
 
-# Start development servers
-just dev
+# Start development servers (no auth needed)
+just dev-local
+
+# Or with Clerk authentication (set CLERK keys in .env first)
+# just dev
 ```
 
 ### Verify Setup
@@ -67,12 +68,14 @@ just dev
 ### Daily Development
 
 ```bash
-# Start everything (databases + apps with hot-reload)
+# Start everything in local mode (no auth needed)
+just dev-local
+
+# Or with Clerk authentication
 just dev
 
 # Or start separately:
 just infra          # Start databases only
-just dev-apps       # Start frontend + backend only
 ```
 
 ### Running Tests

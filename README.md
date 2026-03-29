@@ -77,7 +77,6 @@ pnpm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your Clerk keys and other settings
 
 # Start databases
 just infra
@@ -86,8 +85,11 @@ just infra
 just db-generate
 just db-migrate
 
-# Start development servers (frontend + backend with hot-reload)
-just dev
+# Start development servers (no auth needed in local mode)
+just dev-local
+
+# Or with Clerk authentication (requires CLERK keys in .env)
+# just dev
 ```
 
 Frontend: http://localhost:3000
@@ -101,7 +103,7 @@ API Docs: http://localhost:3001/api
 ```
 mitshe/
 ├── apps/
-│   ├── web/                 # Next.js 15 frontend
+│   ├── web/                 # Next.js 16 frontend
 │   │   ├── src/
 │   │   │   ├── app/         # App Router pages
 │   │   │   ├── components/  # React components
@@ -134,14 +136,17 @@ Run `just` to see all available commands:
 
 | Command | Description |
 |---------|-------------|
-| `just dev` | Start development (infra + frontend + backend) |
+| `just run` | Run mitshe via `docker run` (no compose needed) |
+| `just stop` | Stop running mitshe container |
+| `just dev-local` | Start development in local mode (no Clerk auth) |
+| `just dev` | Start development with Clerk auth |
 | `just infra` | Start only databases (PostgreSQL + Redis) |
 | `just infra-down` | Stop databases |
 | `just build` | Build all packages |
 | `just test` | Run all tests |
 | `just lint` | Run ESLint |
 | `just typecheck` | Run TypeScript type checking |
-| `just light` | Run light mode container |
+| `just light` | Run light mode via docker-compose |
 | `just light-build` | Build light mode Docker image |
 | `just db-migrate` | Run database migrations |
 | `just db-studio` | Open Prisma Studio |

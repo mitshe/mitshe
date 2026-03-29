@@ -21,7 +21,7 @@ Build: pnpm + Turborepo
 ```
 mitshe/
 ├── apps/
-│   ├── web/                     # Next.js 15 frontend (@mitshe/web)
+│   ├── web/                     # Next.js 16 frontend (@mitshe/web)
 │   │   ├── src/
 │   │   │   ├── app/             # App Router pages
 │   │   │   ├── components/      # React components

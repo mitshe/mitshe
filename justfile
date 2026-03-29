@@ -9,6 +9,10 @@ default:
 # Development
 # ==========================================
 
+# Start development in local mode (no Clerk auth needed)
+dev-local: infra
+    AUTH_MODE=local NEXT_PUBLIC_AUTH_MODE=local pnpm run dev
+
 # Start development environment (databases + apps with hot-reload)
 dev: infra
     pnpm run dev
@@ -29,6 +33,24 @@ infra-down:
 # View infrastructure logs
 infra-logs:
     docker compose -f docker/dev/docker-compose.yml logs -f
+
+# ==========================================
+# Quick Run (docker run, no compose)
+# ==========================================
+
+# Run mitshe with a single docker run command
+run:
+    docker run -d --name mitshe -p 3000:3000 -p 3001:3001 -v mitshe-data:/build/data ghcr.io/mitshe/light:latest
+    @echo ""
+    @echo "mitshe is starting..."
+    @echo "  Frontend: http://localhost:3000"
+    @echo "  API:      http://localhost:3001"
+    @echo ""
+    @echo "Run 'just stop' to stop, 'docker logs -f mitshe' for logs"
+
+# Stop and remove mitshe container
+stop:
+    docker stop mitshe && docker rm mitshe
 
 # ==========================================
 # Light Mode (All-in-one container)
