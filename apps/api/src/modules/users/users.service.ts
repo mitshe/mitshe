@@ -66,9 +66,25 @@ export class UsersService {
       this.configService.get<string>('JWT_REFRESH_EXPIRY') || '7d';
   }
 
+  /**
+   * Check if the app has been set up (at least one user exists).
+   */
+  async isSetUp(): Promise<boolean> {
+    const count = await this.prisma.user.count();
+    return count > 0;
+  }
+
   async register(
     dto: RegisterDto,
   ): Promise<{ user: UserInfo; tokens: AuthTokens }> {
+    // Only the first user can register (Jenkins-style setup)
+    const userCount = await this.prisma.user.count();
+    if (userCount > 0) {
+      throw new BadRequestException(
+        'Registration is closed. The admin account has already been created.',
+      );
+    }
+
     // Validate email format
     if (!this.isValidEmail(dto.email)) {
       throw new BadRequestException('Invalid email format');

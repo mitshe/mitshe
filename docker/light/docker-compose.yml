@@ -1,15 +1,10 @@
-# mitshe-light: Single container deployment (LOCAL MODE - no authentication)
+# mitshe-light: Single container deployment
 #
 # Quick start:
 #   docker compose up
 #
 # Or build locally:
 #   docker compose up --build
-#
-# This runs mitshe in LOCAL MODE:
-# - No Clerk authentication required
-# - Anonymous user access
-# - Perfect for local testing and demos
 
 services:
   mitshe:
@@ -25,8 +20,8 @@ services:
     volumes:
       - mitshe-data:/build/data
     environment:
-      # Local mode - no authentication required
-      - AUTH_MODE=local
+      # Selfhosted mode - email/password JWT auth (no external services)
+      - AUTH_MODE=selfhosted
 
       # Optional: Encryption key (auto-generated if not set)
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}

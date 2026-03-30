@@ -8,17 +8,13 @@ import {
 import { useAuthContext } from "./auth-context";
 import { LocalUser, LocalOrganization, LocalMembership } from "./types";
 
-const LOCAL_USER_ID = "local_anonymous";
-const LOCAL_ORG_ID = "local_default";
-
 /**
- * Universal useAuth hook - works in Local, Selfhosted, and Clerk mode.
+ * Universal useAuth hook - works in Selfhosted and Clerk mode.
  */
 export function useAuth() {
   const context = useAuthContext();
 
-  // Local and selfhosted modes use context directly
-  if (context.isLocalMode || context.isSelfhostedMode) {
+  if (context.isSelfhostedMode) {
     return {
       isLoaded: context.isLoaded,
       isSignedIn: context.isSignedIn,
@@ -29,8 +25,6 @@ export function useAuth() {
     };
   }
 
-  // In Clerk mode, we need the actual Clerk hook
-  // This is a workaround - the component using this must be within ClerkProvider
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const clerkAuth = useClerkAuth();
   return {
@@ -44,29 +38,12 @@ export function useAuth() {
 }
 
 /**
- * Universal useUser hook - works in Local, Selfhosted, and Clerk mode.
+ * Universal useUser hook - works in Selfhosted and Clerk mode.
  */
 export function useUser() {
   const context = useAuthContext();
 
-  if (context.isLocalMode) {
-    const localUser: LocalUser = {
-      id: LOCAL_USER_ID,
-      firstName: "Local",
-      lastName: "User",
-      emailAddresses: [{ emailAddress: "local@localhost" }],
-      imageUrl: null,
-    };
-
-    return {
-      isLoaded: true,
-      isSignedIn: true,
-      user: localUser,
-    };
-  }
-
   if (context.isSelfhostedMode) {
-    // In selfhosted mode, user data comes from context
     const userName = context.userName?.split(" ") || [];
     const selfhostedUser: LocalUser = {
       id: context.userId || "",
@@ -95,7 +72,7 @@ export function useUser() {
 }
 
 /**
- * Universal useOrganization hook - works in both Local and Clerk mode.
+ * Universal useOrganization hook - works in Selfhosted and Clerk mode.
  */
 export function useOrganization(options?: {
   memberships?: { infinite: boolean };
@@ -103,34 +80,34 @@ export function useOrganization(options?: {
 }) {
   const context = useAuthContext();
 
-  if (context.isLocalMode) {
-    const localOrg: LocalOrganization = {
-      id: LOCAL_ORG_ID,
-      name: "Local Organization",
-      slug: "local",
+  if (context.isSelfhostedMode) {
+    const org: LocalOrganization = {
+      id: context.orgId || "",
+      name: context.userName ? `${context.userName}'s Workspace` : "Workspace",
+      slug: null,
       imageUrl: null,
     };
 
-    const localMembership: LocalMembership = {
-      id: "local_membership",
+    const membership: LocalMembership = {
+      id: "self_membership",
       role: "org:admin",
       publicUserData: {
-        userId: LOCAL_USER_ID,
-        firstName: "Local",
-        lastName: "User",
-        identifier: "local@localhost",
+        userId: context.userId || "",
+        firstName: context.userName?.split(" ")[0] || null,
+        lastName: context.userName?.split(" ").slice(1).join(" ") || null,
+        identifier: context.userEmail || "",
         imageUrl: null,
       },
       createdAt: new Date(),
     };
 
     return {
-      isLoaded: true,
-      organization: localOrg,
-      membership: localMembership,
+      isLoaded: context.isLoaded,
+      organization: context.isSignedIn ? org : null,
+      membership: context.isSignedIn ? membership : null,
       memberships: options?.memberships
         ? {
-            data: [localMembership],
+            data: context.isSignedIn ? [membership] : [],
             revalidate: async () => {},
           }
         : undefined,

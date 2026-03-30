@@ -49,10 +49,8 @@ just db-generate
 just db-migrate
 
 # Start development servers (no auth needed)
-just dev-local
+just dev
 
-# Or with Clerk authentication (set CLERK keys in .env first)
-# just dev
 ```
 
 ### Verify Setup
@@ -68,11 +66,11 @@ just dev-local
 ### Daily Development
 
 ```bash
-# Start everything in local mode (no auth needed)
-just dev-local
-
-# Or with Clerk authentication
+# Start everything (selfhosted auth - email/password)
 just dev
+
+# Or without authentication
+just dev-noauth
 
 # Or start separately:
 just infra          # Start databases only
@@ -336,9 +334,8 @@ Set via `AUTH_MODE` environment variable:
 
 | Mode | Value | Description |
 |------|-------|-------------|
-| Local | `local` | No auth, anonymous user. Default for light mode. |
-| Selfhosted | `selfhosted` | JWT-based email/password auth. |
-| Clerk | `clerk` | Full Clerk auth with organizations and RBAC. |
+| Selfhosted | `selfhosted` | Email/password JWT auth (default). |
+| Clerk | `clerk` | Clerk auth with organizations, SSO, RBAC. |
 
 ### Environment Variables
 

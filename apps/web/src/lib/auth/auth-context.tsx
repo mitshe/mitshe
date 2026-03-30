@@ -12,34 +12,7 @@ import { ClerkProvider, useAuth as useClerkAuth } from "@clerk/nextjs";
 import { AuthContextValue, AuthMode } from "./types";
 import { selfhostedAuth, SelfhostedUser } from "./selfhosted-auth";
 
-const LOCAL_USER_ID = "local_anonymous";
-const LOCAL_ORG_ID = "local_default";
-
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-/**
- * Local mode auth provider - no authentication required.
- */
-function LocalAuthProvider({ children }: { children: ReactNode }) {
-  const value: AuthContextValue = {
-    authMode: "local",
-    isLocalMode: true,
-    isSelfhostedMode: false,
-    isClerkMode: false,
-    isLoaded: true,
-    isSignedIn: true,
-    userId: LOCAL_USER_ID,
-    orgId: LOCAL_ORG_ID,
-    userEmail: "local@localhost",
-    userName: "Local User",
-    getToken: async () => null,
-    signOut: async () => {
-      // No-op in local mode
-    },
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
 
 /**
  * Selfhosted mode auth provider - JWT-based authentication.
@@ -49,7 +22,6 @@ function SelfhostedAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SelfhostedUser | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
 
-  // Check auth status on mount
   useEffect(() => {
     const checkAuth = async () => {
       if (selfhostedAuth.isAuthenticated()) {
@@ -73,7 +45,6 @@ function SelfhostedAuthProvider({ children }: { children: ReactNode }) {
     await selfhostedAuth.logout();
     setUser(null);
     setOrgId(null);
-    // Redirect to login
     window.location.href = "/sign-in";
   }, []);
 
@@ -83,7 +54,6 @@ function SelfhostedAuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextValue = {
     authMode: "selfhosted",
-    isLocalMode: false,
     isSelfhostedMode: true,
     isClerkMode: false,
     isLoaded,
@@ -110,14 +80,13 @@ function ClerkAuthProviderInner({ children }: { children: ReactNode }) {
 
   const value: AuthContextValue = {
     authMode: "clerk",
-    isLocalMode: false,
     isSelfhostedMode: false,
     isClerkMode: true,
     isLoaded,
     isSignedIn: isSignedIn ?? false,
     userId: userId ?? null,
     orgId: orgId ?? null,
-    userEmail: null, // Clerk doesn't expose email directly in useAuth
+    userEmail: null,
     userName: null,
     getToken: async () => {
       try {
@@ -135,7 +104,7 @@ function ClerkAuthProviderInner({ children }: { children: ReactNode }) {
 }
 
 /**
- * Main auth provider that switches between Local, Selfhosted, and Clerk mode.
+ * Main auth provider that switches between Selfhosted and Clerk mode.
  */
 export function AuthProvider({
   children,
@@ -144,17 +113,18 @@ export function AuthProvider({
   children: ReactNode;
   authMode: AuthMode;
 }) {
-  if (authMode === "local") {
-    return <LocalAuthProvider>{children}</LocalAuthProvider>;
-  }
-
   if (authMode === "selfhosted") {
     return <SelfhostedAuthProvider>{children}</SelfhostedAuthProvider>;
   }
 
-  // Clerk mode
+  // Clerk mode - only render if publishable key is available
+  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (!clerkKey) {
+    return <SelfhostedAuthProvider>{children}</SelfhostedAuthProvider>;
+  }
+
   return (
-    <ClerkProvider>
+    <ClerkProvider publishableKey={clerkKey}>
       <ClerkAuthProviderInner>{children}</ClerkAuthProviderInner>
     </ClerkProvider>
   );
@@ -173,7 +143,6 @@ export function useAuthContext(): AuthContextValue {
 
 /**
  * Hook for selfhosted auth operations (login, register, etc.)
- * Only available in selfhosted mode.
  */
 export function useSelfhostedAuth() {
   const context = useAuthContext();

@@ -40,7 +40,7 @@ cd mitshe
 just setup
 
 # Start databases + dev servers (no auth config needed)
-just dev-local
+just dev
 ```
 
 Frontend: http://localhost:3000 | API: http://localhost:3001 | API Docs: http://localhost:3001/api
@@ -53,8 +53,7 @@ Run `just` to see all commands. Key ones:
 |---------|-------------|
 | `just run` | Run mitshe via `docker run` |
 | `just stop` | Stop mitshe container |
-| `just dev-local` | Dev mode, no auth needed |
-| `just dev` | Dev mode with Clerk auth |
+| `just dev` | Dev mode (email/password auth) |
 | `just build` | Build all packages |
 | `just check` | Lint + typecheck + test |
 | `just light-build` | Build Docker image locally |

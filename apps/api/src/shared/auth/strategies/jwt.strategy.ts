@@ -34,7 +34,9 @@ export class JwtAuthStrategy implements AuthStrategy {
       authMode === 'selfhosted' ||
       !!this.configService.get<string>('JWT_SECRET');
 
-    const secret = this.configService.get<string>('JWT_SECRET');
+    const secret =
+      this.configService.get<string>('JWT_SECRET') ||
+      (this.isEnabled ? 'dev-secret-change-in-production' : undefined);
     if (this.isEnabled && !secret) {
       throw new Error('JWT_SECRET is required for selfhosted auth mode');
     }

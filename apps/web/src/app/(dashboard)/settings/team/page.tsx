@@ -442,11 +442,5 @@ function ClerkModeTeamPage() {
 }
 
 export default function TeamPage() {
-  const { isLocalMode } = useAuthContext();
-
-  if (isLocalMode) {
-    return <LocalModeTeamPage />;
-  }
-
   return <ClerkModeTeamPage />;
 }

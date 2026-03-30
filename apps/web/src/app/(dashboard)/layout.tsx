@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { BreadcrumbsWrapper } from "@/components/layout/breadcrumbs-wrapper";
+import { AuthGuard } from "@/components/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,17 +12,19 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen">
-      <Sidebar />
+    <AuthGuard>
+      <div className="flex h-screen">
+        <Sidebar />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <TopNav />
-        <main className="flex-1 overflow-auto">
-          <BreadcrumbsWrapper />
-          {children}
-        </main>
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <TopNav />
+          <main className="flex-1 overflow-auto">
+            <BreadcrumbsWrapper />
+            {children}
+          </main>
+        </div>
+        <OnboardingTour />
       </div>
-      <OnboardingTour />
-    </div>
+    </AuthGuard>
   );
 }

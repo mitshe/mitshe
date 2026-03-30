@@ -11,9 +11,14 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        // Proxy all /api/v1/* requests to NestJS backend
+        // Proxy /api/v1/* requests to NestJS backend
         source: "/api/v1/:path*",
         destination: `${API_URL}/api/v1/:path*`,
+      },
+      {
+        // Proxy /auth/* requests to NestJS backend
+        source: "/auth/:path*",
+        destination: `${API_URL}/auth/:path*`,
       },
     ];
   },

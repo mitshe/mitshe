@@ -30,11 +30,10 @@ export interface LocalMembership {
   createdAt: Date;
 }
 
-export type AuthMode = "local" | "selfhosted" | "clerk";
+export type AuthMode = "selfhosted" | "clerk";
 
 export interface AuthContextValue {
   authMode: AuthMode;
-  isLocalMode: boolean; // Kept for backward compatibility
   isSelfhostedMode: boolean;
   isClerkMode: boolean;
   isLoaded: boolean;

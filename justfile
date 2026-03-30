@@ -9,11 +9,7 @@ default:
 # Development
 # ==========================================
 
-# Start development in local mode (no Clerk auth needed)
-dev-local: infra
-    AUTH_MODE=local NEXT_PUBLIC_AUTH_MODE=local pnpm run dev
-
-# Start development environment (databases + apps with hot-reload)
+# Start development (selfhosted auth - email/password)
 dev: infra
     pnpm run dev
 

@@ -2,6 +2,9 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const authMode =
+  process.env.AUTH_MODE || process.env.NEXT_PUBLIC_AUTH_MODE || "selfhosted";
+
 const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
@@ -9,33 +12,21 @@ const isPublicRoute = createRouteMatcher([
   "/docs(.*)",
 ]);
 
-// Check if we're in local mode (no Clerk)
-const isLocalMode = process.env.AUTH_MODE === "local";
-
-function localModeMiddleware(req: NextRequest) {
+// Selfhosted mode: JWT auth handled by frontend AuthGuard
+function selfhostedMiddleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // In local mode, redirect root to dashboard
   if (pathname === "/") {
-    return NextResponse.redirect(new URL("/tasks", req.url));
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Block auth routes in local mode
-  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
-    return NextResponse.redirect(new URL("/tasks", req.url));
-  }
-
-  // Allow all other routes
   return NextResponse.next();
 }
 
-// Export the appropriate middleware based on mode
-export default isLocalMode
-  ? localModeMiddleware
-  : clerkMiddleware(async (auth, req) => {
+export default authMode === "clerk"
+  ? clerkMiddleware(async (auth, req) => {
       const { pathname } = req.nextUrl;
 
-      // Redirect root to dashboard (no landing page)
       if (pathname === "/") {
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
@@ -43,7 +34,8 @@ export default isLocalMode
       if (!isPublicRoute(req)) {
         await auth.protect();
       }
-    });
+    })
+  : selfhostedMiddleware;
 
 export const config = {
   matcher: [

@@ -54,7 +54,18 @@ class SelfhostedAuthService {
   }
 
   /**
-   * Register a new user
+   * Check if the app has been set up (first user created).
+   */
+  async getSetupStatus(): Promise<{ isSetUp: boolean }> {
+    const response = await fetch("/auth/setup-status");
+    if (!response.ok) {
+      return { isSetUp: false };
+    }
+    return response.json();
+  }
+
+  /**
+   * Register the first user (admin). Only works when no users exist.
    */
   async register(data: {
     email: string;
@@ -63,7 +74,7 @@ class SelfhostedAuthService {
     lastName?: string;
     organizationName?: string;
   }): Promise<RegisterResponse> {
-    const response = await fetch("/api/v1/auth/register", {
+    const response = await fetch("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -94,7 +105,7 @@ class SelfhostedAuthService {
     password: string;
     organizationId?: string;
   }): Promise<LoginResponse> {
-    const response = await fetch("/api/v1/auth/login", {
+    const response = await fetch("/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -128,7 +139,7 @@ class SelfhostedAuthService {
    */
   async logout(): Promise<void> {
     try {
-      await fetch("/api/v1/auth/logout", {
+      await fetch("/auth/logout", {
         method: "POST",
         credentials: "include",
         headers: this.accessToken
@@ -175,7 +186,7 @@ class SelfhostedAuthService {
 
   private async doRefresh(): Promise<string | null> {
     try {
-      const response = await fetch("/api/v1/auth/refresh", {
+      const response = await fetch("/auth/refresh", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -200,7 +211,7 @@ class SelfhostedAuthService {
    * Switch to a different organization
    */
   async switchOrganization(organizationId: string): Promise<void> {
-    const response = await fetch("/api/v1/auth/switch-organization", {
+    const response = await fetch("/auth/switch-organization", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -230,7 +241,7 @@ class SelfhostedAuthService {
     }
 
     try {
-      const response = await fetch("/api/v1/auth/me", {
+      const response = await fetch("/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
         credentials: "include",
       });

@@ -21,8 +21,8 @@ if [ -z "$ENCRYPTION_KEY" ]; then
 fi
 
 # Check auth mode
-if [ "$AUTH_MODE" = "local" ]; then
-    echo "Running in LOCAL mode - no authentication required"
+if [ "$AUTH_MODE" = "selfhosted" ] || [ -z "$AUTH_MODE" ]; then
+    echo "Running in SELFHOSTED mode - email/password authentication"
 else
     # Validate Clerk keys
     if [ -z "$CLERK_SECRET_KEY" ]; then

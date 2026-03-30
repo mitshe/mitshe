@@ -23,14 +23,10 @@ export const metadata: Metadata = {
   description: "AI-powered workflow automation platform",
 };
 
-// Determine auth mode from environment
 function getAuthMode(): AuthMode {
-  const authMode =
-    process.env.AUTH_MODE || process.env.NEXT_PUBLIC_AUTH_MODE || "clerk";
-
-  if (authMode === "local") return "local";
-  if (authMode === "selfhosted") return "selfhosted";
-  return "clerk";
+  const mode =
+    process.env.AUTH_MODE || process.env.NEXT_PUBLIC_AUTH_MODE || "selfhosted";
+  return mode === "clerk" ? "clerk" : "selfhosted";
 }
 
 const authMode = getAuthMode();

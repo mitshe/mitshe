@@ -43,7 +43,7 @@ const timezones = [
 ];
 
 export default function OrganizationSettingsPage() {
-  const { isLocalMode } = useAuthContext();
+  const { isSelfhostedMode } = useAuthContext();
   const { organization, isLoaded } = useOrganization();
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -107,15 +107,6 @@ export default function OrganizationSettingsPage() {
         </div>
       </div>
 
-      {isLocalMode && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            You are running in local mode. Organization settings are stored
-            locally and will reset when the container restarts.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="grid gap-6">
         {/* General Settings */}

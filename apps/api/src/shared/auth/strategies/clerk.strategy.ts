@@ -13,19 +13,21 @@ import { AuthStrategy, AuthResult } from './auth-strategy.interface';
 export class ClerkAuthStrategy implements AuthStrategy {
   private readonly logger = new Logger(ClerkAuthStrategy.name);
   private readonly secretKey: string | null;
-  private readonly isLocalMode: boolean;
+  private readonly isEnabled: boolean;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    this.isLocalMode = this.configService.get<string>('AUTH_MODE') === 'local';
+    const authMode =
+      this.configService.get<string>('AUTH_MODE') || 'selfhosted';
     const secretKey = this.configService.get<string>('CLERK_SECRET_KEY');
-
-    if (!secretKey && !this.isLocalMode) {
-      throw new Error('CLERK_SECRET_KEY is not configured');
-    }
+    this.isEnabled = authMode === 'clerk' && !!secretKey;
     this.secretKey = secretKey || null;
+
+    if (authMode === 'clerk' && !secretKey) {
+      this.logger.warn('AUTH_MODE=clerk but CLERK_SECRET_KEY is not set');
+    }
   }
 
   canHandle(context: ExecutionContext): boolean {

@@ -23,9 +23,6 @@ import type {
   CreateFromTemplateDto,
 } from "./types";
 
-// Check if running in local mode (set at build time)
-const isLocalMode = process.env.NEXT_PUBLIC_AUTH_MODE === "local";
-
 export const queryKeys = {
   projects: {
     all: ["projects"] as const,
@@ -83,12 +80,6 @@ export const queryKeys = {
 };
 
 function useAuthToken() {
-  // In local mode, return null token (backend doesn't require auth)
-  if (isLocalMode) {
-    return async () => null as unknown as string;
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { getToken } = useAuth();
   return async () => {
     const token = await getToken();

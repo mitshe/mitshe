@@ -1,26 +1,17 @@
 import { SignIn } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
-import { SelfhostedSignIn } from "@/components/auth";
+import { SelfhostedAuthPage } from "@/components/auth/selfhosted-auth-page";
 
-// Determine auth mode
 const authMode =
-  process.env.AUTH_MODE || process.env.NEXT_PUBLIC_AUTH_MODE || "clerk";
+  process.env.AUTH_MODE || process.env.NEXT_PUBLIC_AUTH_MODE || "selfhosted";
 
 export default function SignInPage() {
-  // In local mode, redirect to dashboard (no auth needed)
-  if (authMode === "local") {
-    redirect("/dashboard");
+  if (authMode === "clerk") {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <SignIn />
+      </div>
+    );
   }
 
-  // In selfhosted mode, show custom sign-in form
-  if (authMode === "selfhosted") {
-    return <SelfhostedSignIn />;
-  }
-
-  // In Clerk mode, show Clerk sign-in
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <SignIn />
-    </div>
-  );
+  return <SelfhostedAuthPage />;
 }

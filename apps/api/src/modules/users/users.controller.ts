@@ -10,6 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { IsEmail, IsString, IsOptional, MinLength } from 'class-validator';
 import { UsersService } from './users.service';
 import { AuthGuard } from '@/shared/auth/auth.guard';
 import { AuthResult } from '@/shared/auth/strategies/auth-strategy.interface';
@@ -19,29 +20,55 @@ interface AuthenticatedRequest extends Request {
 }
 
 class RegisterRequestDto {
+  @IsEmail()
   email: string;
+
+  @IsString()
+  @MinLength(8)
   password: string;
+
+  @IsString()
+  @IsOptional()
   firstName?: string;
+
+  @IsString()
+  @IsOptional()
   lastName?: string;
+
+  @IsString()
+  @IsOptional()
   organizationName?: string;
 }
 
 class LoginRequestDto {
+  @IsEmail()
   email: string;
+
+  @IsString()
   password: string;
+
+  @IsString()
+  @IsOptional()
   organizationId?: string;
 }
 
 class RefreshRequestDto {
+  @IsString()
+  @IsOptional()
   refreshToken: string;
 }
 
 class ChangePasswordDto {
+  @IsString()
   oldPassword: string;
+
+  @IsString()
+  @MinLength(8)
   newPassword: string;
 }
 
 class SwitchOrgDto {
+  @IsString()
   organizationId: string;
 }
 
@@ -50,8 +77,18 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   /**
-   * Register a new user
-   * Creates user + default organization
+   * Check if the app has been set up (first user created).
+   * Public endpoint - no auth required.
+   */
+  @Get('setup-status')
+  async getSetupStatus() {
+    const isSetUp = await this.usersService.isSetUp();
+    return { isSetUp };
+  }
+
+  /**
+   * Register the first user (admin).
+   * Only works when no users exist yet.
    */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
