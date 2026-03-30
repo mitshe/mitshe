@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { verifyToken } from '@clerk/backend';
+import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../persistence/prisma/prisma.service';
 
 // Event type definitions
@@ -81,6 +82,8 @@ export class EventsGateway
 
   private readonly logger = new Logger(EventsGateway.name);
   private readonly clerkSecretKey: string;
+  private readonly jwtSecret: string;
+  private readonly authMode: string;
   private connectedClients = new Map<
     string,
     {
@@ -97,7 +100,14 @@ export class EventsGateway
   ) {
     this.clerkSecretKey =
       this.configService.get<string>('CLERK_SECRET_KEY') || '';
-    if (!this.clerkSecretKey) {
+    const authMode =
+      this.configService.get<string>('AUTH_MODE') || 'selfhosted';
+    this.jwtSecret =
+      this.configService.get<string>('JWT_SECRET') ||
+      (authMode === 'selfhosted' ? 'dev-secret-change-in-production' : '');
+    this.authMode = authMode;
+
+    if (authMode === 'clerk' && !this.clerkSecretKey) {
       this.logger.warn(
         'CLERK_SECRET_KEY not configured - WebSocket auth will be disabled',
       );
@@ -139,44 +149,36 @@ export class EventsGateway
       return { event: 'error', data: { message: 'Client not found' } };
     }
 
-    // Validate token if Clerk is configured
-    if (this.clerkSecretKey && data.token) {
-      try {
-        const payload = await verifyToken(data.token, {
-          secretKey: this.clerkSecretKey,
-        });
-
-        // Verify the token's organization matches the requested organization
-        if (payload.org_id && payload.org_id !== data.organizationId) {
-          this.logger.warn(
-            `Client ${client.id} token org (${payload.org_id}) doesn't match requested org (${data.organizationId})`,
-          );
-          return {
-            event: 'error',
-            data: { message: 'Organization mismatch' },
-          };
-        }
-
-        // Token is valid - update client data
-        clientData.userId = payload.sub;
-        clientData.authenticated = true;
-      } catch (error) {
-        this.logger.warn(`Client ${client.id} authentication failed: ${error}`);
-        return {
-          event: 'error',
-          data: { message: 'Invalid or expired token' },
-        };
-      }
-    } else if (this.clerkSecretKey) {
-      // Clerk is configured but no token provided
+    if (!data.token) {
       this.logger.warn(`Client ${client.id} attempted auth without token`);
       return {
         event: 'error',
         data: { message: 'Authentication token required' },
       };
-    } else {
-      // Clerk not configured - allow without token (dev mode)
+    }
+
+    try {
+      if (this.authMode === 'clerk' && this.clerkSecretKey) {
+        // Clerk mode: verify with Clerk SDK
+        const payload = await verifyToken(data.token, {
+          secretKey: this.clerkSecretKey,
+        });
+        clientData.userId = payload.sub;
+      } else {
+        // Selfhosted mode: verify JWT
+        const payload = jwt.verify(data.token, this.jwtSecret) as {
+          sub: string;
+          orgId: string;
+        };
+        clientData.userId = payload.sub;
+      }
       clientData.authenticated = true;
+    } catch (error) {
+      this.logger.warn(`Client ${client.id} authentication failed: ${error}`);
+      return {
+        event: 'error',
+        data: { message: 'Invalid or expired token' },
+      };
     }
 
     // Join organization room

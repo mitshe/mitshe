@@ -38,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <AuthProvider authMode={authMode}>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           suppressHydrationWarning

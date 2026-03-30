@@ -15,12 +15,13 @@ docker run -d \
   -p 3000:3000 \
   -p 3001:3001 \
   -v mitshe-data:/build/data \
+  -v /var/run/docker.sock:/var/run/docker.sock \
   ghcr.io/mitshe/light:latest
 ```
 
-Open **http://localhost:3000**. That's it.
+Open **http://localhost:3000**. Create your admin account on first visit.
 
-Everything runs in one container: frontend, API, SQLite, Redis. No configuration needed.
+Docker socket is mounted so mitshe can run workflow tasks in isolated containers on the host.
 
 ```bash
 # Stop
@@ -39,7 +40,10 @@ git clone https://github.com/mitshe/mitshe.git
 cd mitshe
 just setup
 
-# Start databases + dev servers (no auth config needed)
+# Build workflow executor image (one-time)
+just executor-build
+
+# Start databases + dev servers
 just dev
 ```
 
@@ -54,9 +58,10 @@ Run `just` to see all commands. Key ones:
 | `just run` | Run mitshe via `docker run` |
 | `just stop` | Stop mitshe container |
 | `just dev` | Dev mode (email/password auth) |
+| `just executor-build` | Build workflow executor image |
 | `just build` | Build all packages |
 | `just check` | Lint + typecheck + test |
-| `just light-build` | Build Docker image locally |
+| `just light-build` | Build light Docker image |
 | `just db-migrate` | Run database migrations |
 
 ## Project Structure

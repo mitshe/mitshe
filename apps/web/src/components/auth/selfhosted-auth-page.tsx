@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { selfhostedAuth } from "@/lib/auth/selfhosted-auth";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,6 @@ export function SelfhostedAuthPage() {
 }
 
 function SetupForm() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -74,7 +72,7 @@ function SetupForm() {
         firstName: form.firstName || undefined,
         lastName: form.lastName || undefined,
       });
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -213,7 +211,6 @@ function SetupForm() {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ email: "", password: "" });
@@ -228,7 +225,7 @@ function LoginForm() {
         email: form.email,
         password: form.password,
       });
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

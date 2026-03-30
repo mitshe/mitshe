@@ -19,6 +19,7 @@ services:
       - "3001:3001"  # API
     volumes:
       - mitshe-data:/build/data
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       # Selfhosted mode - email/password JWT auth (no external services)
       - AUTH_MODE=selfhosted

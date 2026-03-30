@@ -38,21 +38,24 @@ export class TasksService {
   ) {}
 
   async create(organizationId: string, userId: string, dto: CreateTaskDto) {
-    // Verify project belongs to organization
-    const project = await this.prisma.project.findFirst({
-      where: { id: dto.projectId, organizationId },
-    });
+    // Verify project belongs to organization (if provided)
+    if (dto.projectId) {
+      const project = await this.prisma.project.findFirst({
+        where: { id: dto.projectId, organizationId },
+      });
 
-    if (!project) {
-      throw new NotFoundException(`Project ${dto.projectId} not found`);
+      if (!project) {
+        throw new NotFoundException(`Project ${dto.projectId} not found`);
+      }
     }
 
     const task = await this.prisma.task.create({
       data: {
         organizationId,
-        projectId: dto.projectId,
+        projectId: dto.projectId || null,
         title: dto.title,
         description: dto.description,
+        priority: dto.priority,
         externalIssueId: dto.externalIssueId,
         externalIssueUrl: dto.externalIssueUrl,
         createdBy: userId,

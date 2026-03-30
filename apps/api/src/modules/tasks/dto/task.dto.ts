@@ -17,11 +17,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateTaskDto {
   @IsString()
   @MinLength(1)
-  @MaxLength(100)
-  projectId: string;
-
-  @IsString()
-  @MinLength(1)
   @MaxLength(500)
   title: string;
 
@@ -29,6 +24,16 @@ export class CreateTaskDto {
   @IsOptional()
   @MaxLength(10000)
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  priority?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  projectId?: string;
 
   @IsString()
   @IsOptional()

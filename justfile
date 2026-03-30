@@ -36,7 +36,7 @@ infra-logs:
 
 # Run mitshe with a single docker run command
 run:
-    docker run -d --name mitshe -p 3000:3000 -p 3001:3001 -v mitshe-data:/build/data ghcr.io/mitshe/light:latest
+    docker run -d --name mitshe -p 3000:3000 -p 3001:3001 -v mitshe-data:/build/data -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/mitshe/light:latest
     @echo ""
     @echo "mitshe is starting..."
     @echo "  Frontend: http://localhost:3000"
@@ -51,6 +51,10 @@ stop:
 # ==========================================
 # Light Mode (All-in-one container)
 # ==========================================
+
+# Build workflow executor image
+executor-build:
+    docker build -t mitshe-executor:latest -f apps/api/docker/executor/Dockerfile apps/api/docker/executor/
 
 # Build light mode image
 light-build:

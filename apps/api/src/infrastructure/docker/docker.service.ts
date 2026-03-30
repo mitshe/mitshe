@@ -181,7 +181,7 @@ export class DockerService implements OnModuleInit {
     this.docker = new Docker();
     this.executorImage =
       this.configService.get<string>('EXECUTOR_IMAGE') ||
-      'ghcr.io/mitch-com/mitshe-executor:latest';
+      'mitshe-executor:latest';
   }
 
   async onModuleInit() {
@@ -271,11 +271,10 @@ export class DockerService implements OnModuleInit {
 
       return result;
     } catch (error) {
-      // If image not found, try to pull it
       if ((error as NodeJS.ErrnoException).message?.includes('No such image')) {
-        this.logger.log('Image not found, pulling...');
-        await this.pullImage();
-        return this.executeWorkflow(job, onEvent);
+        throw new Error(
+          `Executor image "${this.executorImage}" not found. Build it with: just executor-build`,
+        );
       }
       throw error;
     } finally {
