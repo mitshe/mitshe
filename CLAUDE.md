@@ -10,7 +10,7 @@ Nazwa projektu: mitshe
 Stack: Next.js 16 + NestJS 11 + TypeScript + Prisma + PostgreSQL/SQLite
 Architektura: Hexagonal + CQRS + Event-Driven (Monorepo)
 UI: shadcn/ui + Tailwind CSS 4
-Auth: Clerk (optional) lub Local mode (anonymous)
+Auth: Selfhosted (JWT) lub Clerk (optional)
 Build: pnpm + Turborepo
 ```
 
@@ -50,16 +50,16 @@ mitshe/
 
 | Mode | Database | Redis | Auth | Use Case |
 |------|----------|-------|------|----------|
-| **Light** | SQLite (embedded) | Embedded | Local (anonymous) | Quick demos, single user |
-| **Dev** | PostgreSQL (Docker) | Docker | Clerk | Local development |
-| **Prod** | PostgreSQL (external) | External | Clerk | Production, multi-user |
+| **Light** | SQLite (embedded) | Embedded | Selfhosted | Quick start, single user |
+| **Dev** | PostgreSQL (Docker) | Docker | Selfhosted | Local development |
+| **Prod** | PostgreSQL (external) | External | Selfhosted or Clerk | Production, multi-user |
 
 ### Authentication Modes
 
 | Mode | `AUTH_MODE` | Description |
 |------|-------------|-------------|
-| **Local** | `local` | No authentication, anonymous user, single organization |
-| **Clerk** | `clerk` | Full Clerk authentication, multi-user, organizations, RBAC |
+| **Selfhosted** | `selfhosted` | Email/password JWT auth (default) |
+| **Clerk** | `clerk` | Clerk authentication, multi-user, organizations, RBAC |
 
 ---
 
@@ -317,13 +317,13 @@ pnpm --filter @mitshe/api prisma migrate reset
 
 ### Root .env (shared)
 ```bash
-# Authentication Mode: 'local' (no auth) or 'clerk' (Clerk auth)
-AUTH_MODE=local
+# Authentication Mode: 'selfhosted' (email/password) or 'clerk' (Clerk auth)
+AUTH_MODE=selfhosted
+NEXT_PUBLIC_AUTH_MODE=selfhosted
 
 # Clerk Authentication (required only if AUTH_MODE=clerk)
-CLERK_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-NEXT_PUBLIC_AUTH_MODE=local  # Must match AUTH_MODE for frontend
+# CLERK_SECRET_KEY=sk_test_...
+# NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 
 # Database
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mitshe
@@ -424,4 +424,4 @@ class OnTaskCreated {
 
 ---
 
-*Ostatnia aktualizacja: 2026-02-08*
+*Ostatnia aktualizacja: 2026-04-01*

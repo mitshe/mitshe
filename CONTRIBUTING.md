@@ -364,7 +364,7 @@ Build locally: `just light-build` | Push: `just docker-push`
 
 - **Questions**: Open a [Discussion](https://github.com/mitshe/mitshe/discussions)
 - **Bugs**: Open an [Issue](https://github.com/mitshe/mitshe/issues)
-- **Security**: Email security@mitshe.io
+- **Security**: Open a private [Security Advisory](https://github.com/mitshe/mitshe/security/advisories/new)
 
 ---
 
