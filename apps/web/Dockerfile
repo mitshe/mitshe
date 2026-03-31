@@ -1,54 +1,57 @@
 # Build stage
-FROM node:20-alpine AS builder
-
-WORKDIR /app
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 # Install dependencies
-COPY package*.json ./
-RUN npm ci
+FROM base AS deps
+WORKDIR /build
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages/types/package.json ./packages/types/
+COPY apps/web/package.json ./apps/web/
+RUN pnpm install --frozen-lockfile
 
-# Copy source and build
-COPY . .
+# Build
+FROM base AS builder
+WORKDIR /build
+COPY --from=deps /build/node_modules ./node_modules
+COPY --from=deps /build/packages/types/node_modules ./packages/types/node_modules
+COPY --from=deps /build/apps/web/node_modules ./apps/web/node_modules
+COPY pnpm-workspace.yaml package.json turbo.json ./
+COPY packages/ ./packages/
+COPY apps/web/ ./apps/web/
 
-# Build arguments for environment variables
-ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-ARG NEXT_PUBLIC_API_URL
-ARG BACKEND_URL=http://api:3001
+# Build types
+WORKDIR /build/packages/types
+RUN pnpm run build
 
-ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV BACKEND_URL=$BACKEND_URL
+# Build web
+WORKDIR /build/apps/web
+ENV NEXT_PUBLIC_API_URL=http://localhost:3001
+ENV NEXT_PUBLIC_AUTH_MODE=selfhosted
+ENV AUTH_MODE=selfhosted
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm run build
 
-RUN npm run build
-
-# Production stage
+# Production
 FROM node:20-alpine AS production
+RUN apk add --no-cache curl
+WORKDIR /build
 
-WORKDIR /app
+COPY --from=builder /build/apps/web/.next /build/apps/web/.next
+COPY --from=builder /build/apps/web/public /build/apps/web/public
+COPY --from=builder /build/apps/web/package.json /build/apps/web/
+COPY --from=builder /build/apps/web/next.config.ts /build/apps/web/
+COPY --from=builder /build/node_modules /build/node_modules
+COPY --from=builder /build/apps/web/node_modules /build/apps/web/node_modules
+COPY --from=builder /build/packages/types /build/packages/types
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies only
-RUN npm ci --only=production
-
-# Copy built application
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.ts ./
-
-# Set ownership
-RUN chown -R nextjs:nodejs /app
-
-USER nextjs
+WORKDIR /build/apps/web
 
 EXPOSE 3000
-
 ENV NODE_ENV=production
 ENV PORT=3000
 
-CMD ["npm", "start"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000 || exit 1
+
+CMD ["pnpm", "start"]
