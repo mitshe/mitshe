@@ -59,7 +59,6 @@ jobs:
             ${{ env.REGISTRY }}/mitshe/api:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/mitshe/api:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Build and push Web image
         uses: docker/build-push-action@v6
@@ -72,7 +71,6 @@ jobs:
             ${{ env.REGISTRY }}/mitshe/web:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/mitshe/web:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Build and push Executor image
         uses: docker/build-push-action@v6
@@ -85,7 +83,6 @@ jobs:
             ${{ env.REGISTRY }}/mitshe/executor:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/mitshe/executor:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Build and push Light image
         uses: docker/build-push-action@v6
@@ -98,7 +95,6 @@ jobs:
             ${{ env.REGISTRY }}/mitshe/light:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/mitshe/light:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Summary
         run: |
