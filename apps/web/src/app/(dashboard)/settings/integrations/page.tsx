@@ -183,7 +183,7 @@ const integrationDefinitions: IntegrationDef[] = [
     icon: <GitHubIcon />,
     color: "bg-[#24292e]",
     available: true,
-    docsUrl: "https://github.com/settings/tokens?type=beta",
+    docsUrl: "https://github.com/settings/tokens/new",
     fields: [
       {
         key: "accessToken",
