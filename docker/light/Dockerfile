@@ -92,7 +92,8 @@ RUN apk add --no-cache \
     supervisor \
     curl \
     bash \
-    openssl && \
+    openssl \
+    docker-cli && \
     npm install -g prisma@6
 
 # Use /build as base directory to preserve pnpm symlink structure

@@ -73,6 +73,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push Executor image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api/docker/executor
+          file: apps/api/docker/executor/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/mitshe/executor:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/mitshe/executor:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build and push Light image
         uses: docker/build-push-action@v6
         with:
@@ -93,4 +105,5 @@ jobs:
           echo "|-------|-----|" >> $GITHUB_STEP_SUMMARY
           echo "| ghcr.io/mitshe/api | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
           echo "| ghcr.io/mitshe/web | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ghcr.io/mitshe/executor | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
           echo "| ghcr.io/mitshe/light | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY

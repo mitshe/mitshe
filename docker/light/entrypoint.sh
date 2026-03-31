@@ -24,29 +24,33 @@ fi
 if [ "$AUTH_MODE" = "selfhosted" ] || [ -z "$AUTH_MODE" ]; then
     echo "Running in SELFHOSTED mode - email/password authentication"
 else
-    # Validate Clerk keys
     if [ -z "$CLERK_SECRET_KEY" ]; then
         echo "Warning: CLERK_SECRET_KEY not set. Authentication will not work."
-        echo "Set it via: docker run -e CLERK_SECRET_KEY=sk_... mitshe"
     fi
+fi
 
-    if [ -z "$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" ]; then
-        echo "Warning: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY not set."
+# Ensure executor image exists on host (for workflow execution)
+EXECUTOR_IMAGE="${EXECUTOR_IMAGE:-ghcr.io/mitshe/executor:latest}"
+export EXECUTOR_IMAGE
+if [ -S /var/run/docker.sock ]; then
+    if ! docker image inspect "$EXECUTOR_IMAGE" > /dev/null 2>&1; then
+        echo "Pulling workflow executor image: $EXECUTOR_IMAGE"
+        docker pull "$EXECUTOR_IMAGE" 2>/dev/null || echo "Warning: Could not pull executor image. Workflows will not run until image is available."
+    else
+        echo "Executor image found: $EXECUTOR_IMAGE"
     fi
+else
+    echo "Warning: Docker socket not mounted. Workflow execution will not work."
+    echo "  Mount it with: -v /var/run/docker.sock:/var/run/docker.sock"
 fi
 
 echo ""
 echo "=================================================="
-echo "  mitshe-light is starting..."
+echo "  mitshe is ready!"
 echo ""
 echo "  Frontend:  http://localhost:3000"
 echo "  API:       http://localhost:3001"
-echo "  Data:      /build/data/mitshe.db"
-echo ""
-echo "  To persist data, mount a volume:"
-echo "  docker run -v mitshe-data:/build/data mitshe"
 echo "=================================================="
 echo ""
 
-# Execute the main command
 exec "$@"

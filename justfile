@@ -54,7 +54,7 @@ stop:
 
 # Build workflow executor image
 executor-build:
-    docker build -t mitshe-executor:latest -f apps/api/docker/executor/Dockerfile apps/api/docker/executor/
+    docker build -t ghcr.io/mitshe/executor:latest -f apps/api/docker/executor/Dockerfile apps/api/docker/executor/
 
 # Build light mode image
 light-build:

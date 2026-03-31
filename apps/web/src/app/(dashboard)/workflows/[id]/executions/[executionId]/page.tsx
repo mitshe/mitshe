@@ -470,6 +470,53 @@ export default function ExecutionDetailPage() {
 
   const definition = execution?.workflow?.definition;
   const nodes = definition?.nodes || [];
+  const edges = definition?.edges || [];
+
+  // Sort nodeResults by topological order (execution flow) based on edges
+  const sortedNodeResults = useMemo(() => {
+    if (!edges.length || !nodeResults.length) return nodeResults;
+
+    // Build adjacency: which nodes come after which
+    const inDegree = new Map<string, number>();
+    const adjList = new Map<string, string[]>();
+    const allNodeIds = new Set(nodeResults.map((r) => r.nodeId));
+
+    for (const id of allNodeIds) {
+      inDegree.set(id, 0);
+      adjList.set(id, []);
+    }
+
+    for (const edge of edges) {
+      if (allNodeIds.has(edge.source) && allNodeIds.has(edge.target)) {
+        adjList.get(edge.source)!.push(edge.target);
+        inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
+      }
+    }
+
+    // Kahn's algorithm - topological sort
+    const queue = [...allNodeIds].filter((id) => (inDegree.get(id) || 0) === 0);
+    const sorted: string[] = [];
+
+    while (queue.length > 0) {
+      const node = queue.shift()!;
+      sorted.push(node);
+      for (const neighbor of adjList.get(node) || []) {
+        const newDegree = (inDegree.get(neighbor) || 1) - 1;
+        inDegree.set(neighbor, newDegree);
+        if (newDegree === 0) queue.push(neighbor);
+      }
+    }
+
+    // Add any nodes not in edges (orphans)
+    for (const id of allNodeIds) {
+      if (!sorted.includes(id)) sorted.push(id);
+    }
+
+    const orderMap = new Map(sorted.map((id, idx) => [id, idx]));
+    return [...nodeResults].sort(
+      (a, b) => (orderMap.get(a.nodeId) ?? 999) - (orderMap.get(b.nodeId) ?? 999)
+    );
+  }, [nodeResults, edges]);
 
   // Loading state - must be after all hooks
   if (isLoading) {
@@ -571,7 +618,7 @@ export default function ExecutionDetailPage() {
         )}
         <div className="flex items-center gap-2">
           <span className="text-foreground font-medium">
-            {nodeResults.filter((n) => n.status === "completed").length}
+            {sortedNodeResults.filter((n) => n.status === "completed").length}
           </span>
           <span>of {nodes.length} steps completed</span>
         </div>
@@ -596,23 +643,23 @@ export default function ExecutionDetailPage() {
         </CardHeader>
         <CardContent>
           <PipelineProgress
-            steps={nodeResults}
+            steps={sortedNodeResults}
             nodes={nodes as Array<{ id: string; name: string; type: string }>}
           />
 
-          {nodeResults.length === 0 && nodes.length > 0 ? (
+          {sortedNodeResults.length === 0 && nodes.length > 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-4" />
               <p>Waiting for execution to start...</p>
             </div>
-          ) : nodeResults.length === 0 ? (
+          ) : sortedNodeResults.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-4" />
               <p>No steps defined</p>
             </div>
           ) : (
             <div className="space-y-0">
-              {nodeResults.map((result, index) => {
+              {sortedNodeResults.map((result, index) => {
                 const nodeDef = nodeMap.get(result.nodeId) as
                   | { name: string; type: string }
                   | undefined;
@@ -622,7 +669,7 @@ export default function ExecutionDetailPage() {
                     step={result}
                     nodeName={nodeDef?.name || result.nodeId}
                     nodeType={nodeDef?.type || "unknown"}
-                    isLast={index === nodeResults.length - 1}
+                    isLast={index === sortedNodeResults.length - 1}
                     stepNumber={index + 1}
                   />
                 );

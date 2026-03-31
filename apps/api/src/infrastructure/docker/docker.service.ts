@@ -181,7 +181,7 @@ export class DockerService implements OnModuleInit {
     this.docker = new Docker();
     this.executorImage =
       this.configService.get<string>('EXECUTOR_IMAGE') ||
-      'mitshe-executor:latest';
+      'ghcr.io/mitshe/executor:latest';
   }
 
   async onModuleInit() {
