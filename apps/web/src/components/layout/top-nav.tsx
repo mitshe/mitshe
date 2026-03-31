@@ -48,9 +48,7 @@ export function TopNav() {
           href="/dashboard"
           className="flex md:hidden items-center gap-2 font-semibold"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs">
-            AI
-          </div>
+          <img src="/logo.svg" alt="mitshe" className="h-8 w-8" />
         </Link>
 
         <button

@@ -21,13 +21,14 @@ export class ClerkAuthGuard implements CanActivate {
   private readonly isLocalMode: boolean;
 
   constructor(private readonly configService: ConfigService) {
-    this.isLocalMode = this.configService.get<string>('AUTH_MODE') === 'local';
-    const secretKey = this.configService.get<string>('CLERK_SECRET_KEY');
+    const authMode =
+      this.configService.get<string>('AUTH_MODE') || 'selfhosted';
+    this.isLocalMode = authMode !== 'clerk';
+    this.secretKey = this.configService.get<string>('CLERK_SECRET_KEY');
 
-    if (!secretKey && !this.isLocalMode) {
-      throw new Error('CLERK_SECRET_KEY is not configured');
+    if (authMode === 'clerk' && !this.secretKey) {
+      this.logger.warn('AUTH_MODE=clerk but CLERK_SECRET_KEY is not set');
     }
-    this.secretKey = secretKey;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

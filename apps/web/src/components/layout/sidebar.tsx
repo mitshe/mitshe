@@ -218,6 +218,7 @@ export function Sidebar() {
           href="/dashboard"
           className="flex items-center gap-2 font-semibold"
         >
+          <img src="/logo.svg" alt="mitshe" className="h-8 w-8" />
           <span>mitshe</span>
         </Link>
       </div>
