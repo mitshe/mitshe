@@ -13,16 +13,15 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: mitshe/mitshe
 
 jobs:
   build-and-push:
-    name: Build & Push Docker Images
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-      attestations: write
-      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -46,45 +45,8 @@ jobs:
             VERSION=${{ github.event.inputs.version }}
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version: $VERSION"
 
-      - name: Build and push API image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api/Dockerfile
-          push: true
-          provenance: false
-          tags: |
-            ${{ env.REGISTRY }}/mitshe/api:${{ steps.version.outputs.version }}
-            ${{ env.REGISTRY }}/mitshe/api:latest
-          cache-from: type=gha
-
-      - name: Build and push Web image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/web/Dockerfile
-          push: true
-          provenance: false
-          tags: |
-            ${{ env.REGISTRY }}/mitshe/web:${{ steps.version.outputs.version }}
-            ${{ env.REGISTRY }}/mitshe/web:latest
-          cache-from: type=gha
-
-      - name: Build and push Executor image
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/api/docker/executor
-          file: apps/api/docker/executor/Dockerfile
-          push: true
-          provenance: false
-          tags: |
-            ${{ env.REGISTRY }}/mitshe/executor:${{ steps.version.outputs.version }}
-            ${{ env.REGISTRY }}/mitshe/executor:latest
-          cache-from: type=gha
-
-      - name: Build and push Light image
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -92,9 +54,19 @@ jobs:
           push: true
           provenance: false
           tags: |
-            ${{ env.REGISTRY }}/mitshe/light:${{ steps.version.outputs.version }}
-            ${{ env.REGISTRY }}/mitshe/light:latest
-          cache-from: type=gha
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Build and push Executor
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api/docker/executor
+          file: apps/api/docker/executor/Dockerfile
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-executor:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-executor:latest
 
       - name: Summary
         run: |
@@ -102,7 +74,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Image | Tag |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| ghcr.io/mitshe/api | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| ghcr.io/mitshe/web | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| ghcr.io/mitshe/executor | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| ghcr.io/mitshe/light | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ghcr.io/${{ env.IMAGE_NAME }} | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ghcr.io/${{ env.IMAGE_NAME }}-executor | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY

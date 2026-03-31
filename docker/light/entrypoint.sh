@@ -30,7 +30,7 @@ else
 fi
 
 # Ensure executor image exists on host (for workflow execution)
-EXECUTOR_IMAGE="${EXECUTOR_IMAGE:-ghcr.io/mitshe/executor:latest}"
+EXECUTOR_IMAGE="${EXECUTOR_IMAGE:-ghcr.io/mitshe/mitshe-executor:latest}"
 export EXECUTOR_IMAGE
 if [ -S /var/run/docker.sock ]; then
     if ! docker image inspect "$EXECUTOR_IMAGE" > /dev/null 2>&1; then

@@ -16,7 +16,7 @@ docker run -d \
   -p 3001:3001 \
   -v mitshe-data:/build/data \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  ghcr.io/mitshe/light:latest
+  ghcr.io/mitshe/mitshe:latest
 ```
 
 Open **http://localhost:3000**. Create your admin account on first visit.

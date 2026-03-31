@@ -11,7 +11,7 @@ services:
     build:
       context: ../..
       dockerfile: docker/light/Dockerfile
-    image: ghcr.io/mitshe/light:latest
+    image: ghcr.io/mitshe/mitshe:latest
     container_name: mitshe
     restart: unless-stopped
     ports:
