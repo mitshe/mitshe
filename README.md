@@ -28,6 +28,22 @@ Docker socket is mounted so mitshe can run workflow tasks in isolated containers
 docker stop mitshe && docker rm mitshe
 ```
 
+## Update
+
+Your data is stored in the `mitshe-data` volume and persists across updates.
+
+```bash
+docker stop mitshe && docker rm mitshe
+docker pull ghcr.io/mitshe/mitshe:latest
+docker run -d \
+  --name mitshe \
+  -p 3000:3000 \
+  -p 3001:3001 \
+  -v mitshe-data:/build/data \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  ghcr.io/mitshe/mitshe:latest
+```
+
 ## Develop
 
 ```bash

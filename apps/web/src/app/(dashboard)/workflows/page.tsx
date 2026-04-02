@@ -66,6 +66,7 @@ import {
   MessageSquare,
   FileText,
   Sparkles,
+  Search,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import { toast } from "sonner";
@@ -140,6 +141,7 @@ export default function WorkflowsPage() {
   const deleteWorkflow = useDeleteWorkflow();
   const runWorkflow = useRunWorkflow();
 
+  const [search, setSearch] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createMode, setCreateMode] = useState<"blank" | "template">("blank");
   const [selectedTemplate, setSelectedTemplate] =
@@ -151,8 +153,19 @@ export default function WorkflowsPage() {
     projectId: "",
   });
 
-  const totalPages = Math.ceil(workflows.length / ITEMS_PER_PAGE);
-  const paginatedWorkflows = workflows.slice(
+  // Filter workflows by search
+  const filteredWorkflows = search
+    ? workflows.filter((w) => {
+        const s = search.toLowerCase();
+        return (
+          String(w.name || "").toLowerCase().includes(s) ||
+          String(w.description || "").toLowerCase().includes(s)
+        );
+      })
+    : workflows;
+
+  const totalPages = Math.ceil(filteredWorkflows.length / ITEMS_PER_PAGE);
+  const paginatedWorkflows = filteredWorkflows.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
@@ -255,6 +268,7 @@ export default function WorkflowsPage() {
             Create and manage automated workflows
           </p>
         </div>
+        <div className="flex items-center gap-2">
         <Dialog
           open={createDialogOpen}
           onOpenChange={(open) => {
@@ -318,7 +332,7 @@ export default function WorkflowsPage() {
                     No templates available
                   </div>
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-2 max-h-[400px] overflow-y-auto pr-1">
                     {templates.map((template) => {
                       const style = categoryStyles[template.category] || {
                         icon: <WorkflowIcon className="w-5 h-5" />,
@@ -459,6 +473,18 @@ export default function WorkflowsPage() {
             )}
           </DialogContent>
         </Dialog>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search workflows..."
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+          className="pl-9 max-w-md"
+        />
       </div>
 
       <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
