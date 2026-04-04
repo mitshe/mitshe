@@ -273,7 +273,8 @@ export default function AICredentialsPage() {
                   <Zap className="w-4 h-4" />
                   <AlertDescription>
                     No API key required. This provider manages its own
-                    authentication — configure it in a terminal session.
+                    authentication — configure it in a Workspace session.
+                    Supported only in Workspace sessions, not in Workflows.
                   </AlertDescription>
                 </Alert>
               ) : (
