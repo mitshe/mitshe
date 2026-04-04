@@ -59,6 +59,7 @@ import {
   useSessions,
   useCreateSession,
   useDeleteSession,
+  useAgents,
   useProjects,
   useRepositories,
   useAICredentials,
@@ -66,7 +67,7 @@ import {
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
 import { queryKeys } from "@/lib/api/hooks";
-import type { SessionStatus, AIProvider } from "@/lib/api/types";
+import type { SessionStatus, AgentDefinition } from "@/lib/api/types";
 
 const providerLabels: Record<string, string> = {
   CLAUDE: "Claude",
@@ -113,9 +114,12 @@ export default function SessionsPage() {
   const queryClient = useQueryClient();
   const { socket } = useSocket();
   const { data: sessions = [], isLoading } = useSessions();
+  const { data: agents = [] } = useAgents();
   const { data: projects = [] } = useProjects();
   const { data: repositories = [] } = useRepositories();
   const { data: aiCredentials = [] } = useAICredentials();
+  const createSession = useCreateSession();
+  const deleteSession = useDeleteSession();
 
   // Auto-refresh list when session status changes
   useEffect(() => {
@@ -126,17 +130,36 @@ export default function SessionsPage() {
     socket.on("session:status", handler);
     return () => { socket.off("session:status", handler); };
   }, [socket, queryClient]);
-  const createSession = useCreateSession();
-  const deleteSession = useDeleteSession();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState({
+    agentDefinitionId: "",
     name: "",
     projectId: "",
     repositoryIds: [] as string[],
     aiCredentialId: "",
+    startArguments: "",
     instructions: "",
   });
+
+  const handleAgentSelect = (agentId: string) => {
+    const agent = agents.find((a) => a.id === agentId);
+    if (!agent) {
+      setForm((prev) => ({ ...prev, agentDefinitionId: "" }));
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      agentDefinitionId: agentId,
+      aiCredentialId: agent.aiCredentialId || prev.aiCredentialId,
+      startArguments: agent.startArguments || prev.startArguments,
+      instructions: agent.instructions || prev.instructions,
+      projectId: agent.defaultProjectId || prev.projectId,
+      repositoryIds:
+        agent.defaultRepositories?.map((r) => r.repositoryId) ||
+        prev.repositoryIds,
+    }));
+  };
 
   const toggleRepo = (repoId: string) => {
     setForm((prev) => ({
@@ -152,10 +175,7 @@ export default function SessionsPage() {
       toast.error("Please enter a session name");
       return;
     }
-    if (form.repositoryIds.length === 0) {
-      toast.error("Please select at least one repository");
-      return;
-    }
+    // Repositories not strictly required — session can work without them
 
     try {
       const session = await createSession.mutateAsync({
@@ -163,15 +183,19 @@ export default function SessionsPage() {
         projectId: form.projectId || undefined,
         repositoryIds: form.repositoryIds,
         aiCredentialId: form.aiCredentialId || undefined,
+        agentDefinitionId: form.agentDefinitionId || undefined,
+        startArguments: form.startArguments || undefined,
         instructions: form.instructions || undefined,
       });
       toast.success("Session created");
       setIsCreateOpen(false);
       setForm({
+        agentDefinitionId: "",
         name: "",
         projectId: "",
         repositoryIds: [],
         aiCredentialId: "",
+        startArguments: "",
         instructions: "",
       });
       router.push(`/sessions/${session.id}`);
@@ -210,17 +234,42 @@ export default function SessionsPage() {
               New Session
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
             <DialogHeader>
-              <DialogTitle>New Agent Session</DialogTitle>
+              <DialogTitle>New Session</DialogTitle>
               <DialogDescription>
-                Start an interactive session with Claude Code in an isolated
-                environment
+                Start an interactive session in an isolated environment
               </DialogDescription>
             </DialogHeader>
-            <DialogBody className="space-y-4 py-4">
+            <DialogBody className="space-y-4 py-4 overflow-y-auto">
+              {agents.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Agent (optional)</Label>
+                  <Select
+                    value={form.agentDefinitionId}
+                    onValueChange={handleAgentSelect}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No agent — configure manually" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agents.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                          {a.description && (
+                            <span className="text-muted-foreground ml-2">
+                              — {a.description}
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label htmlFor="name">Session Name</Label>
+                <Label htmlFor="name">Session Name *</Label>
                 <Input
                   id="name"
                   value={form.name}
@@ -275,7 +324,7 @@ export default function SessionsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>AI Provider</Label>
+                <Label>AI Provider (optional)</Label>
                 <Select
                   value={form.aiCredentialId}
                   onValueChange={(v) =>
@@ -283,16 +332,29 @@ export default function SessionsPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select AI provider" />
+                    <SelectValue placeholder="None — plain bash terminal" />
                   </SelectTrigger>
                   <SelectContent>
                     {aiCredentials.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.provider}
+                        {providerLabels[c.provider] || c.provider}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="startArgs">Start Arguments (optional)</Label>
+                <Input
+                  id="startArgs"
+                  value={form.startArguments}
+                  onChange={(e) =>
+                    setForm({ ...form, startArguments: e.target.value })
+                  }
+                  placeholder="e.g., --dangerously-skip-permissions --model opus"
+                  className="font-mono text-sm"
+                />
               </div>
 
               <div className="space-y-2">
@@ -305,12 +367,9 @@ export default function SessionsPage() {
                   onChange={(e) =>
                     setForm({ ...form, instructions: e.target.value })
                   }
-                  placeholder="System instructions for the agent (like CLAUDE.md)..."
+                  placeholder="System instructions for the agent..."
                   rows={4}
                 />
-                <p className="text-xs text-muted-foreground">
-                  These will be written as CLAUDE.md in the workspace
-                </p>
               </div>
             </DialogBody>
             <DialogFooter>
@@ -322,11 +381,7 @@ export default function SessionsPage() {
               </Button>
               <Button
                 onClick={handleCreate}
-                disabled={
-                  createSession.isPending ||
-                  !form.name.trim() ||
-                  form.repositoryIds.length === 0
-                }
+                disabled={createSession.isPending || !form.name.trim()}
               >
                 {createSession.isPending && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

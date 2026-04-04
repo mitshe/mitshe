@@ -71,16 +71,34 @@ export default function SessionDetailPage() {
 
   // Tab state
   const agentTerminalId = `${sessionId}:agent`;
-  const [tabs, setTabs] = useState<Tab[]>([
-    {
-      id: agentTerminalId,
-      title: "Agent",
-      type: "terminal",
-      closeable: true,
-      terminalId: agentTerminalId,
-      cmd: ["bash", "-c", "claude && exec bash"],
-    },
-  ]);
+
+  // Build agent terminal command from session config
+  const buildAgentCmd = useCallback((): string[] => {
+    if (!session?.aiCredentialId) {
+      return ["bash"]; // No AI provider = plain bash
+    }
+    const args = session.startArguments?.trim() || "";
+    const claudeCmd = args ? `claude ${args}` : "claude";
+    return ["bash", "-c", `${claudeCmd} && exec bash`];
+  }, [session?.aiCredentialId, session?.startArguments]);
+
+  const [tabs, setTabs] = useState<Tab[]>([]);
+
+  // Initialize tabs when session loads
+  useEffect(() => {
+    if (!session || tabs.length > 0) return;
+    const hasAgent = !!session.aiCredentialId;
+    setTabs([
+      {
+        id: agentTerminalId,
+        title: hasAgent ? "Agent" : "Terminal",
+        type: "terminal",
+        closeable: true,
+        terminalId: agentTerminalId,
+        cmd: buildAgentCmd(),
+      },
+    ]);
+  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
   const [activeTabId, setActiveTabId] = useState(agentTerminalId);
   const [fileContents, setFileContents] = useState<
     Record<string, { content: string | null; loading: boolean }>
