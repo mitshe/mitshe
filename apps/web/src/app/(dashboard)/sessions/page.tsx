@@ -242,18 +242,25 @@ export default function SessionsPage() {
               </DialogDescription>
             </DialogHeader>
             <DialogBody className="space-y-4 py-4 overflow-y-auto">
-              {agents.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Agent (optional)</Label>
-                  <Select
-                    value={form.agentDefinitionId}
-                    onValueChange={handleAgentSelect}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="No agent — configure manually" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {agents.map((a) => (
+              <div className="space-y-2">
+                <Label>Agent (optional)</Label>
+                <Select
+                  value={form.agentDefinitionId}
+                  onValueChange={handleAgentSelect}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No agent — configure manually" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        No agents defined.{" "}
+                        <a href="/agents" className="underline">
+                          Create one
+                        </a>
+                      </div>
+                    ) : (
+                      agents.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.name}
                           {a.description && (
@@ -262,11 +269,11 @@ export default function SessionsPage() {
                             </span>
                           )}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="name">Session Name *</Label>
