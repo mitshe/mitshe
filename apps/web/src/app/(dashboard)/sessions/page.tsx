@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -62,7 +63,9 @@ import {
   useRepositories,
   useAICredentials,
 } from "@/lib/api/hooks";
+import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
+import { queryKeys } from "@/lib/api/hooks";
 import type { SessionStatus } from "@/lib/api/types";
 
 const statusConfig: Record<
@@ -98,10 +101,22 @@ const statusConfig: Record<
 
 export default function SessionsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
   const { data: sessions = [], isLoading } = useSessions();
   const { data: projects = [] } = useProjects();
   const { data: repositories = [] } = useRepositories();
   const { data: aiCredentials = [] } = useAICredentials();
+
+  // Auto-refresh list when session status changes
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    };
+    socket.on("session:status", handler);
+    return () => { socket.off("session:status", handler); };
+  }, [socket, queryClient]);
   const createSession = useCreateSession();
   const deleteSession = useDeleteSession();
 
