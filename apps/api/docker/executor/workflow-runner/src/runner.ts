@@ -251,7 +251,22 @@ async function executeWorkflow(job: WorkflowJob): Promise<WorkflowResult> {
     vars: definition.variables || {},
     nodes: nodeOutputs,
     ctx: workflowContext,
-    env: process.env as Record<string, string>,
+    env: (() => {
+      const sensitiveKeys = new Set([
+        'WORKFLOW_JOB', 'SESSION_CONFIG', 'ANTHROPIC_API_KEY',
+        'OPENAI_API_KEY', 'ENCRYPTION_KEY', 'JWT_SECRET',
+        'CLERK_SECRET_KEY', 'CLERK_PUBLISHABLE_KEY', 'API_TOKEN',
+        'XAI_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY',
+        'CUSTOM_API_KEY', 'SENTRY_DSN',
+      ]);
+      const safe: Record<string, string> = {};
+      for (const [k, v] of Object.entries(process.env)) {
+        if (v && !sensitiveKeys.has(k)) {
+          safe[k] = v;
+        }
+      }
+      return safe;
+    })(),
   };
 
   const executorContext: ExecutorContext = {

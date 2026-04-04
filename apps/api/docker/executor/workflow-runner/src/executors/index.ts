@@ -164,12 +164,27 @@ function executeScriptNode(
     throw new Error('Script expression is required');
   }
 
+  // Filter env vars - exclude known internal secrets only
+  const sensitiveKeys = new Set([
+    'WORKFLOW_JOB', 'SESSION_CONFIG', 'ANTHROPIC_API_KEY',
+    'OPENAI_API_KEY', 'ENCRYPTION_KEY', 'JWT_SECRET',
+    'CLERK_SECRET_KEY', 'CLERK_PUBLISHABLE_KEY', 'API_TOKEN',
+    'XAI_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY',
+    'CUSTOM_API_KEY', 'SENTRY_DSN',
+  ]);
+  const safeEnv: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v && !sensitiveKeys.has(k)) {
+      safeEnv[k] = v;
+    }
+  }
+
   const scriptContext = {
     ...ctx.expressionContext.trigger,
     vars: ctx.expressionContext.vars,
     nodes: ctx.expressionContext.nodes,
     ctx: ctx.workflowContext,
-    env: process.env,
+    env: safeEnv,
   };
 
   try {

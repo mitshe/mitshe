@@ -14,6 +14,7 @@ import { IsEmail, IsString, IsOptional, MinLength } from 'class-validator';
 import { UsersService } from './users.service';
 import { AuthGuard } from '@/shared/auth/auth.guard';
 import { AuthResult } from '@/shared/auth/strategies/auth-strategy.interface';
+import { AuthRateLimit } from '@/shared/decorators/throttle.decorator';
 
 interface AuthenticatedRequest extends Request {
   auth: AuthResult;
@@ -73,6 +74,7 @@ class SwitchOrgDto {
 }
 
 @Controller('auth')
+@AuthRateLimit()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

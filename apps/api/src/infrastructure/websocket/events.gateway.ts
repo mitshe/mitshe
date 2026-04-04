@@ -104,9 +104,7 @@ export class EventsGateway
       this.configService.get<string>('CLERK_SECRET_KEY') || '';
     const authMode =
       this.configService.get<string>('AUTH_MODE') || 'selfhosted';
-    this.jwtSecret =
-      this.configService.get<string>('JWT_SECRET') ||
-      (authMode === 'selfhosted' ? 'dev-secret-change-in-production' : '');
+    this.jwtSecret = this.configService.get<string>('JWT_SECRET') || '';
     this.authMode = authMode;
 
     if (authMode === 'clerk' && !this.clerkSecretKey) {
@@ -159,6 +157,8 @@ export class EventsGateway
       };
     }
 
+    let verifiedOrgId: string | undefined;
+
     try {
       if (this.authMode === 'clerk' && this.clerkSecretKey) {
         // Clerk mode: verify with Clerk SDK
@@ -166,13 +166,16 @@ export class EventsGateway
           secretKey: this.clerkSecretKey,
         });
         clientData.userId = payload.sub;
+        // Clerk JWT may contain org_id claim
+        verifiedOrgId = (payload as any).org_id;
       } else {
-        // Selfhosted mode: verify JWT
+        // Selfhosted mode: verify JWT - orgId is in the token
         const payload = jwt.verify(data.token, this.jwtSecret) as {
           sub: string;
           orgId: string;
         };
         clientData.userId = payload.sub;
+        verifiedOrgId = payload.orgId;
       }
       clientData.authenticated = true;
     } catch (error) {
@@ -183,10 +186,46 @@ export class EventsGateway
       };
     }
 
+    // Use org from JWT if available, otherwise verify membership
+    const requestedOrgId = data.organizationId;
+    if (verifiedOrgId && verifiedOrgId !== requestedOrgId) {
+      this.logger.warn(
+        `Client ${client.id} requested org ${requestedOrgId} but JWT contains ${verifiedOrgId}`,
+      );
+      return {
+        event: 'error',
+        data: { message: 'Organization mismatch' },
+      };
+    }
+
+    // Verify user is member of the organization
+    if (!verifiedOrgId) {
+      const membership = await this.prisma.organizationMember.findFirst({
+        where: {
+          userId: clientData.userId!,
+          organizationId: requestedOrgId,
+        },
+        select: { id: true },
+      });
+      if (!membership) {
+        // Also check if user is org owner
+        const org = await this.prisma.organization.findFirst({
+          where: { id: requestedOrgId, ownerId: clientData.userId! },
+          select: { id: true },
+        });
+        if (!org) {
+          return {
+            event: 'error',
+            data: { message: 'Not a member of this organization' },
+          };
+        }
+      }
+    }
+
     // Join organization room
-    clientData.organizationId = data.organizationId;
-    void client.join(`org:${data.organizationId}`);
-    clientData.rooms.add(`org:${data.organizationId}`);
+    clientData.organizationId = requestedOrgId;
+    void client.join(`org:${requestedOrgId}`);
+    clientData.rooms.add(`org:${requestedOrgId}`);
 
     this.logger.log(
       `[WS AUTH] Client ${client.id} authenticated and joined room: org:${data.organizationId}`,
@@ -662,6 +701,16 @@ export class EventsGateway
   ) {
     if (!this.isClientAuthenticated(client)) {
       return { event: 'error', data: { message: 'Authentication required' } };
+    }
+
+    // Verify client is subscribed to the session room (org ownership checked at subscribe time)
+    const sessionId = data.terminalId.split(':')[0];
+    const clientData = this.connectedClients.get(client.id);
+    if (!clientData?.rooms.has(`session:${sessionId}`)) {
+      return {
+        event: 'error',
+        data: { message: 'Not subscribed to this session' },
+      };
     }
 
     this.terminalManager?.sendInput(data.terminalId, data.input);

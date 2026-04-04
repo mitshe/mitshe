@@ -62,8 +62,9 @@ export class SessionContainerService implements OnModuleInit {
       Cmd: [
         [
           'chown -R executor:executor /home/executor 2>/dev/null',
+          // Decode setup script from base64 env var and execute as executor (avoids shell injection)
           config.environment?.setupScript
-            ? `su -s /bin/bash executor -c "${config.environment.setupScript.replace(/"/g, '\\"').replace(/\n/g, ' && ')}"`
+            ? 'echo "$SETUP_SCRIPT_B64" | base64 -d > /tmp/.setup.sh && chmod +x /tmp/.setup.sh && su -s /bin/bash executor -c "bash /tmp/.setup.sh" && rm -f /tmp/.setup.sh'
             : '',
           'exec su -s /bin/bash executor -c "node /session/server.js"',
         ]
@@ -72,6 +73,12 @@ export class SessionContainerService implements OnModuleInit {
       ],
       Env: [
         `SESSION_CONFIG=${sessionConfig}`,
+        // Setup script as base64 (decoded safely in Cmd, avoids shell injection)
+        ...(config.environment?.setupScript
+          ? [
+              `SETUP_SCRIPT_B64=${Buffer.from(config.environment.setupScript).toString('base64')}`,
+            ]
+          : []),
         // Custom env vars from environment config
         ...(config.environment?.variables?.map(
           (v) => `${v.key}=${v.value}`,
@@ -85,7 +92,7 @@ export class SessionContainerService implements OnModuleInit {
         'mitshe.created-at': new Date().toISOString(),
       },
       HostConfig: {
-        Binds: ['mitshe-executor-home:/home/executor'],
+        Binds: [`mitshe-executor-home-${config.organizationId}:/home/executor`],
         Memory:
           (config.environment?.memoryMb || 4096) * 1024 * 1024,
         NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
