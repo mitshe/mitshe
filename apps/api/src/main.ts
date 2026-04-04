@@ -7,7 +7,9 @@ import { AppModule } from './app.module';
 import type { AppConfig } from './config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, // Required for webhook signature verification
+  });
   const logger = new Logger('Bootstrap');
   const config = app.get(ConfigService<AppConfig>);
 
