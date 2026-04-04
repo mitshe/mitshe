@@ -607,7 +607,7 @@ export const api = {
       }),
 
     startTerminal: (id: string, token: string) =>
-      request<{ status: string }>(`/sessions/${id}/terminal`, {
+      request<{ status: string; buffer?: string }>(`/sessions/${id}/terminal`, {
         method: "POST",
         token,
       }),

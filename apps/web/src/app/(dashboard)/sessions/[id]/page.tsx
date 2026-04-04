@@ -286,12 +286,15 @@ function TerminalView({
   useEffect(() => {
     if (!terminalReady || !isRunning) return;
 
-    startTerminal.mutateAsync(sessionId).then((res) => {
-      if (res.status === "started") {
+    startTerminal.mutateAsync(sessionId).then((res: any) => {
+      // Write buffered output from previous session (reconnect)
+      if (res.buffer && xtermRef.current) {
+        xtermRef.current.write(res.buffer);
+      } else if (res.status === "started") {
         xtermRef.current?.writeln("\x1b[1;32m● Claude Code starting...\x1b[0m\r\n");
       }
     }).catch(() => {
-      // May already be active - that's fine
+      // ignore
     });
   }, [terminalReady, isRunning, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 

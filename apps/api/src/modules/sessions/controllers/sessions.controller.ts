@@ -170,7 +170,8 @@ export class SessionsController {
     }
 
     if (this.containerService.hasActiveSession(id)) {
-      return { status: 'already_active' };
+      const buffer = this.containerService.getOutputBuffer(id);
+      return { status: 'already_active', buffer };
     }
 
     await this.containerService.startInteractiveSession(
@@ -189,12 +190,8 @@ export class SessionsController {
       },
     );
 
-    // Listen for input from WebSocket clients
-    this.eventsGateway.server?.on?.('connection', () => {
-      // Input forwarding is handled via session:input events in the gateway
-    });
-
-    return { status: 'started' };
+    const buffer = this.containerService.getOutputBuffer(id);
+    return { status: 'started', buffer };
   }
 
   /**

@@ -29,6 +29,10 @@ export class SessionContainerService implements OnModuleInit {
   /** Active interactive sessions: sessionId → InteractiveSession */
   private readonly activeSessions = new Map<string, InteractiveSession>();
 
+  /** Terminal output buffer per session (for reconnect) */
+  private readonly outputBuffers = new Map<string, string>();
+  private readonly MAX_BUFFER_SIZE = 512 * 1024; // 512KB
+
   constructor(private configService: ConfigService) {
     this.docker = new Docker();
     this.executorImage =
@@ -128,9 +132,23 @@ export class SessionContainerService implements OnModuleInit {
 
     this.activeSessions.set(sessionId, { exec, stream });
 
+    // Initialize buffer
+    if (!this.outputBuffers.has(sessionId)) {
+      this.outputBuffers.set(sessionId, '');
+    }
+
     // Forward terminal output — TTY mode means no demuxing needed
     stream.on('data', (chunk: Buffer) => {
-      onData(chunk.toString('utf8'));
+      const text = chunk.toString('utf8');
+
+      // Append to buffer (trim if too large)
+      let buf = (this.outputBuffers.get(sessionId) || '') + text;
+      if (buf.length > this.MAX_BUFFER_SIZE) {
+        buf = buf.slice(buf.length - this.MAX_BUFFER_SIZE);
+      }
+      this.outputBuffers.set(sessionId, buf);
+
+      onData(text);
     });
 
     stream.on('end', () => {
@@ -160,6 +178,13 @@ export class SessionContainerService implements OnModuleInit {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Get buffered terminal output (for reconnect)
+   */
+  getOutputBuffer(sessionId: string): string {
+    return this.outputBuffers.get(sessionId) || '';
   }
 
   /**
