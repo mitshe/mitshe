@@ -63,6 +63,9 @@ async function bootstrap() {
     .addTag('workflows', 'Workflow builder')
     .addTag('integrations', 'External integrations')
     .addTag('api-keys', 'API key management')
+    .addTag('Sessions', 'Interactive agent sessions')
+    .addTag('Presets', 'Reusable agent presets')
+    .addTag('Environments', 'Container environment configurations')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

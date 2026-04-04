@@ -47,15 +47,26 @@ export interface BulkUpdateRepositoriesDto {
   isActive: boolean;
 }
 
+export interface RemoteRepository {
+  externalId: string;
+  name: string;
+  fullPath: string;
+  description: string | null;
+  defaultBranch: string;
+  webUrl: string;
+  provider: GitProvider;
+  integrationId: string;
+  alreadyImported: boolean;
+}
+
 export interface SyncRepositoriesResult {
-  created: number;
-  updated: number;
+  synced: number;
   total: number;
 }
 
 export interface SyncAllRepositoriesResult {
   integrations: number;
-  totalCreated: number;
-  totalUpdated: number;
+  totalSynced: number;
+  totalRepositories: number;
   errors: string[];
 }

@@ -72,3 +72,22 @@ export class AICredentialListResponseDto {
   })
   credentials: AICredentialResponseDto[];
 }
+
+export class TestAICredentialDto {
+  @IsEnum(AIProvider)
+  @ApiProperty({ description: 'AI provider to test', enum: AIProvider })
+  provider: AIProvider;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'API key (optional for local providers)' })
+  apiKey?: string;
+}
+
+export class TestAIConnectionResponseDto {
+  @ApiProperty({ description: 'Whether the connection test was successful' })
+  success: boolean;
+
+  @ApiProperty({ description: 'Connection test result message' })
+  message: string;
+}

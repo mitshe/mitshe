@@ -21,6 +21,11 @@ import type {
   UpdateRepositoryDto,
   BulkUpdateRepositoriesDto,
   CreateFromTemplateDto,
+  CreateAgentDefinitionDto,
+  UpdateAgentDefinitionDto,
+  CreateEnvironmentDto,
+  UpdateEnvironmentDto,
+  CreateSessionDto,
 } from "./types";
 
 export const queryKeys = {
@@ -76,6 +81,26 @@ export const queryKeys = {
     available: () => [...queryKeys.repositories.all, "available"] as const,
     detail: (id: string) =>
       [...queryKeys.repositories.all, "detail", id] as const,
+  },
+  presets: {
+    all: ["presets"] as const,
+    list: () => [...queryKeys.presets.all, "list"] as const,
+    detail: (id: string) => [...queryKeys.presets.all, "detail", id] as const,
+  },
+  environments: {
+    all: ["environments"] as const,
+    list: () => [...queryKeys.environments.all, "list"] as const,
+    detail: (id: string) =>
+      [...queryKeys.environments.all, "detail", id] as const,
+  },
+  sessions: {
+    all: ["sessions"] as const,
+    list: (status?: string, projectId?: string) =>
+      [...queryKeys.sessions.all, "list", { status, projectId }] as const,
+    detail: (id: string) =>
+      [...queryKeys.sessions.all, "detail", id] as const,
+    files: (id: string) =>
+      [...queryKeys.sessions.all, "files", id] as const,
   },
 };
 
@@ -830,6 +855,28 @@ export function useDeleteAICredential() {
   });
 }
 
+export function useTestAICredential() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.aiCredentials.test(id, token);
+    },
+  });
+}
+
+export function useTestAICredentialBeforeConnect() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async (data: { provider: string; apiKey?: string }) => {
+      const token = await getToken();
+      return api.aiCredentials.testBeforeConnect(data, token);
+    },
+  });
+}
+
 export function useRepositories(active?: boolean) {
   const getToken = useAuthToken();
 
@@ -922,6 +969,64 @@ export function useDeleteRepository() {
   });
 }
 
+export function useBulkDeleteRepositories() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const token = await getToken();
+      return api.repositories.bulkDelete(ids, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.repositories.all });
+    },
+  });
+}
+
+export function useRemoteRepositories() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      const { repositories } = await api.repositories.listRemote(token);
+      return repositories;
+    },
+  });
+}
+
+export function useSyncExistingRepositories() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      const response = await api.repositories.syncExisting(token);
+      return response.result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.repositories.all });
+    },
+  });
+}
+
+export function useSyncOneRepository() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.repositories.syncOne(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.repositories.all });
+    },
+  });
+}
+
 export function useSyncRepositories() {
   const getToken = useAuthToken();
   const queryClient = useQueryClient();
@@ -932,10 +1037,389 @@ export function useSyncRepositories() {
       if (integrationId) {
         return api.repositories.syncIntegration(integrationId, token);
       }
-      return api.repositories.syncAll(token);
+      const response = await api.repositories.syncAll(token);
+      return response.result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.repositories.all });
+    },
+  });
+}
+
+export function useSyncSelectiveRepositories() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      integrationId: string;
+      externalIds: string[];
+    }) => {
+      const token = await getToken();
+      return api.repositories.syncSelective(data, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.repositories.all });
+    },
+  });
+}
+
+// =========================================================================
+// Sessions
+// =========================================================================
+
+export function useSessions(status?: string, projectId?: string) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: queryKeys.sessions.list(status, projectId),
+    queryFn: async () => {
+      const token = await getToken();
+      const { sessions } = await api.sessions.list(token, status, projectId);
+      return sessions;
+    },
+  });
+}
+
+export function useSession(id: string) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: queryKeys.sessions.detail(id),
+    queryFn: async () => {
+      const token = await getToken();
+      const { session } = await api.sessions.get(id, token);
+      return session;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateSessionDto) => {
+      const token = await getToken();
+      const { session } = await api.sessions.create(data, token);
+      return session;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useDeleteSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      await api.sessions.delete(id, token);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useStartTerminal() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      terminalId,
+      cmd,
+    }: {
+      sessionId: string;
+      terminalId?: string;
+      cmd?: string[];
+    }) => {
+      const token = await getToken();
+      return api.sessions.startTerminal(sessionId, token, {
+        terminalId,
+        cmd,
+      });
+    },
+  });
+}
+
+export function useCloseTerminal() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      terminalId,
+    }: {
+      sessionId: string;
+      terminalId: string;
+    }) => {
+      const token = await getToken();
+      return api.sessions.closeTerminal(sessionId, terminalId, token);
+    },
+  });
+}
+
+export function usePauseSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.sessions.pause(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useResumeSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.sessions.resume(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useStopSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.sessions.stop(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useSessionFiles(id: string) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: queryKeys.sessions.files(id),
+    queryFn: async () => {
+      const token = await getToken();
+      const { files } = await api.sessions.getFiles(id, token);
+      return files;
+    },
+    enabled: !!id,
+    refetchInterval: 10000,
+  });
+}
+
+export function useSessionGitStatus(id: string) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: [...queryKeys.sessions.detail(id), "git-status"],
+    queryFn: async () => {
+      const token = await getToken();
+      const { statuses } = await api.sessions.getGitStatus(id, token);
+      return statuses;
+    },
+    enabled: !!id,
+    refetchInterval: 5000,
+  });
+}
+
+export function useReadSessionFile() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async ({ id, path }: { id: string; path: string }) => {
+      const token = await getToken();
+      return api.sessions.readFile(id, path, token);
+    },
+  });
+}
+
+export function useDeleteSessionFile() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async ({ id, path }: { id: string; path: string }) => {
+      const token = await getToken();
+      return api.sessions.deleteFile(id, path, token);
+    },
+  });
+}
+
+export function useWriteSessionFile() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      path,
+      content,
+    }: {
+      id: string;
+      path: string;
+      content: string;
+    }) => {
+      const token = await getToken();
+      return api.sessions.writeFile(id, path, content, token);
+    },
+  });
+}
+
+// =========================================================================
+// Agents
+// =========================================================================
+
+export function usePresets() {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: queryKeys.presets.list(),
+    queryFn: async () => {
+      const token = await getToken();
+      const { agents } = await api.presets.list(token);
+      return agents;
+    },
+  });
+}
+
+export function useCreatePreset() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateAgentDefinitionDto) => {
+      const token = await getToken();
+      const { agent } = await api.presets.create(data, token);
+      return agent;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.presets.all });
+    },
+  });
+}
+
+export function useUpdatePreset() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateAgentDefinitionDto;
+    }) => {
+      const token = await getToken();
+      const { agent } = await api.presets.update(id, data, token);
+      return agent;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.presets.all });
+    },
+  });
+}
+
+export function useDeletePreset() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      await api.presets.delete(id, token);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.presets.all });
+    },
+  });
+}
+
+// =========================================================================
+// Environments
+// =========================================================================
+
+export function useEnvironments() {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: queryKeys.environments.list(),
+    queryFn: async () => {
+      const token = await getToken();
+      const { environments } = await api.environments.list(token);
+      return environments;
+    },
+  });
+}
+
+export function useCreateEnvironment() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateEnvironmentDto) => {
+      const token = await getToken();
+      const { environment } = await api.environments.create(data, token);
+      return environment;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.environments.all });
+    },
+  });
+}
+
+export function useUpdateEnvironment() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateEnvironmentDto;
+    }) => {
+      const token = await getToken();
+      const { environment } = await api.environments.update(id, data, token);
+      return environment;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.environments.all });
+    },
+  });
+}
+
+export function useDeleteEnvironment() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      await api.environments.delete(id, token);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.environments.all });
     },
   });
 }

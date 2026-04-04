@@ -1913,15 +1913,15 @@ npx prisma migrate deploy
 
   api: `# REST API
 
-Access mitshe programmatically.
+Access mitshe programmatically. Interactive Swagger docs available at \`/api\` on your API server.
 
 ## Authentication
 
 \`\`\`bash
-curl https://api.ai-tasks.app/v1/tasks -H "Authorization: Bearer YOUR_API_KEY"
+curl http://localhost:3001/api/v1/tasks -H "Authorization: Bearer YOUR_API_KEY"
 \`\`\`
 
-Get your key at [Settings → API Keys](/settings/api-keys).
+Get your key at [Settings - API Keys](/settings/api-keys).
 
 :::warning
 Keep your API key secret. Never commit to version control.
@@ -1933,20 +1933,104 @@ Keep your API key secret. Never commit to version control.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| \`GET\` | \`/tasks\` | List tasks |
-| \`POST\` | \`/tasks\` | Create task |
-| \`GET\` | \`/tasks/:id\` | Get task |
-| \`POST\` | \`/tasks/:id/process\` | Start processing |
+| \`GET\` | \`/api/v1/tasks\` | List tasks |
+| \`POST\` | \`/api/v1/tasks\` | Create task |
+| \`GET\` | \`/api/v1/tasks/:id\` | Get task |
+| \`PUT\` | \`/api/v1/tasks/:id\` | Update task |
+| \`DELETE\` | \`/api/v1/tasks/:id\` | Delete task |
+| \`POST\` | \`/api/v1/tasks/:id/process\` | Start AI processing |
 
 ### Workflows
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| \`GET\` | \`/workflows\` | List workflows |
-| \`GET\` | \`/workflows/:id\` | Get workflow |
-| \`POST\` | \`/workflows/:id/run\` | Execute workflow |
+| \`GET\` | \`/api/v1/workflows\` | List workflows |
+| \`POST\` | \`/api/v1/workflows\` | Create workflow |
+| \`GET\` | \`/api/v1/workflows/:id\` | Get workflow |
+| \`PUT\` | \`/api/v1/workflows/:id\` | Update workflow |
+| \`DELETE\` | \`/api/v1/workflows/:id\` | Delete workflow |
+| \`POST\` | \`/api/v1/workflows/:id/run\` | Execute workflow |
 
-## Rate limits
+### Sessions
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/sessions\` | List sessions (filter: ?status=RUNNING&projectId=...) |
+| \`POST\` | \`/api/v1/sessions\` | Create and start session |
+| \`GET\` | \`/api/v1/sessions/:id\` | Get session with messages |
+| \`DELETE\` | \`/api/v1/sessions/:id\` | Delete session and stop container |
+| \`POST\` | \`/api/v1/sessions/:id/pause\` | Pause session |
+| \`POST\` | \`/api/v1/sessions/:id/resume\` | Resume paused/stopped session |
+| \`POST\` | \`/api/v1/sessions/:id/stop\` | Stop session (container stays for resume) |
+| \`POST\` | \`/api/v1/sessions/:id/exec\` | Execute command in container (non-interactive) |
+| \`POST\` | \`/api/v1/sessions/:id/terminals\` | Start a terminal (bash or agent) |
+| \`DELETE\` | \`/api/v1/sessions/:id/terminals/:terminalId\` | Close a terminal |
+| \`GET\` | \`/api/v1/sessions/:id/files\` | List files in workspace |
+| \`GET\` | \`/api/v1/sessions/:id/file?path=...\` | Read file content |
+| \`POST\` | \`/api/v1/sessions/:id/file\` | Write file content |
+| \`DELETE\` | \`/api/v1/sessions/:id/file?path=...\` | Delete file |
+| \`GET\` | \`/api/v1/sessions/:id/git-status\` | Get git status |
+
+### Presets
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/presets\` | List presets |
+| \`POST\` | \`/api/v1/presets\` | Create preset |
+| \`GET\` | \`/api/v1/presets/:id\` | Get preset |
+| \`PUT\` | \`/api/v1/presets/:id\` | Update preset |
+| \`DELETE\` | \`/api/v1/presets/:id\` | Delete preset |
+
+### Environments
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/environments\` | List environments |
+| \`POST\` | \`/api/v1/environments\` | Create environment |
+| \`GET\` | \`/api/v1/environments/:id\` | Get environment |
+| \`PUT\` | \`/api/v1/environments/:id\` | Update environment |
+| \`DELETE\` | \`/api/v1/environments/:id\` | Delete environment |
+
+### Projects
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/projects\` | List projects |
+| \`POST\` | \`/api/v1/projects\` | Create project |
+| \`GET\` | \`/api/v1/projects/:id\` | Get project |
+| \`PUT\` | \`/api/v1/projects/:id\` | Update project |
+| \`DELETE\` | \`/api/v1/projects/:id\` | Delete project |
+
+### Integrations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/integrations\` | List integrations |
+| \`POST\` | \`/api/v1/integrations\` | Create integration |
+| \`POST\` | \`/api/v1/integrations/:id/test\` | Test connection |
+| \`DELETE\` | \`/api/v1/integrations/:id\` | Delete integration |
+
+### AI Credentials
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/ai-credentials\` | List AI credentials |
+| \`POST\` | \`/api/v1/ai-credentials\` | Create credential |
+| \`POST\` | \`/api/v1/ai-credentials/:id/test\` | Test connection |
+| \`DELETE\` | \`/api/v1/ai-credentials/:id\` | Delete credential |
+
+### Repositories
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/repositories\` | List repositories |
+| \`GET\` | \`/api/v1/repositories/remote\` | List remote repos from providers |
+| \`POST\` | \`/api/v1/repositories/sync/existing\` | Sync existing repos |
+| \`POST\` | \`/api/v1/repositories/sync/selective\` | Import selected repos |
+| \`DELETE\` | \`/api/v1/repositories/:id\` | Delete repository |
+| \`DELETE\` | \`/api/v1/repositories/bulk\` | Bulk delete |
+
+## Rate Limits
 
 | Type | Limit |
 |------|-------|
@@ -1954,17 +2038,331 @@ Keep your API key secret. Never commit to version control.
 | Workflow runs | 10/min |
 | AI processing | 20/min |
 
-## Example
+## Examples
+
+### Create a session
 
 \`\`\`bash
-curl -X POST https://api.ai-tasks.app/v1/workflows/abc123/run \\
+curl -X POST http://localhost:3001/api/v1/sessions \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Fix login bug",
+    "repositoryIds": ["repo_123"],
+    "aiCredentialId": "cred_456",
+    "instructions": "Fix the login bug described in JIRA-789"
+  }'
+\`\`\`
+
+### Execute command in session
+
+\`\`\`bash
+curl -X POST http://localhost:3001/api/v1/sessions/sess_123/exec \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"command": "git diff --stat"}'
+\`\`\`
+
+### Run a workflow
+
+\`\`\`bash
+curl -X POST http://localhost:3001/api/v1/workflows/wf_123/run \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"input": {"issueKey": "PROJ-456"}}'
 \`\`\`
+`,
 
-\`\`\`json
-{ "executionId": "exec_789", "status": "running" }
+  // ─── Workspace ──────────────────────────────────────────────────
+  "workspace": `# Workspace
+
+The Workspace module provides interactive AI agent sessions with isolated Docker environments. Work directly with AI agents like Claude Code or OpenClaw in a browser-based terminal, edit files with a Monaco-powered code editor, and manage your codebase - all from mitshe.
+
+## Key Features
+
+<cards>
+<card title="Interactive Sessions" icon="terminal" href="/docs/workspace/sessions">
+Launch isolated Docker containers with your repositories and work with AI agents in real-time through a browser terminal.
+</card>
+<card title="Presets" icon="sliders" href="/docs/workspace/presets">
+Define reusable agent configurations with pre-selected repositories, instructions, and CLI arguments.
+</card>
+<card title="Environments" icon="box" href="/docs/workspace/environments">
+Configure container resources, environment variables, and setup scripts for consistent development environments.
+</card>
+</cards>
+
+## How It Works
+
+1. **Create a Session** - select repositories, optionally choose a preset and environment
+2. **Agent Terminal** - a Docker container starts with your repos cloned, and the AI agent launches automatically
+3. **Code Editor** - click any file to open it in the built-in Monaco editor with syntax highlighting
+4. **File Browser** - navigate your workspace files with git status indicators
+5. **Multiple Terminals** - open additional bash terminals alongside the agent
+
+## Supported AI Agents
+
+| Agent | CLI Command | Instructions File | Auth |
+|-------|-------------|-------------------|------|
+| Claude Code | \`claude\` | \`CLAUDE.md\` | OAuth (configure in terminal) |
+| OpenClaw | \`openclaw tui\` | \`SOUL.md\` | \`openclaw onboard\` (configure in terminal) |
+
+Both agents are CLI-based providers that manage their own authentication. Configure them once in a terminal session - credentials persist across all future sessions via shared Docker volumes.
+`,
+
+  "workspace/sessions": `# Sessions
+
+Sessions are interactive workspaces where you work with AI agents in isolated Docker containers.
+
+## Creating a Session
+
+1. Go to **Workspace > Sessions**
+2. Click **New Session**
+3. Configure:
+   - **Preset** (optional) - select a predefined agent configuration
+   - **Session Name** - descriptive name for the session
+   - **Project** (optional) - associate with a project
+   - **Repositories** - select repos to clone into the workspace
+   - **AI Provider** (optional) - Claude Code, OpenClaw, or none for plain bash
+   - **Start Arguments** (optional) - CLI flags for the agent
+   - **Environment** (optional) - container configuration
+   - **Instructions** (optional) - system prompt for the agent
+4. Click **Start Session**
+
+## Session Lifecycle
+
 \`\`\`
+Creating -> Running <-> Paused -> Completed
+\`\`\`
+
+- **Running** - container is active, agent is available
+- **Paused** - container stays alive, agent process continues, you can disconnect and reconnect
+- **Completed** - agent process stopped, container stays for resume with \`--continue\`
+- **Resume** - restart the agent with conversation history preserved
+
+## Terminal Features
+
+- **Agent Terminal** - launches the AI agent (Claude Code or OpenClaw) with bash fallback after exit
+- **Additional Terminals** - open new bash terminals via the + button
+- **Keyboard Input** - full terminal emulation with arrow keys, Ctrl+C, function keys
+- **Output Buffer** - reconnecting to a session restores terminal history
+
+## Code Editor
+
+Click any file in the file browser to open it in the Monaco editor:
+
+- **Syntax Highlighting** - 100+ languages supported
+- **Auto-save** - changes saved to container after 2s of inactivity
+- **Ctrl+S** - manual save
+- **Ctrl+F** - find in file
+- **Ctrl+H** - find and replace
+- **Real-time Updates** - files refresh when agent makes changes
+
+## File Browser
+
+- **Git Status** - modified (M), added (A), deleted (D), untracked (U) indicators
+- **Context Menu** (right-click) - New File, New Folder, Copy Path, Rename, Delete
+- **Auto-refresh** - file tree updates periodically
+`,
+
+  "workspace/presets": `# Presets
+
+Presets are reusable agent configurations that pre-fill session creation fields. Define once, use many times.
+
+## Creating a Preset
+
+1. Go to **Workspace > Presets**
+2. Click **New Preset**
+3. Configure:
+   - **Name** - e.g., "Code Reviewer", "Bug Fixer"
+   - **Description** - what this preset does
+   - **AI Provider** - Claude Code, OpenClaw, etc.
+   - **Start Arguments** - CLI flags (e.g., \`--dangerously-skip-permissions --model opus\`)
+   - **Default Project** - pre-selected project
+   - **Default Repositories** - pre-selected repos
+   - **Max Session Duration** - auto-stop after N hours
+   - **Instructions** - system prompt for the agent
+
+## Using a Preset
+
+When creating a new session, select a preset from the dropdown. All fields are pre-filled but remain editable - you can override any setting before starting.
+
+## Example Presets
+
+**Code Reviewer**
+- Provider: Claude Code
+- Arguments: \`--model opus\`
+- Instructions: "Review code for bugs, security issues, and best practices. Suggest improvements."
+
+**Quick Fix Agent**
+- Provider: Claude Code
+- Arguments: \`--dangerously-skip-permissions\`
+- Instructions: "Fix the described issue. Commit changes with a clear message."
+`,
+
+  "workspace/environments": `# Environments
+
+Environments define container configurations - resource limits, environment variables, and setup scripts.
+
+## Creating an Environment
+
+1. Go to **Workspace > Environments**
+2. Click **New Environment**
+3. Configure:
+   - **Name** - e.g., "Node + Python", "High Memory"
+   - **Description** - what this environment includes
+   - **Memory (MB)** - RAM limit (default: 4096)
+   - **CPU Cores** - CPU limit (default: 2)
+   - **Setup Script** - commands to run on container start
+   - **Environment Variables** - key-value pairs, with optional secret flag
+
+## Setup Script
+
+The setup script runs on container start before the session begins. Use it to install additional tools:
+
+\`\`\`bash
+pip install pytest black
+npm install -g tsx
+apt-get update && apt-get install -y ripgrep
+\`\`\`
+
+## Environment Variables
+
+Variables are passed to the container as standard environment variables. Mark sensitive values as "Secret" to mask them in the UI.
+
+## Usage
+
+Select an environment when creating a session or preset. Resource limits and env vars are applied to the Docker container automatically.
+`,
+
+  // ─── Workflow Session Nodes ─────────────────────────────────────
+  "workflows/session-nodes": `# Session Nodes
+
+Session nodes allow workflows to create and interact with Workspace sessions programmatically. This bridges automation (Workflows) with interactive agent work (Workspace).
+
+## Use Cases
+
+- **JIRA ticket -> Agent session** - automatically create a session when a ticket is assigned, run the agent, and post results back
+- **Scheduled code review** - daily workflow creates a session, agent reviews code, sends diff to Slack
+- **GitLab MR -> Analysis** - webhook triggers session, agent analyzes changes, comments on MR
+
+## Available Nodes
+
+### Actions
+
+<nodelist>
+<node type="action" name="Create Session" desc="Create and start a new agent session with repositories. Stores sessionId in workflow context." />
+<node type="action" name="Run Command" desc="Execute a shell command in a session container. Returns stdout and exit code." />
+<node type="action" name="Run Agent Task" desc="Start AI agent (Claude/OpenClaw) with a prompt in print mode. Waits for completion." />
+<node type="action" name="Stop Session" desc="Stop and optionally delete a session." />
+<node type="action" name="Read File" desc="Read file content from a session container." />
+<node type="action" name="Write File" desc="Write content to a file in a session container." />
+</nodelist>
+
+### Data
+
+<nodelist>
+<node type="data" name="Get Git Diff" desc="Get git diff from session workspace with additions/deletions count." />
+<node type="data" name="List Files" desc="List all files in session workspace." />
+</nodelist>
+
+## Example Workflow
+
+\`\`\`
+Manual Trigger
+  -> Create Session (repos: my-app, instructions: "Fix bugs")
+  -> Run Agent Task (prompt: "Find and fix the login bug described in JIRA-123")
+  -> Get Git Diff
+  -> Stop Session
+  -> Slack Message (send diff summary)
+\`\`\`
+
+## Context Variables
+
+The **Create Session** node automatically stores \`sessionId\` in the workflow context. Subsequent session nodes use it via \`{{ctx.sessionId}}\`.
+
+You can also pass a specific \`sessionId\` in the node config to target a different session.
+`,
+
+  // ─── AI Agent Integrations ──────────────────────────────────────
+  "integrations/claude-code": `# Claude Code
+
+Claude Code is Anthropic's official CLI for AI-assisted development. In mitshe, it runs inside isolated Docker containers as part of Workspace sessions.
+
+## Setup
+
+1. Go to **Settings > AI Providers**
+2. Click **Add Provider** and select **Claude Code (Local)**
+3. No API key needed - Claude Code manages its own authentication
+
+## First Session
+
+When you create your first session with Claude Code:
+1. The agent terminal opens with \`claude\` command
+2. Claude Code will prompt you to log in via OAuth
+3. After logging in, your credentials are stored in a shared Docker volume
+4. All future sessions reuse the credentials automatically
+
+## Configuration
+
+### Start Arguments
+
+Pass CLI flags via the Start Arguments field in session creation or presets:
+
+- \`--dangerously-skip-permissions\` - skip permission prompts (sandboxed environment)
+- \`--model opus\` or \`--model sonnet\` - select model
+- \`--permission-mode plan\` - start in plan mode
+- \`--verbose\` - verbose output
+
+### Instructions
+
+Instructions are written as \`CLAUDE.md\` in the workspace root. Claude Code reads this file automatically as project context.
+
+## In Workflows
+
+Use the **Run Agent Task** workflow node with \`provider: claude\` to run Claude Code in print mode (\`claude -p "prompt"\`). The agent executes the task and returns the output.
+`,
+
+  "integrations/openclaw": `# OpenClaw
+
+OpenClaw is an open-source AI agent platform supporting 50+ AI providers. In mitshe, it runs inside isolated Docker containers as part of Workspace sessions.
+
+## Setup
+
+1. Go to **Settings > AI Providers**
+2. Click **Add Provider** and select **OpenClaw**
+3. No API key needed - OpenClaw manages its own provider configuration
+
+## First Session
+
+When you create your first session with OpenClaw:
+1. The agent terminal opens with \`openclaw tui\` command
+2. Run \`openclaw onboard\` to configure your preferred AI provider and API keys
+3. Configuration is stored in a shared Docker volume (\`~/.openclaw/\`)
+4. All future sessions reuse the configuration automatically
+
+## Supported Providers
+
+OpenClaw supports 50+ AI providers including:
+- Anthropic (Claude)
+- OpenAI (GPT-4, etc.)
+- Google (Gemini)
+- Groq, Mistral, DeepSeek
+- Ollama (local models)
+- And many more
+
+## Configuration
+
+### Start Arguments
+
+Pass flags via Start Arguments in session creation or presets. Refer to the [OpenClaw CLI Reference](https://docs.openclaw.ai/start/wizard-cli-reference) for available flags.
+
+### Instructions
+
+Instructions are written as \`SOUL.md\` in the workspace root. OpenClaw reads this file as the agent personality/instructions.
+
+## In Workflows
+
+Use the **Run Agent Task** workflow node with \`provider: openclaw\` to run OpenClaw in task mode. The agent executes the task and returns the output.
 `,
 };

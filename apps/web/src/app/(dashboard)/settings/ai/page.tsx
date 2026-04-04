@@ -45,6 +45,7 @@ import {
   EyeOff,
   Shield,
   Zap,
+  PlugZap,
 } from "lucide-react";
 import {
   AnthropicIcon,
@@ -53,11 +54,14 @@ import {
   GoogleIcon,
   GroqIcon,
 } from "@/components/icons/brand-icons";
+import { OpenClawIcon } from "@/components/icons/openclaw-icon";
 import {
   useAICredentials,
   useCreateAICredential,
   useUpdateAICredential,
   useDeleteAICredential,
+  useTestAICredential,
+  useTestAICredentialBeforeConnect,
 } from "@/lib/api/hooks";
 import { toast } from "sonner";
 import { AIProvider } from "@/lib/api/types";
@@ -102,6 +106,12 @@ const providerConfig: Record<
     icon: <AnthropicIcon />,
     color: "bg-[#D97757]",
   },
+  OPENCLAW: {
+    name: "OpenClaw",
+    description: "Open-source AI agent platform with 50+ providers",
+    icon: <OpenClawIcon />,
+    color: "bg-[#10B981]",
+  },
 };
 
 export default function AICredentialsPage() {
@@ -109,6 +119,9 @@ export default function AICredentialsPage() {
   const createCredential = useCreateAICredential();
   const updateCredential = useUpdateAICredential();
   const deleteCredential = useDeleteAICredential();
+
+  const testCredential = useTestAICredential();
+  const testBeforeConnect = useTestAICredentialBeforeConnect();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -118,7 +131,22 @@ export default function AICredentialsPage() {
     isDefault: false,
   });
 
-  const isLocalProvider = addForm.provider === "CLAUDE_CODE_LOCAL";
+  const isLocalProvider =
+    addForm.provider === "CLAUDE_CODE_LOCAL" ||
+    addForm.provider === "OPENCLAW";
+
+  const handleTestConnection = async (id: string) => {
+    try {
+      const result = await testCredential.mutateAsync(id);
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.error("Failed to test connection");
+    }
+  };
 
   const handleAddCredential = async () => {
     if (!addForm.provider) {
@@ -132,6 +160,16 @@ export default function AICredentialsPage() {
     }
 
     try {
+      const testResult = await testBeforeConnect.mutateAsync({
+        provider: addForm.provider as AIProvider,
+        apiKey: isLocalProvider ? undefined : addForm.apiKey,
+      });
+
+      if (!testResult.success) {
+        toast.error(`Connection test failed: ${testResult.message}`);
+        return;
+      }
+
       await createCredential.mutateAsync({
         provider: addForm.provider as AIProvider,
         apiKey: isLocalProvider ? "local" : addForm.apiKey,
@@ -234,8 +272,9 @@ export default function AICredentialsPage() {
                 <Alert>
                   <Zap className="w-4 h-4" />
                   <AlertDescription>
-                    No API key required. Uses your local Claude Code instance
-                    running on localhost.
+                    No API key required. This provider manages its own
+                    authentication - configure it in a Workspace session.
+                    Supported only in Workspace sessions, not in Workflows.
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -293,14 +332,16 @@ export default function AICredentialsPage() {
                 onClick={handleAddCredential}
                 disabled={
                   createCredential.isPending ||
+                  testBeforeConnect.isPending ||
                   !addForm.provider ||
                   (!isLocalProvider && !addForm.apiKey)
                 }
               >
-                {createCredential.isPending && (
+                {(createCredential.isPending ||
+                  testBeforeConnect.isPending) && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
-                Add Provider
+                {testBeforeConnect.isPending ? "Testing..." : "Add Provider"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -374,6 +415,20 @@ export default function AICredentialsPage() {
                       <Star className="w-3.5 h-3.5" />
                     </Button>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleTestConnection(credential.id)}
+                    disabled={testCredential.isPending}
+                    className="h-7 w-7"
+                    title="Test connection"
+                  >
+                    {testCredential.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <PlugZap className="w-3.5 h-3.5" />
+                    )}
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button

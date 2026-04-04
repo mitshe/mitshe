@@ -9,11 +9,12 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Injectable } from '@nestjs/common';
+import { Logger, Injectable, Inject, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { verifyToken } from '@clerk/backend';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../persistence/prisma/prisma.service';
+import { TerminalManagerService } from '../../modules/sessions/services/terminal-manager.service';
 
 // Event type definitions
 export interface TaskUpdatePayload {
@@ -97,6 +98,7 @@ export class EventsGateway
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly terminalManager?: TerminalManagerService,
   ) {
     this.clerkSecretKey =
       this.configService.get<string>('CLERK_SECRET_KEY') || '';
@@ -603,6 +605,92 @@ export class EventsGateway
       `Client ${client.id} unsubscribed from execution:${executionId}`,
     );
     return { event: 'unsubscribed', data: { executionId } };
+  }
+
+  // ─── Session Terminal Subscriptions ──────────────────────────────
+
+  @SubscribeMessage('subscribe:session')
+  async handleSubscribeSession(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() sessionId: string,
+  ) {
+    if (!this.isClientAuthenticated(client)) {
+      return { event: 'error', data: { message: 'Authentication required' } };
+    }
+
+    const clientData = this.connectedClients.get(client.id);
+    if (!clientData?.organizationId) {
+      return { event: 'error', data: { message: 'Organization not set' } };
+    }
+
+    const session = await this.prisma.agentSession.findFirst({
+      where: { id: sessionId, organizationId: clientData.organizationId },
+      select: { id: true },
+    });
+
+    if (!session) {
+      return {
+        event: 'error',
+        data: { message: 'Session not found or not authorized' },
+      };
+    }
+
+    void client.join(`session:${sessionId}`);
+    clientData.rooms.add(`session:${sessionId}`);
+    this.logger.log(
+      `Client ${client.id} subscribed to session:${sessionId}`,
+    );
+    return { event: 'subscribed', data: { sessionId } };
+  }
+
+  @SubscribeMessage('unsubscribe:session')
+  handleUnsubscribeSession(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() sessionId: string,
+  ) {
+    void client.leave(`session:${sessionId}`);
+    this.logger.log(
+      `Client ${client.id} unsubscribed from session:${sessionId}`,
+    );
+    return { event: 'unsubscribed', data: { sessionId } };
+  }
+
+  @SubscribeMessage('session:input')
+  handleSessionInput(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { terminalId: string; input: string },
+  ) {
+    if (!this.isClientAuthenticated(client)) {
+      return { event: 'error', data: { message: 'Authentication required' } };
+    }
+
+    this.terminalManager?.sendInput(data.terminalId, data.input);
+  }
+
+  /**
+   * Emit terminal output (routed by terminalId)
+   */
+  emitSessionOutput(terminalId: string, output: string) {
+    // terminalId format: "sessionId:term-xxx"
+    const sessionId = terminalId.split(':')[0];
+    this.server.to(`session:${sessionId}`).emit('session:output', {
+      terminalId,
+      data: output,
+    });
+  }
+
+  /**
+   * Emit session status change
+   */
+  emitSessionStatus(
+    organizationId: string,
+    sessionId: string,
+    status: string,
+    error?: string,
+  ) {
+    this.server
+      .to(`org:${organizationId}`)
+      .emit('session:status', { sessionId, status, error });
   }
 
   /**

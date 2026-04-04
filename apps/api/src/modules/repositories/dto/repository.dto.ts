@@ -125,6 +125,57 @@ export class SyncResultResponseDto {
   };
 }
 
+export class SelectiveSyncRepositoriesDto {
+  @IsArray()
+  @IsString({ each: true })
+  externalIds: string[];
+
+  @IsString()
+  integrationId: string;
+}
+
+export class RemoteRepositoryResponseDto {
+  @ApiProperty({ description: 'External repository ID from the provider' })
+  externalId: string;
+
+  @ApiProperty({ description: 'Repository name' })
+  name: string;
+
+  @ApiProperty({ description: 'Full repository path' })
+  fullPath: string;
+
+  @ApiPropertyOptional({ description: 'Repository description', nullable: true })
+  description: string | null;
+
+  @ApiProperty({ description: 'Default branch name' })
+  defaultBranch: string;
+
+  @ApiProperty({ description: 'Web URL to view repository' })
+  webUrl: string;
+
+  @ApiProperty({ description: 'Git provider' })
+  provider: string;
+
+  @ApiProperty({ description: 'Integration ID' })
+  integrationId: string;
+
+  @ApiProperty({ description: 'Whether the repo is already imported' })
+  alreadyImported: boolean;
+}
+
+export class BulkDeleteRepositoriesDto {
+  @IsArray()
+  @IsString({ each: true })
+  ids: string[];
+}
+
+export class BulkDeleteResultResponseDto {
+  @ApiProperty({ description: 'Bulk delete result' })
+  result: {
+    deleted: number;
+  };
+}
+
 export class BulkUpdateResultResponseDto {
   @ApiProperty({ description: 'Bulk update result' })
   result: {

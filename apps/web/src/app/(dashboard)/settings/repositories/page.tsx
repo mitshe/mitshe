@@ -28,6 +28,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -39,18 +50,26 @@ import {
   Settings2,
   AlertCircle,
   CheckCircle2,
+  Trash2,
+  Download,
+  Search,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import {
   useRepositories,
   useUpdateRepository,
+  useDeleteRepository,
   useBulkUpdateRepositories,
-  useSyncRepositories,
+  useBulkDeleteRepositories,
+  useRemoteRepositories,
+  useSyncExistingRepositories,
+  useSyncOneRepository,
+  useSyncSelectiveRepositories,
   useIntegrations,
 } from "@/lib/api/hooks";
 import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
-import type { Repository, GitProvider } from "@/lib/api/types";
+import type { Repository, RemoteRepository, GitProvider } from "@/lib/api/types";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -64,14 +83,24 @@ export default function RepositoriesPage() {
   const { data: repositories = [], isLoading } = useRepositories();
   const { data: integrations = [] } = useIntegrations();
   const updateRepository = useUpdateRepository();
+  const deleteRepository = useDeleteRepository();
   const bulkUpdate = useBulkUpdateRepositories();
-  const syncRepositories = useSyncRepositories();
+  const bulkDelete = useBulkDeleteRepositories();
+  const fetchRemoteRepos = useRemoteRepositories();
+  const syncExisting = useSyncExistingRepositories();
+  const syncOne = useSyncOneRepository();
+  const syncSelective = useSyncSelectiveRepositories();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
   const [branchPattern, setBranchPattern] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
+  const [remoteRepos, setRemoteRepos] = useState<RemoteRepository[]>([]);
+  const [syncSelectedIds, setSyncSelectedIds] = useState<string[]>([]);
+  const [syncSearch, setSyncSearch] = useState("");
 
   const totalPages = Math.ceil(repositories.length / ITEMS_PER_PAGE);
   const paginatedRepos = repositories.slice(
@@ -89,19 +118,116 @@ export default function RepositoriesPage() {
 
   const handleSync = async () => {
     try {
-      const result = await syncRepositories.mutateAsync(undefined);
-      if ("totalCreated" in result) {
-        toast.success(
-          `Synced ${result.totalCreated} new, ${result.totalUpdated} updated repositories`,
-        );
-      } else {
-        toast.success(
-          `Synced ${result.created} new, ${result.updated} updated repositories`,
-        );
-      }
+      const result = await syncExisting.mutateAsync();
+      toast.success(`Synced ${result.synced} of ${result.total} repositories`);
     } catch {
       toast.error("Failed to sync repositories");
     }
+  };
+
+  const handleSyncOne = async (repo: Repository) => {
+    try {
+      const result = await syncOne.mutateAsync(repo.id);
+      if (result.synced) {
+        toast.success(`"${repo.name}" synced`);
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.error("Failed to sync repository");
+    }
+  };
+
+  const handleBulkSync = async () => {
+    if (selectedIds.length === 0) return;
+    let synced = 0;
+    try {
+      for (const id of selectedIds) {
+        const result = await syncOne.mutateAsync(id);
+        if (result.synced) synced++;
+      }
+      toast.success(`Synced ${synced} of ${selectedIds.length} repositories`);
+    } catch {
+      toast.error("Failed to sync repositories");
+    }
+  };
+
+  const handleOpenSyncDialog = async () => {
+    try {
+      const repos = await fetchRemoteRepos.mutateAsync();
+      setRemoteRepos(repos);
+      // Pre-select repos that are not yet imported
+      setSyncSelectedIds(
+        repos.filter((r) => !r.alreadyImported).map((r) => r.externalId),
+      );
+      setSyncSearch("");
+      setSyncDialogOpen(true);
+    } catch {
+      toast.error("Failed to fetch remote repositories");
+    }
+  };
+
+  const handleSyncSelected = async () => {
+    if (syncSelectedIds.length === 0) {
+      toast.error("No repositories selected");
+      return;
+    }
+
+    // Group by integrationId
+    const byIntegration = new Map<string, string[]>();
+    for (const externalId of syncSelectedIds) {
+      const repo = remoteRepos.find((r) => r.externalId === externalId);
+      if (!repo) continue;
+      const ids = byIntegration.get(repo.integrationId) || [];
+      ids.push(externalId);
+      byIntegration.set(repo.integrationId, ids);
+    }
+
+    try {
+      let totalSynced = 0;
+      for (const [integrationId, externalIds] of byIntegration) {
+        const { result } = await syncSelective.mutateAsync({
+          integrationId,
+          externalIds,
+        });
+        totalSynced += result.synced;
+      }
+      toast.success(`Imported ${totalSynced} repositories`);
+      setSyncDialogOpen(false);
+    } catch {
+      toast.error("Failed to import repositories");
+    }
+  };
+
+  const filteredRemoteRepos = remoteRepos.filter(
+    (r) =>
+      !syncSearch ||
+      r.name.toLowerCase().includes(syncSearch.toLowerCase()) ||
+      r.fullPath.toLowerCase().includes(syncSearch.toLowerCase()),
+  );
+
+  const toggleSyncSelectAll = () => {
+    const filteredIds = filteredRemoteRepos.map((r) => r.externalId);
+    const allSelected = filteredIds.every((id) =>
+      syncSelectedIds.includes(id),
+    );
+    if (allSelected) {
+      setSyncSelectedIds((prev) =>
+        prev.filter((id) => !filteredIds.includes(id)),
+      );
+    } else {
+      setSyncSelectedIds((prev) => [
+        ...new Set([...prev, ...filteredIds]),
+      ]);
+    }
+  };
+
+  const toggleSyncSelect = (externalId: string) => {
+    setSyncSelectedIds((prev) =>
+      prev.includes(externalId)
+        ? prev.filter((id) => id !== externalId)
+        : [...prev, externalId],
+    );
   };
 
   const handleToggleActive = async (repo: Repository) => {
@@ -137,6 +263,27 @@ export default function RepositoriesPage() {
       setSelectedIds([]);
     } catch {
       toast.error("Failed to disable repositories");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    try {
+      const { result } = await bulkDelete.mutateAsync(selectedIds);
+      toast.success(`Deleted ${result.deleted} repositories`);
+      setSelectedIds([]);
+    } catch {
+      toast.error("Failed to delete repositories");
+    }
+  };
+
+  const handleDelete = async (repo: Repository) => {
+    try {
+      await deleteRepository.mutateAsync(repo.id);
+      toast.success(`Repository "${repo.name}" deleted`);
+      setSelectedIds((prev) => prev.filter((id) => id !== repo.id));
+    } catch {
+      toast.error("Failed to delete repository");
     }
   };
 
@@ -188,17 +335,33 @@ export default function RepositoriesPage() {
             Manage Git repositories for your workflows
           </p>
         </div>
-        <Button
-          onClick={handleSync}
-          disabled={syncRepositories.isPending || !hasGitIntegration}
-        >
-          {syncRepositories.isPending ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4 mr-2" />
+        <div className="flex items-center gap-2">
+          {repositories.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={handleSync}
+              disabled={syncExisting.isPending || !hasGitIntegration}
+            >
+              {syncExisting.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Sync
+            </Button>
           )}
-          Sync Repositories
-        </Button>
+          <Button
+            onClick={handleOpenSyncDialog}
+            disabled={fetchRemoteRepos.isPending || !hasGitIntegration}
+          >
+            {fetchRemoteRepos.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            Import
+          </Button>
+        </div>
       </div>
 
       {!hasGitIntegration && (
@@ -257,6 +420,51 @@ export default function RepositoriesPage() {
           >
             Disable
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleBulkSync}
+            disabled={syncOne.isPending}
+          >
+            {syncOne.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5 mr-1" />
+            )}
+            Sync
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkDelete.isPending}
+                className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Repositories</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete {selectedIds.length}{" "}
+                  {selectedIds.length === 1 ? "repository" : "repositories"}?
+                  You can re-sync them later from your Git provider.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleBulkDelete}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])}>
             Clear
           </Button>
@@ -285,9 +493,17 @@ export default function RepositoriesPage() {
                   : "Connect a Git integration to see your repositories."}
               </p>
               {hasGitIntegration && (
-                <Button variant="outline" onClick={handleSync}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Sync Now
+                <Button
+                  variant="outline"
+                  onClick={handleOpenSyncDialog}
+                  disabled={fetchRemoteRepos.isPending}
+                >
+                  {fetchRemoteRepos.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
+                  Import Repositories
                 </Button>
               )}
             </div>
@@ -379,6 +595,19 @@ export default function RepositoriesPage() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => handleSyncOne(repo)}
+                            disabled={syncOne.isPending}
+                            title="Sync from remote"
+                          >
+                            {syncOne.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleConfigOpen(repo)}
                           >
                             <Settings2 className="w-4 h-4" />
@@ -391,6 +620,40 @@ export default function RepositoriesPage() {
                           >
                             {repo.isActive ? "Disable" : "Enable"}
                           </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={deleteRepository.isPending}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Delete Repository
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete{" "}
+                                  <strong>{repo.name}</strong>? This will remove
+                                  the repository from mitshe. You can re-sync it
+                                  later from your Git provider.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(repo)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -456,6 +719,107 @@ export default function RepositoriesPage() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={syncDialogOpen} onOpenChange={setSyncDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Import Repositories</DialogTitle>
+            <DialogDescription>
+              Select repositories to import from your Git providers.
+              Already imported repositories are marked.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={syncSearch}
+                onChange={(e) => setSyncSearch(e.target.value)}
+                placeholder="Search repositories..."
+                className="pl-9"
+              />
+            </div>
+          </div>
+          <DialogBody className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
+            {remoteRepos.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No repositories found from your Git providers.
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 py-2 px-1 sticky top-0 bg-background z-10 border-b">
+                  <Checkbox
+                    checked={
+                      filteredRemoteRepos.length > 0 &&
+                      filteredRemoteRepos.every((r) =>
+                        syncSelectedIds.includes(r.externalId),
+                      )
+                    }
+                    onCheckedChange={toggleSyncSelectAll}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {syncSelectedIds.length} of {remoteRepos.length} selected
+                  </span>
+                </div>
+                {filteredRemoteRepos.map((repo) => (
+                  <label
+                    key={`${repo.provider}:${repo.externalId}`}
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={syncSelectedIds.includes(repo.externalId)}
+                      onCheckedChange={() => toggleSyncSelect(repo.externalId)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm truncate">
+                          {repo.fullPath}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`${providerConfig[repo.provider]?.color || "bg-gray-500"} text-white border-0 text-[10px] px-1.5 py-0`}
+                        >
+                          {providerConfig[repo.provider]?.name || repo.provider}
+                        </Badge>
+                        {repo.alreadyImported && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            Imported
+                          </Badge>
+                        )}
+                      </div>
+                      {repo.description && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {repo.description}
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSyncDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSyncSelected}
+              disabled={syncSelective.isPending || syncSelectedIds.length === 0}
+            >
+              {syncSelective.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              Import {syncSelectedIds.length}{" "}
+              {syncSelectedIds.length === 1 ? "Repository" : "Repositories"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -22,8 +22,10 @@ import { AICredentialsService } from '../services/ai-credentials.service';
 import {
   CreateAICredentialDto,
   UpdateAICredentialDto,
+  TestAICredentialDto,
   AICredentialWrapperResponseDto,
   AICredentialListResponseDto,
+  TestAIConnectionResponseDto,
 } from '../dto/ai-credential.dto';
 import { AuthGuard } from '@/shared/auth';
 import { OrganizationId } from '../../../shared/decorators/organization.decorator';
@@ -78,6 +80,17 @@ export class AICredentialsController {
   async findAll(@OrganizationId() organizationId: string) {
     const credentials = await this.aiCredentialsService.findAll(organizationId);
     return { credentials };
+  }
+
+  @Post('test')
+  @ApiOperation({ summary: 'Test AI provider connection before saving' })
+  @ApiResponse({
+    status: 200,
+    description: 'Connection test result',
+    type: TestAIConnectionResponseDto,
+  })
+  async testBeforeConnect(@Body() dto: TestAICredentialDto) {
+    return this.aiCredentialsService.testBeforeConnect(dto.provider, dto.apiKey);
   }
 
   @Get(':id')
@@ -152,5 +165,20 @@ export class AICredentialsController {
       id,
       `Deleted AI credential: ${credential.provider}`,
     );
+  }
+
+  @Post(':id/test')
+  @ApiOperation({ summary: 'Test AI credential connection' })
+  @ApiResponse({
+    status: 200,
+    description: 'Connection test result',
+    type: TestAIConnectionResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Credential not found' })
+  async testConnection(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
+    return this.aiCredentialsService.testConnection(organizationId, id);
   }
 }

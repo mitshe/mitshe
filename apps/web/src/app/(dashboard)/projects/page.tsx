@@ -23,6 +23,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -44,6 +45,9 @@ import {
   Trash2,
   FolderKanban,
   ListTodo,
+  Workflow,
+  MessageSquareCode,
+  BotMessageSquare,
   Settings,
   Loader2,
 } from "lucide-react";
@@ -296,6 +300,26 @@ export default function ProjectsPage() {
                               Edit
                             </Link>
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link href={`/tasks?projectId=${project.id}`}>
+                              <ListTodo className="w-4 h-4 mr-2" />
+                              Tasks
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/workflows?projectId=${project.id}`}>
+                              <Workflow className="w-4 h-4 mr-2" />
+                              Workflows
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/sessions?projectId=${project.id}`}>
+                              <MessageSquareCode className="w-4 h-4 mr-2" />
+                              Sessions
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-red-600"
                             onClick={() => handleDeleteProject(project.id)}
@@ -378,6 +402,26 @@ export default function ProjectsPage() {
                                   Edit
                                 </Link>
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem asChild>
+                                <Link href={`/tasks?projectId=${project.id}`}>
+                                  <ListTodo className="w-4 h-4 mr-2" />
+                                  Tasks
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/workflows?projectId=${project.id}`}>
+                                  <Workflow className="w-4 h-4 mr-2" />
+                                  Workflows
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/sessions?projectId=${project.id}`}>
+                                  <MessageSquareCode className="w-4 h-4 mr-2" />
+                                  Sessions
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-red-600"
                                 onClick={() => handleDeleteProject(project.id)}

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { EncryptionService } from '../../../shared/encryption/encryption.service';
+import { AdapterFactoryService } from '../../../infrastructure/adapters/adapter-factory.service';
 import {
   CreateAICredentialDto,
   UpdateAICredentialDto,
@@ -16,6 +17,7 @@ export class AICredentialsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
+    private readonly adapterFactory: AdapterFactoryService,
   ) {}
 
   async create(organizationId: string, dto: CreateAICredentialDto) {
@@ -133,6 +135,56 @@ export class AICredentialsService {
     }
 
     return this.prisma.aICredential.delete({ where: { id } });
+  }
+
+  // =========================================================================
+  // Connection Testing
+  // =========================================================================
+
+  async testConnection(
+    organizationId: string,
+    id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const credential = await this.prisma.aICredential.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!credential) {
+      throw new NotFoundException(`AI credential ${id} not found`);
+    }
+
+    const apiKey = this.encryption.decrypt(
+      Buffer.from(credential.encryptedKey),
+      Buffer.from(credential.keyIv),
+    );
+
+    const result = await this.adapterFactory.testAIProviderConnection(
+      credential.provider,
+      { apiKey },
+    );
+
+    return {
+      success: result.success,
+      message: result.success
+        ? 'Connection successful'
+        : result.error || 'Connection failed',
+    };
+  }
+
+  async testBeforeConnect(
+    provider: AIProvider,
+    apiKey?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const result = await this.adapterFactory.testAIProviderConnection(provider, {
+      apiKey: apiKey || 'local',
+    });
+
+    return {
+      success: result.success,
+      message: result.success
+        ? 'Connection successful'
+        : result.error || 'Connection failed',
+    };
   }
 
   // =========================================================================

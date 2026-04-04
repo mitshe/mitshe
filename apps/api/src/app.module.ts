@@ -38,6 +38,9 @@ import { AICredentialsModule } from './modules/ai-credentials/ai-credentials.mod
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AuditApiModule } from './modules/audit/audit.module';
 import { UsersModule } from './modules/users/users.module';
+import { AgentsModule } from './modules/agents/agents.module';
+import { EnvironmentsModule } from './modules/environments/environments.module';
+import { SessionsModule } from './modules/sessions/sessions.module';
 
 // App
 import { AppController } from './app.controller';
@@ -149,6 +152,9 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
     ApiKeysModule,
     AuditApiModule,
     UsersModule,
+    AgentsModule,
+    EnvironmentsModule,
+    SessionsModule,
   ],
   controllers: [AppController],
   providers: [

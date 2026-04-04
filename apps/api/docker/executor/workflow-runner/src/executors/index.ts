@@ -23,6 +23,8 @@ import {
   TelegramExecutor,
 } from './notification/index.js';
 
+import { SessionExecutor } from './session/session.executor.js';
+
 // Legacy executors (to be refactored later)
 import { executeAINode } from './ai.js';
 import { executeShellNode } from './shell.js';
@@ -61,6 +63,9 @@ class ExecutorRegistry {
       new WebhookExecutor(),
       new DiscordExecutor(),
       new TelegramExecutor(),
+
+      // Session executors
+      new SessionExecutor(),
     ];
 
     // Register each executor for its supported types

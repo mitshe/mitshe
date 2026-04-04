@@ -31,11 +31,13 @@ import {
   Workflow,
   Play,
   Sparkles,
+  MessageSquareCode,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "@/lib/utils";
 import {
   useTasks,
+  useSessions,
   useProjects,
   useWorkflows,
   useIntegrations,
@@ -45,6 +47,7 @@ import { getTaskStatus } from "@/lib/status-config";
 
 export default function DashboardPage() {
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
+  const { data: sessions = [], isLoading: sessionsLoading } = useSessions();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: workflows = [], isLoading: workflowsLoading } = useWorkflows();
   const { data: integrations = [], isLoading: integrationsLoading } =
@@ -54,6 +57,7 @@ export default function DashboardPage() {
 
   const isLoading =
     tasksLoading ||
+    sessionsLoading ||
     projectsLoading ||
     workflowsLoading ||
     integrationsLoading ||
@@ -117,8 +121,12 @@ export default function DashboardPage() {
   const successRate =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const activeWorkflows = workflows.filter((w) => w.isActive).length;
+  const activeSessions = sessions.filter(
+    (s) => s.status === "RUNNING" || s.status === "PAUSED",
+  ).length;
 
   const recentTasks = tasks.slice(0, 5);
+  const recentSessions = sessions.slice(0, 5);
 
   if (isLoading) {
     return (
@@ -241,6 +249,13 @@ export default function DashboardPage() {
             {activeWorkflows}
           </span>
         </div>
+        <div className="flex items-center gap-1.5">
+          <MessageSquareCode className="h-4 w-4 text-blue-500" />
+          <span>Active Sessions</span>
+          <span className="font-semibold text-foreground">
+            {activeSessions}
+          </span>
+        </div>
       </div>
 
       <Card>
@@ -298,6 +313,69 @@ export default function DashboardPage() {
                   </TableBody>
                 </Table>
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Sessions */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle className="text-lg">Recent Sessions</CardTitle>
+            <CardDescription>Latest interactive agent sessions</CardDescription>
+          </div>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/sessions">
+              View all
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {recentSessions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageSquareCode className="mx-auto h-8 w-8 mb-2" />
+              <p className="text-sm">No sessions yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentSessions.map((session) => (
+                <Link
+                  key={session.id}
+                  href={`/sessions/${session.id}`}
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MessageSquareCode className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-sm font-medium truncate">
+                      {session.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge
+                      variant={
+                        session.status === "RUNNING"
+                          ? "default"
+                          : session.status === "PAUSED"
+                            ? "secondary"
+                            : session.status === "FAILED"
+                              ? "destructive"
+                              : "outline"
+                      }
+                      className="text-[10px]"
+                    >
+                      {session.status === "RUNNING" && (
+                        <Play className="w-2.5 h-2.5 mr-0.5" />
+                      )}
+                      {session.status}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">
+                      {formatDistanceToNow(new Date(session.lastActiveAt))}
+                    </span>
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </CardContent>

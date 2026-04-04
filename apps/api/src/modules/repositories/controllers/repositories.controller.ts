@@ -23,10 +23,14 @@ import { OrganizationId } from '../../../shared/decorators/organization.decorato
 import {
   UpdateRepositoryDto,
   BulkUpdateRepositoriesDto,
+  BulkDeleteRepositoriesDto,
+  SelectiveSyncRepositoriesDto,
+  RemoteRepositoryResponseDto,
   RepositoryWrapperResponseDto,
   RepositoryListResponseDto,
   SyncResultResponseDto,
   BulkUpdateResultResponseDto,
+  BulkDeleteResultResponseDto,
 } from '../dto/repository.dto';
 import { ApiRateLimit } from '../../../shared/decorators/throttle.decorator';
 
@@ -83,6 +87,40 @@ export class RepositoriesController {
     return { result };
   }
 
+  @Post('sync/existing')
+  @ApiOperation({
+    summary: 'Sync only already-imported repositories (update metadata)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Sync result',
+    type: SyncResultResponseDto,
+  })
+  async syncExisting(@OrganizationId() organizationId: string) {
+    const result =
+      await this.repositoriesService.syncExisting(organizationId);
+    return { result };
+  }
+
+  @Post('sync/selective')
+  @ApiOperation({ summary: 'Selectively sync chosen repositories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Sync result',
+    type: SyncResultResponseDto,
+  })
+  async syncSelective(
+    @OrganizationId() organizationId: string,
+    @Body() dto: SelectiveSyncRepositoriesDto,
+  ) {
+    const result = await this.repositoriesService.syncFromIntegration(
+      organizationId,
+      dto.integrationId,
+      dto.externalIds,
+    );
+    return { result };
+  }
+
   @Post('sync/:integrationId')
   @ApiOperation({ summary: 'Sync repositories from a specific integration' })
   @ApiResponse({
@@ -101,6 +139,21 @@ export class RepositoriesController {
     return { result };
   }
 
+  @Get('remote')
+  @ApiOperation({
+    summary: 'List remote repositories from connected git providers',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Remote repositories',
+    type: [RemoteRepositoryResponseDto],
+  })
+  async listRemote(@OrganizationId() organizationId: string) {
+    const repositories =
+      await this.repositoriesService.listRemoteRepositories(organizationId);
+    return { repositories };
+  }
+
   @Patch('bulk')
   @ApiOperation({ summary: 'Bulk update repositories' })
   @ApiResponse({
@@ -115,6 +168,24 @@ export class RepositoriesController {
     const result = await this.repositoriesService.bulkUpdate(
       organizationId,
       dto,
+    );
+    return { result };
+  }
+
+  @Delete('bulk')
+  @ApiOperation({ summary: 'Bulk delete repositories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Deleted repositories',
+    type: BulkDeleteResultResponseDto,
+  })
+  async bulkDelete(
+    @OrganizationId() organizationId: string,
+    @Body() dto: BulkDeleteRepositoriesDto,
+  ) {
+    const result = await this.repositoriesService.bulkDelete(
+      organizationId,
+      dto.ids,
     );
     return { result };
   }
@@ -157,6 +228,20 @@ export class RepositoriesController {
       dto,
     );
     return { repository };
+  }
+
+  @Post(':id/sync')
+  @ApiOperation({ summary: 'Sync a single repository from remote' })
+  @ApiResponse({
+    status: 200,
+    description: 'Sync result',
+  })
+  @ApiResponse({ status: 404, description: 'Repository not found' })
+  async syncOne(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
+    return this.repositoriesService.syncOne(organizationId, id);
   }
 
   @Delete(':id')
