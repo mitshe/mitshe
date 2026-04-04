@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,9 +111,16 @@ const statusConfig: Record<
 
 export default function SessionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlProjectId = searchParams.get("projectId") || "";
   const queryClient = useQueryClient();
   const { socket } = useSocket();
   const { data: sessions = [], isLoading } = useSessions();
+
+  const filteredSessions = useMemo(() => {
+    if (!urlProjectId) return sessions;
+    return sessions.filter((s) => s.projectId === urlProjectId);
+  }, [sessions, urlProjectId]);
   const { data: agents = [] } = useAgents();
   const { data: projects = [] } = useProjects();
   const { data: repositories = [] } = useRepositories();
@@ -412,7 +419,7 @@ export default function SessionsPage() {
             <div className="flex items-center justify-center h-32">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
-          ) : sessions.length === 0 ? (
+          ) : filteredSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <MessageSquareCode className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Sessions</h3>
@@ -426,7 +433,7 @@ export default function SessionsPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {sessions.map((session) => {
+              {filteredSessions.map((session) => {
                 const config = statusConfig[session.status as SessionStatus];
                 return (
                   <div

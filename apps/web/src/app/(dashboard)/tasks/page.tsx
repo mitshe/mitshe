@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -124,7 +125,10 @@ export default function TasksPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const [filterProjectId, setFilterProjectId] = useState<string>("all");
+  const searchParams = useSearchParams();
+  const [filterProjectId, setFilterProjectId] = useState<string>(
+    searchParams.get("projectId") || "all",
+  );
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
