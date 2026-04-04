@@ -84,7 +84,7 @@ function buildFileTree(paths: string[], basePath: string): FileTreeNode[] {
 }
 
 function FileTreeItem({ node, depth = 0 }: { node: FileTreeNode; depth?: number }) {
-  const [isOpen, setIsOpen] = useState(depth < 2);
+  const [isOpen, setIsOpen] = useState(depth < 1);
 
   if (node.type === "file") {
     return (
@@ -419,11 +419,11 @@ export default function SessionDetailPage() {
       {/* Main Content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* File Browser */}
-        <div className="w-60 border-r shrink-0 flex flex-col overflow-hidden">
-          <div className="px-3 py-2 border-b">
+        <div className="w-60 border-r shrink-0 flex flex-col overflow-hidden min-h-0">
+          <div className="px-3 py-2 border-b shrink-0">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Files</p>
           </div>
-          <ScrollArea className="flex-1">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="py-1">
               {fileTree.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">
@@ -433,7 +433,7 @@ export default function SessionDetailPage() {
                 fileTree.map((node) => <FileTreeItem key={node.path} node={node} />)
               )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Terminal */}
