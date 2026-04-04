@@ -6,6 +6,8 @@
 # Then run apps on host with hot-reload:
 #   pnpm run dev
 
+name: mitshe-dev
+
 services:
   postgres:
     image: postgres:16-alpine
