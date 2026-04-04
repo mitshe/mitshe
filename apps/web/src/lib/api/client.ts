@@ -33,6 +33,15 @@ import type {
   RemoteRepository,
   SyncRepositoriesResult,
   SyncAllRepositoriesResult,
+  AgentDefinition,
+  CreateAgentDefinitionDto,
+  UpdateAgentDefinitionDto,
+  Environment,
+  CreateEnvironmentDto,
+  UpdateEnvironmentDto,
+  AgentSession,
+  CreateSessionDto,
+  SessionFileNode,
   WorkflowTemplateMetadata,
   WorkflowTemplate,
   CreateFromTemplateDto,
@@ -573,5 +582,166 @@ export const api = {
         method: "POST",
         token,
       }),
+  },
+
+  presets: {
+    list: (token: string) =>
+      request<{ agents: AgentDefinition[] }>("/presets", { token }),
+
+    get: (id: string, token: string) =>
+      request<{ agent: AgentDefinition }>(`/presets/${id}`, { token }),
+
+    create: (data: CreateAgentDefinitionDto, token: string) =>
+      request<{ agent: AgentDefinition }>("/presets", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    update: (id: string, data: UpdateAgentDefinitionDto, token: string) =>
+      request<{ agent: AgentDefinition }>(`/presets/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    delete: (id: string, token: string) =>
+      request<void>(`/presets/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+  },
+
+  environments: {
+    list: (token: string) =>
+      request<{ environments: Environment[] }>("/environments", { token }),
+
+    get: (id: string, token: string) =>
+      request<{ environment: Environment }>(`/environments/${id}`, { token }),
+
+    create: (data: CreateEnvironmentDto, token: string) =>
+      request<{ environment: Environment }>("/environments", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    update: (id: string, data: UpdateEnvironmentDto, token: string) =>
+      request<{ environment: Environment }>(`/environments/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    delete: (id: string, token: string) =>
+      request<void>(`/environments/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+  },
+
+  sessions: {
+    list: (token: string, status?: string, projectId?: string) => {
+      const params = new URLSearchParams();
+      if (status) params.set("status", status);
+      if (projectId) params.set("projectId", projectId);
+      const qs = params.toString();
+      return request<{ sessions: AgentSession[] }>(
+        `/sessions${qs ? `?${qs}` : ""}`,
+        { token },
+      );
+    },
+
+    get: (id: string, token: string) =>
+      request<{ session: AgentSession }>(`/sessions/${id}`, { token }),
+
+    create: (data: CreateSessionDto, token: string) =>
+      request<{ session: AgentSession }>("/sessions", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    delete: (id: string, token: string) =>
+      request<void>(`/sessions/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+
+    startTerminal: (
+      id: string,
+      token: string,
+      options?: { terminalId?: string; cmd?: string[] },
+    ) =>
+      request<{ terminalId: string; status: string; buffer?: string }>(
+        `/sessions/${id}/terminals`,
+        {
+          method: "POST",
+          body: options ? JSON.stringify(options) : undefined,
+          token,
+        },
+      ),
+
+    closeTerminal: (id: string, terminalId: string, token: string) =>
+      request<{ status: string }>(
+        `/sessions/${id}/terminals/${encodeURIComponent(terminalId)}`,
+        {
+          method: "DELETE",
+          token,
+        },
+      ),
+
+    pause: (id: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/pause`, {
+        method: "POST",
+        token,
+      }),
+
+    resume: (id: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/resume`, {
+        method: "POST",
+        token,
+      }),
+
+    stop: (id: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/stop`, {
+        method: "POST",
+        token,
+      }),
+
+    getFiles: (id: string, token: string, path?: string) => {
+      const qs = path ? `?path=${encodeURIComponent(path)}` : "";
+      return request<{ files: string[] }>(`/sessions/${id}/files${qs}`, {
+        token,
+      });
+    },
+
+    getGitStatus: (id: string, token: string) =>
+      request<{ statuses: Array<{ path: string; status: string }> }>(
+        `/sessions/${id}/git-status`,
+        { token },
+      ),
+
+    readFile: (id: string, filePath: string, token: string) =>
+      request<{ path: string; content: string }>(
+        `/sessions/${id}/file?path=${encodeURIComponent(filePath)}`,
+        { token },
+      ),
+
+    writeFile: (id: string, path: string, content: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/file`, {
+        method: "POST",
+        body: JSON.stringify({ path, content }),
+        token,
+      }),
+
+    deleteFile: (id: string, path: string, token: string) =>
+      request<{ status: string }>(
+        `/sessions/${id}/file?path=${encodeURIComponent(path)}`,
+        {
+          method: "DELETE",
+          token,
+        },
+      ),
   },
 };

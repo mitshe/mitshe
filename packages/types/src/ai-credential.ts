@@ -6,7 +6,8 @@ export type AIProvider =
   | "OPENROUTER"
   | "GEMINI"
   | "GROQ"
-  | "CLAUDE_CODE_LOCAL";
+  | "CLAUDE_CODE_LOCAL"
+  | "OPENCLAW";
 
 export interface AICredential {
   id: string;

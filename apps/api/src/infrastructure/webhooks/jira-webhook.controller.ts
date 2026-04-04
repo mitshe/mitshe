@@ -111,7 +111,7 @@ export class JiraWebhookController {
     );
 
     if (!orgData) {
-      this.logger.warn(`Invalid webhook token/slug: ${token}`);
+      this.logger.warn(`Invalid webhook token/slug: ${token.substring(0, 8)}...`);
       throw new NotFoundException('Invalid webhook token');
     }
 

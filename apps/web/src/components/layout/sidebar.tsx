@@ -6,6 +6,9 @@ import {
   LayoutDashboard,
   FolderKanban,
   ListTodo,
+  MessageSquareCode,
+  SlidersHorizontal,
+  Box,
   Workflow,
   History,
   Plug,
@@ -53,6 +56,27 @@ const coreNavItems = [
     href: "/executions",
     icon: History,
     tourId: "nav-executions",
+  },
+];
+
+const workspaceNavItems = [
+  {
+    title: "Sessions",
+    href: "/sessions",
+    icon: MessageSquareCode,
+    tourId: "nav-sessions",
+  },
+  {
+    title: "Presets",
+    href: "/presets",
+    icon: SlidersHorizontal,
+    tourId: "nav-presets",
+  },
+  {
+    title: "Environments",
+    href: "/environments",
+    icon: Box,
+    tourId: "nav-environments",
   },
 ];
 
@@ -128,6 +152,31 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       {/* Core Navigation */}
       <div className="space-y-1">
         {coreNavItems.map((item) => (
+          <Button
+            key={item.href}
+            variant={isActive(item.href) ? "secondary" : "ghost"}
+            className={cn(
+              "w-full justify-start",
+              isActive(item.href) && "bg-secondary",
+            )}
+            asChild
+            onClick={onNavigate}
+            data-tour={item.tourId}
+          >
+            <Link href={item.href}>
+              <item.icon className="mr-2 h-4 w-4" />
+              {item.title}
+            </Link>
+          </Button>
+        ))}
+      </div>
+
+      {/* Workspace Section */}
+      <div className="mt-6 space-y-1">
+        <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Workspace
+        </p>
+        {workspaceNavItems.map((item) => (
           <Button
             key={item.href}
             variant={isActive(item.href) ? "secondary" : "ghost"}

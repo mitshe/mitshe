@@ -121,6 +121,12 @@ COPY --from=builder /build/packages/types /build/packages/types
 
 WORKDIR /build
 
+# Create non-root user with docker group access
+RUN addgroup -g 998 docker 2>/dev/null || true && \
+    adduser -D -u 1000 mitshe && \
+    addgroup mitshe docker 2>/dev/null || true && \
+    chown -R mitshe:mitshe /build /var/log/supervisor
+
 # Copy configuration files
 COPY docker/light/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/light/entrypoint.sh /entrypoint.sh
@@ -145,6 +151,9 @@ EXPOSE 3000 3001
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:3000 && curl -f http://localhost:3001/health || exit 1
+
+# Note: entrypoint runs as root for initialization (Redis, DB setup, Docker pull).
+# Application processes (web, api) run as 'mitshe' user via supervisor config.
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

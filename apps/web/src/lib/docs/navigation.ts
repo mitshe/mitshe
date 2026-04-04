@@ -6,6 +6,9 @@ import {
   Sparkles,
   GitBranch,
   MessageSquare,
+  MessageSquareCode,
+  SlidersHorizontal,
+  Terminal,
   Zap,
   Box,
   SquareKanban,
@@ -43,6 +46,36 @@ export const docsNav: DocNavSection[] = [
         slug: "workflows/expressions",
         icon: Code,
       },
+      {
+        title: "Session Nodes",
+        slug: "workflows/session-nodes",
+        icon: MessageSquareCode,
+      },
+    ],
+  },
+  {
+    title: "Workspace",
+    items: [
+      {
+        title: "Overview",
+        slug: "workspace",
+        icon: Terminal,
+      },
+      {
+        title: "Sessions",
+        slug: "workspace/sessions",
+        icon: MessageSquareCode,
+      },
+      {
+        title: "Presets",
+        slug: "workspace/presets",
+        icon: SlidersHorizontal,
+      },
+      {
+        title: "Environments",
+        slug: "workspace/environments",
+        icon: Box,
+      },
     ],
   },
   {
@@ -55,6 +88,16 @@ export const docsNav: DocNavSection[] = [
       { title: "YouTrack", slug: "integrations/youtrack", icon: SquareKanban },
       { title: "Slack", slug: "integrations/slack", icon: MessageSquare },
       { title: "Obsidian", slug: "integrations/obsidian", icon: BookOpen },
+      {
+        title: "Claude Code",
+        slug: "integrations/claude-code",
+        icon: Sparkles,
+      },
+      {
+        title: "OpenClaw",
+        slug: "integrations/openclaw",
+        icon: Terminal,
+      },
     ],
   },
   {
