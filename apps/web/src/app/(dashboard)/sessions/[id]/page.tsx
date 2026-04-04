@@ -128,9 +128,11 @@ function FileTreeItem({ node, depth = 0 }: { node: FileTreeNode; depth?: number 
 function TerminalView({
   sessionId,
   isRunning,
+  wasCompleted,
 }: {
   sessionId: string;
   isRunning: boolean;
+  wasCompleted: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<HTMLDivElement>(null);
@@ -295,15 +297,15 @@ function TerminalView({
   useEffect(() => {
     if (!terminalReady || !isRunning) return;
 
-    startTerminal.mutateAsync(sessionId).then((res: any) => {
-      // Write buffered output from previous session (reconnect)
-      if (res.buffer && xtermRef.current) {
-        xtermRef.current.write(res.buffer);
-      } else if (res.status === "started") {
-        xtermRef.current?.writeln("\x1b[1;32m● Claude Code starting...\x1b[0m\r\n");
-      }
-    }).catch(() => {
-      // ignore
+    startTerminal
+      .mutateAsync({ id: sessionId, continueSession: wasCompleted })
+      .then((res: any) => {
+        if (res.buffer && xtermRef.current) {
+          xtermRef.current.write(res.buffer);
+        }
+      })
+      .catch(() => {
+        // ignore
     });
   }, [terminalReady, isRunning, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -326,6 +328,7 @@ export default function SessionDetailPage() {
   const pauseSession = usePauseSession();
   const resumeSession = useResumeSession();
   const stopSession = useStopSession();
+  const [resumedFromCompleted, setResumedFromCompleted] = useState(false);
 
   const { socket } = useSocket();
 
@@ -349,13 +352,24 @@ export default function SessionDetailPage() {
   };
 
   const handleResume = async () => {
-    try { await resumeSession.mutateAsync(sessionId); refetch(); }
-    catch { toast.error("Failed to resume session"); }
+    try {
+      const wasCompleted = session?.status === "COMPLETED";
+      await resumeSession.mutateAsync(sessionId);
+      if (wasCompleted) setResumedFromCompleted(true);
+      refetch();
+    } catch {
+      toast.error("Failed to resume session");
+    }
   };
 
   const handleStop = async () => {
-    try { await stopSession.mutateAsync(sessionId); refetch(); }
-    catch { toast.error("Failed to stop session"); }
+    try {
+      await stopSession.mutateAsync(sessionId);
+      setResumedFromCompleted(false);
+      refetch();
+    } catch {
+      toast.error("Failed to stop session");
+    }
   };
 
   if (isLoading) {
@@ -377,7 +391,9 @@ export default function SessionDetailPage() {
   const currentStatus = session.status as SessionStatus;
   const isRunning = currentStatus === "RUNNING";
   const isPaused = currentStatus === "PAUSED";
+  const isCompleted = currentStatus === "COMPLETED";
   const isActive = isRunning || isPaused;
+  const canShowTerminal = isRunning || isPaused;
   const fileTree = buildFileTree(files, "/workspace");
 
   return (
@@ -412,7 +428,7 @@ export default function SessionDetailPage() {
               <Pause className="w-4 h-4 mr-1" /> Pause
             </Button>
           )}
-          {isPaused && (
+          {(isPaused || isCompleted) && (
             <Button variant="outline" size="sm" onClick={handleResume}>
               <Play className="w-4 h-4 mr-1" /> Resume
             </Button>
@@ -447,8 +463,22 @@ export default function SessionDetailPage() {
 
         {/* Terminal */}
         <div className="flex-1 min-w-0 bg-[#0a0a0a] overflow-hidden">
-          {isActive ? (
-            <TerminalView sessionId={sessionId} isRunning={isRunning} />
+          {canShowTerminal ? (
+            <TerminalView
+              sessionId={sessionId}
+              isRunning={isRunning}
+              wasCompleted={resumedFromCompleted}
+            />
+          ) : isCompleted ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center">
+                <TerminalIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="mb-3">Session stopped</p>
+                <Button variant="outline" size="sm" onClick={handleResume}>
+                  <Play className="w-4 h-4 mr-1" /> Resume with --continue
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <div className="text-center">

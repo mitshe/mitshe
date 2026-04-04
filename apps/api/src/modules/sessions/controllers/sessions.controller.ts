@@ -153,11 +153,12 @@ export class SessionsController {
   }
 
   @Post(':id/terminal')
-  @ApiOperation({ summary: 'Start interactive Claude Code terminal session' })
+  @ApiOperation({ summary: 'Start or reconnect interactive Claude Code terminal' })
   @ApiResponse({ status: 200 })
   async startTerminal(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
+    @Body() body?: { continue?: boolean },
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 
@@ -169,25 +170,28 @@ export class SessionsController {
       throw new BadRequestException('Session has no container');
     }
 
+    // Already has an active claude process — just return buffer for reconnect
     if (this.containerService.hasActiveSession(id)) {
       const buffer = this.containerService.getOutputBuffer(id);
       return { status: 'already_active', buffer };
     }
 
+    // Start new claude process (with --continue if resuming after stop)
+    const shouldContinue = body?.continue === true;
+
     await this.containerService.startInteractiveSession(
       id,
       session.containerId,
-      // onData: forward terminal output to WebSocket
       (data) => {
         this.eventsGateway.emitSessionOutput(id, data);
       },
-      // onEnd: Claude process exited
       () => {
         this.eventsGateway.emitSessionOutput(
           id,
-          '\r\n[Session ended]\r\n',
+          '\r\n[Claude Code exited]\r\n',
         );
       },
+      { continue: shouldContinue },
     );
 
     const buffer = this.containerService.getOutputBuffer(id);
@@ -218,7 +222,7 @@ export class SessionsController {
 
   @Post(':id/pause')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Pause agent session' })
+  @ApiOperation({ summary: 'Pause agent session (freezes state, container stays alive)' })
   async pause(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
@@ -228,7 +232,8 @@ export class SessionsController {
       throw new BadRequestException('Can only pause a running session');
     }
 
-    this.containerService.closeInteractiveSession(id);
+    // Don't close the interactive session — claude process keeps running.
+    // We just change status so frontend knows to disconnect its view.
     await this.sessionsService.updateStatus(id, 'PAUSED');
     this.eventsGateway.emitSessionStatus(organizationId, id, 'PAUSED');
     return { status: 'paused' };
@@ -236,21 +241,30 @@ export class SessionsController {
 
   @Post(':id/resume')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Resume agent session' })
+  @ApiOperation({ summary: 'Resume paused or stopped session' })
   async resume(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
-    if (session.status !== 'PAUSED') {
-      throw new BadRequestException('Can only resume a paused session');
+
+    if (session.status !== 'PAUSED' && session.status !== 'COMPLETED') {
+      throw new BadRequestException('Can only resume a paused or completed session');
     }
 
-    if (
-      session.containerId &&
-      !(await this.containerService.isContainerRunning(session.containerId))
-    ) {
-      throw new BadRequestException('Container is no longer running');
+    if (!session.containerId) {
+      throw new BadRequestException('Session has no container');
+    }
+
+    // Check if container is still running
+    const containerRunning = await this.containerService.isContainerRunning(
+      session.containerId,
+    );
+
+    if (!containerRunning) {
+      throw new BadRequestException(
+        'Container is no longer running. Delete this session and create a new one.',
+      );
     }
 
     await this.sessionsService.updateStatus(id, 'RUNNING');
@@ -260,7 +274,7 @@ export class SessionsController {
 
   @Post(':id/stop')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Stop and complete agent session' })
+  @ApiOperation({ summary: 'Stop claude process (container stays for resume with --continue)' })
   async stop(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
@@ -270,14 +284,11 @@ export class SessionsController {
       throw new BadRequestException('Session is already stopped');
     }
 
+    // Close the claude process but keep the container alive
     this.containerService.closeInteractiveSession(id);
 
-    if (session.containerId) {
-      await this.containerService.stopContainer(session.containerId);
-      await this.containerService.removeContainer(session.containerId);
-    }
-
-    await this.sessionsService.updateStatus(id, 'COMPLETED', null);
+    // Keep containerId — needed for resume with --continue
+    await this.sessionsService.updateStatus(id, 'COMPLETED');
     this.eventsGateway.emitSessionStatus(organizationId, id, 'COMPLETED');
     return { status: 'completed' };
   }

@@ -1116,9 +1116,17 @@ export function useStartTerminal() {
   const getToken = useAuthToken();
 
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({
+      id,
+      continueSession,
+    }: {
+      id: string;
+      continueSession?: boolean;
+    }) => {
       const token = await getToken();
-      return api.sessions.startTerminal(id, token);
+      return api.sessions.startTerminal(id, token, {
+        continue: continueSession,
+      });
     },
   });
 }

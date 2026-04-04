@@ -606,9 +606,14 @@ export const api = {
         token,
       }),
 
-    startTerminal: (id: string, token: string) =>
+    startTerminal: (
+      id: string,
+      token: string,
+      options?: { continue?: boolean },
+    ) =>
       request<{ status: string; buffer?: string }>(`/sessions/${id}/terminal`, {
         method: "POST",
+        body: options ? JSON.stringify(options) : undefined,
         token,
       }),
 

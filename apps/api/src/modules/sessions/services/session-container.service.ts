@@ -109,14 +109,17 @@ export class SessionContainerService implements OnModuleInit {
     containerId: string,
     onData: (data: string) => void,
     onEnd: () => void,
+    options?: { continue?: boolean },
   ): Promise<void> {
     // Kill previous session if exists
     this.closeInteractiveSession(sessionId);
 
     const container = this.docker.getContainer(containerId);
 
+    const cmd = options?.continue ? ['claude', '--continue'] : ['claude'];
+
     const exec = await container.exec({
-      Cmd: ['claude'],
+      Cmd: cmd,
       AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,
