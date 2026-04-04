@@ -124,6 +124,7 @@ function TerminalView({
   sessionId: string;
   isRunning: boolean;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<any>(null);
   const fitRef = useRef<any>(null);
@@ -131,18 +132,36 @@ function TerminalView({
   const startTerminal = useStartTerminal();
   const [terminalReady, setTerminalReady] = useState(false);
 
-  // Initialize xterm
+  // Initialize xterm after container is measured
   useEffect(() => {
-    if (!termRef.current) return;
+    if (!termRef.current || !containerRef.current) return;
 
     let terminal: any;
     let fitAddon: any;
+    let disposed = false;
 
     const init = async () => {
+      // Wait for container to have dimensions
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          const rect = containerRef.current?.getBoundingClientRect();
+          if (rect && rect.height > 50 && rect.width > 50) {
+            resolve();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        check();
+      });
+
+      if (disposed) return;
+
       const { Terminal } = await import("@xterm/xterm");
       const { FitAddon } = await import("@xterm/addon-fit");
       // @ts-expect-error CSS import for xterm styles
       await import("@xterm/xterm/css/xterm.css");
+
+      if (disposed) return;
 
       terminal = new Terminal({
         cursorBlink: true,
@@ -176,7 +195,13 @@ function TerminalView({
       fitAddon = new FitAddon();
       terminal.loadAddon(fitAddon);
       terminal.open(termRef.current!);
-      fitAddon.fit();
+
+      // Force fit after open
+      requestAnimationFrame(() => {
+        if (!disposed) {
+          try { fitAddon.fit(); } catch { /* ignore */ }
+        }
+      });
 
       xtermRef.current = terminal;
       fitRef.current = fitAddon;
@@ -189,6 +214,7 @@ function TerminalView({
     init();
 
     return () => {
+      disposed = true;
       terminal?.dispose();
       xtermRef.current = null;
       fitRef.current = null;
@@ -196,30 +222,18 @@ function TerminalView({
     };
   }, []);
 
-  // Resize handling with ResizeObserver
+  // Resize handling — observe the outer container (has real dimensions)
   useEffect(() => {
-    if (!fitRef.current || !termRef.current) return;
+    if (!fitRef.current || !containerRef.current) return;
 
     const handleResize = () => {
       try { fitRef.current?.fit(); } catch { /* ignore */ }
     };
 
     const observer = new ResizeObserver(handleResize);
-    observer.observe(termRef.current);
-    window.addEventListener("resize", handleResize);
+    observer.observe(containerRef.current);
 
-    // Fit after layout settles
-    const t1 = setTimeout(handleResize, 50);
-    const t2 = setTimeout(handleResize, 200);
-    const t3 = setTimeout(handleResize, 500);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", handleResize);
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
+    return () => observer.disconnect();
   }, [terminalReady]);
 
   // Subscribe to session output via WebSocket
@@ -284,8 +298,8 @@ function TerminalView({
   }, [terminalReady, isRunning, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      <div ref={termRef} className="absolute inset-0" />
+    <div ref={containerRef} style={{ width: "100%", height: "100%" , overflow: "hidden" }}>
+      <div ref={termRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 }
