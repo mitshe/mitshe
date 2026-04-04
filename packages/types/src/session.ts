@@ -58,6 +58,7 @@ export interface CreateSessionDto {
   aiCredentialId?: string;
   agentDefinitionId?: string;
   startArguments?: string;
+  environmentId?: string;
   instructions?: string;
 }
 

@@ -27,6 +27,7 @@ export class SessionsService {
         aiCredentialId: dto.aiCredentialId || null,
         agentDefinitionId: dto.agentDefinitionId || null,
         startArguments: dto.startArguments || null,
+        environmentId: dto.environmentId || null,
         instructions: dto.instructions || '',
         createdBy: userId,
         repositories: {

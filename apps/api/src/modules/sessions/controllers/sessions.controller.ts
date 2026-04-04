@@ -22,7 +22,10 @@ import {
 import { Request } from 'express';
 import { SessionStatus } from '@prisma/client';
 import { SessionsService } from '../services/sessions.service';
-import { SessionContainerService } from '../services/session-container.service';
+import {
+  SessionContainerService,
+  type SessionContainerConfig,
+} from '../services/session-container.service';
 import { TerminalManagerService } from '../services/terminal-manager.service';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { EventsGateway } from '../../../infrastructure/websocket/events.gateway';
@@ -72,6 +75,26 @@ export class SessionsController {
       branch: sr.repository.defaultBranch,
     }));
 
+    // Load environment if set
+    let envConfig: SessionContainerConfig['environment'] | undefined;
+    if (dto.environmentId) {
+      const env = await this.prisma.environment.findFirst({
+        where: { id: dto.environmentId, organizationId },
+        include: { variables: true },
+      });
+      if (env) {
+        envConfig = {
+          memoryMb: env.memoryMb,
+          cpuCores: env.cpuCores,
+          setupScript: env.setupScript,
+          variables: env.variables.map((v) => ({
+            key: v.key,
+            value: v.value,
+          })),
+        };
+      }
+    }
+
     setImmediate(async () => {
       try {
         const containerId = await this.containerService.createAndStart({
@@ -79,6 +102,7 @@ export class SessionsController {
           organizationId,
           repos,
           instructions: session.instructions,
+          environment: envConfig,
         });
 
         await this.sessionsService.updateStatus(

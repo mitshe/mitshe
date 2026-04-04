@@ -63,6 +63,7 @@ import {
   useProjects,
   useRepositories,
   useAICredentials,
+  useEnvironments,
 } from "@/lib/api/hooks";
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
@@ -125,6 +126,7 @@ export default function SessionsPage() {
   const { data: projects = [] } = useProjects();
   const { data: repositories = [] } = useRepositories();
   const { data: aiCredentials = [] } = useAICredentials();
+  const { data: environmentsList = [] } = useEnvironments();
   const createSession = useCreateSession();
   const deleteSession = useDeleteSession();
 
@@ -146,6 +148,7 @@ export default function SessionsPage() {
     repositoryIds: [] as string[],
     aiCredentialId: "",
     startArguments: "",
+    environmentId: "",
     instructions: "",
   });
 
@@ -192,6 +195,7 @@ export default function SessionsPage() {
         aiCredentialId: form.aiCredentialId || undefined,
         agentDefinitionId: form.agentDefinitionId || undefined,
         startArguments: form.startArguments || undefined,
+        environmentId: form.environmentId || undefined,
         instructions: form.instructions || undefined,
       });
       toast.success("Session created");
@@ -203,6 +207,7 @@ export default function SessionsPage() {
         repositoryIds: [],
         aiCredentialId: "",
         startArguments: "",
+    environmentId: "",
         instructions: "",
       });
       router.push(`/sessions/${session.id}`);
@@ -369,6 +374,32 @@ export default function SessionsPage() {
                   placeholder="e.g., --dangerously-skip-permissions --model opus"
                   className="font-mono text-sm"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Environment (optional)</Label>
+                <Select
+                  value={form.environmentId}
+                  onValueChange={(v) =>
+                    setForm({ ...form, environmentId: v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Default environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {environmentsList.map((env) => (
+                      <SelectItem key={env.id} value={env.id}>
+                        {env.name}
+                        {env.description && (
+                          <span className="text-muted-foreground ml-2">
+                            — {env.description}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

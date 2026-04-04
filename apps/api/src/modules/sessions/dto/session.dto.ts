@@ -40,6 +40,11 @@ export class CreateSessionDto {
 
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Environment ID' })
+  environmentId?: string;
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'System instructions' })
   instructions?: string;
 }

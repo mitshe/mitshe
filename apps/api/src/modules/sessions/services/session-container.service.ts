@@ -7,6 +7,12 @@ export interface SessionContainerConfig {
   organizationId: string;
   repos: Array<{ name: string; cloneUrl: string; branch: string }>;
   instructions: string;
+  environment?: {
+    memoryMb?: number | null;
+    cpuCores?: number | null;
+    setupScript?: string | null;
+    variables?: Array<{ key: string; value: string }>;
+  };
 }
 
 /**
@@ -52,9 +58,23 @@ export class SessionContainerService implements OnModuleInit {
       User: 'root',
       Entrypoint: ['bash', '-c'],
       Cmd: [
-        'chown -R executor:executor /home/executor 2>/dev/null; exec su -s /bin/bash executor -c "node /session/server.js"',
+        [
+          'chown -R executor:executor /home/executor 2>/dev/null',
+          config.environment?.setupScript
+            ? `su -s /bin/bash executor -c "${config.environment.setupScript.replace(/"/g, '\\"').replace(/\n/g, ' && ')}"`
+            : '',
+          'exec su -s /bin/bash executor -c "node /session/server.js"',
+        ]
+          .filter(Boolean)
+          .join('; '),
       ],
-      Env: [`SESSION_CONFIG=${sessionConfig}`],
+      Env: [
+        `SESSION_CONFIG=${sessionConfig}`,
+        // Custom env vars from environment config
+        ...(config.environment?.variables?.map(
+          (v) => `${v.key}=${v.value}`,
+        ) || []),
+      ],
       WorkingDir: '/workspace',
       Labels: {
         'mitshe.type': 'session',
@@ -64,8 +84,9 @@ export class SessionContainerService implements OnModuleInit {
       },
       HostConfig: {
         Binds: ['mitshe-executor-home:/home/executor'],
-        Memory: 4 * 1024 * 1024 * 1024,
-        NanoCpus: 2 * 1e9,
+        Memory:
+          (config.environment?.memoryMb || 4096) * 1024 * 1024,
+        NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
         PidsLimit: 512,
         NetworkMode: 'bridge',
         SecurityOpt: ['no-new-privileges:true'],
