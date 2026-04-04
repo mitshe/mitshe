@@ -2,8 +2,6 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Docker from 'dockerode';
 import { Duplex } from 'stream';
-import { homedir } from 'os';
-import { existsSync } from 'fs';
 
 export interface SessionContainerConfig {
   sessionId: string;
@@ -61,14 +59,6 @@ export class SessionContainerService implements OnModuleInit {
 
     this.logger.log(`Creating session container: ${containerName}`);
 
-    // Mount host ~/.claude config into container for shared auth
-    const binds: string[] = [];
-    const hostClaudeDir = `${homedir()}/.claude`;
-    if (existsSync(hostClaudeDir)) {
-      binds.push(`${hostClaudeDir}:/home/executor/.claude`);
-      this.logger.log('Mounting host ~/.claude config into container');
-    }
-
     const container = await this.docker.createContainer({
       Image: this.executorImage,
       name: containerName,
@@ -82,7 +72,9 @@ export class SessionContainerService implements OnModuleInit {
         'mitshe.created-at': new Date().toISOString(),
       },
       HostConfig: {
-        Binds: binds.length > 0 ? binds : undefined,
+        // Shared volume for Claude Code auth — first session logs in,
+        // all subsequent sessions reuse the token automatically
+        Binds: ['mitshe-claude-config:/home/executor/.claude'],
         Memory: 4 * 1024 * 1024 * 1024, // 4GB
         NanoCpus: 2 * 1e9, // 2 CPUs
         PidsLimit: 512,
