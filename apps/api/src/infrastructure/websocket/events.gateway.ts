@@ -9,11 +9,12 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Injectable } from '@nestjs/common';
+import { Logger, Injectable, Inject, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { verifyToken } from '@clerk/backend';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../persistence/prisma/prisma.service';
+import { SessionContainerService } from '../../modules/sessions/services/session-container.service';
 
 // Event type definitions
 export interface TaskUpdatePayload {
@@ -97,6 +98,7 @@ export class EventsGateway
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly sessionContainerService?: SessionContainerService,
   ) {
     this.clerkSecretKey =
       this.configService.get<string>('CLERK_SECRET_KEY') || '';
@@ -662,10 +664,8 @@ export class EventsGateway
       return { event: 'error', data: { message: 'Authentication required' } };
     }
 
-    // Emit to room so the session controller can pick it up
-    this.server
-      .to(`session:${data.sessionId}`)
-      .emit('session:input:forward', data);
+    // Forward input directly to the container's stdin
+    this.sessionContainerService?.sendInput(data.sessionId, data.input);
   }
 
   /**

@@ -22,7 +22,6 @@ import {
 import {
   useSession,
   useStartTerminal,
-  useSendInput,
   usePauseSession,
   useResumeSession,
   useStopSession,
@@ -272,17 +271,16 @@ function TerminalView({
     };
   }, [socket, sessionId, terminalReady, subscribeToSession, unsubscribeFromSession]);
 
-  // Forward keyboard input to backend via REST
-  const sendInput = useSendInput();
+  // Forward keyboard input to backend via WebSocket (low latency)
   useEffect(() => {
-    if (!xtermRef.current || !isRunning) return;
+    if (!xtermRef.current || !socket || !isRunning) return;
 
     const disposable = xtermRef.current.onData((data: string) => {
-      sendInput.mutate({ id: sessionId, input: data });
+      socket.emit("session:input", { sessionId, input: data });
     });
 
     return () => disposable.dispose();
-  }, [terminalReady, sessionId, isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [terminalReady, socket, sessionId, isRunning]);
 
   // Start terminal session when ready and running
   useEffect(() => {
