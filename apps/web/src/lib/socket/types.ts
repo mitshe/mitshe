@@ -52,24 +52,9 @@ export interface SessionStatusPayload {
   error?: string;
 }
 
-export interface SessionMessagePayload {
+export interface SessionOutputPayload {
   sessionId: string;
-  role: string;
-  content: string;
-}
-
-export interface SessionEventPayload {
-  sessionId: string;
-  event: Record<string, unknown>;
-}
-
-export interface SessionMessageCompletePayload {
-  sessionId: string;
-}
-
-export interface SessionErrorPayload {
-  sessionId: string;
-  error: string;
+  data: string;
 }
 
 export type SocketEvent =
@@ -85,10 +70,7 @@ export type SocketEvent =
   | "integration:event"
   | "notification"
   | "session:status"
-  | "session:message"
-  | "session:event"
-  | "session:message-complete"
-  | "session:error";
+  | "session:output";
 
 export interface SocketEventPayloads {
   "task:update": TaskUpdatePayload;
@@ -109,8 +91,5 @@ export interface SocketEventPayloads {
   "integration:event": IntegrationEventPayload;
   notification: NotificationPayload;
   "session:status": SessionStatusPayload;
-  "session:message": SessionMessagePayload;
-  "session:event": SessionEventPayload;
-  "session:message-complete": SessionMessageCompletePayload;
-  "session:error": SessionErrorPayload;
+  "session:output": SessionOutputPayload;
 }

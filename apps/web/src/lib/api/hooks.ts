@@ -1112,13 +1112,24 @@ export function useDeleteSession() {
   });
 }
 
-export function useSendSessionMessage() {
+export function useStartTerminal() {
   const getToken = useAuthToken();
 
   return useMutation({
-    mutationFn: async ({ id, content }: { id: string; content: string }) => {
+    mutationFn: async (id: string) => {
       const token = await getToken();
-      return api.sessions.sendMessage(id, content, token);
+      return api.sessions.startTerminal(id, token);
+    },
+  });
+}
+
+export function useSendInput() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: string }) => {
+      const token = await getToken();
+      return api.sessions.sendInput(id, input, token);
     },
   });
 }

@@ -34,13 +34,6 @@ export class CreateSessionDto {
   instructions?: string;
 }
 
-export class SendMessageDto {
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Message content to send to the agent' })
-  content: string;
-}
-
 export class SessionResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() organizationId: string;

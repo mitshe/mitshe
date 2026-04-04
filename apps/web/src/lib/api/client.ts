@@ -606,10 +606,16 @@ export const api = {
         token,
       }),
 
-    sendMessage: (id: string, content: string, token: string) =>
-      request<{ status: string }>(`/sessions/${id}/messages`, {
+    startTerminal: (id: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/terminal`, {
         method: "POST",
-        body: JSON.stringify({ content }),
+        token,
+      }),
+
+    sendInput: (id: string, input: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/input`, {
+        method: "POST",
+        body: JSON.stringify({ input }),
         token,
       }),
 

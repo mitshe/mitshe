@@ -21,7 +21,6 @@ export interface AgentSession {
   updatedAt: string;
   lastActiveAt: string;
   repositories?: SessionRepositoryInfo[];
-  messages?: SessionMessage[];
   project?: {
     id: string;
     name: string;
@@ -46,25 +45,12 @@ export interface SessionRepositoryInfo {
   };
 }
 
-export interface SessionMessage {
-  id: string;
-  sessionId: string;
-  role: "user" | "assistant" | "system" | "tool";
-  content: string;
-  metadata: Record<string, unknown> | null;
-  createdAt: string;
-}
-
 export interface CreateSessionDto {
   name: string;
   projectId?: string;
   repositoryIds: string[];
   aiCredentialId?: string;
   instructions?: string;
-}
-
-export interface SendMessageDto {
-  content: string;
 }
 
 export interface SessionFileNode {

@@ -11,7 +11,6 @@ import {
   HttpStatus,
   Req,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,11 +24,9 @@ import { SessionStatus } from '@prisma/client';
 import { SessionsService } from '../services/sessions.service';
 import { SessionContainerService } from '../services/session-container.service';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
-import { EncryptionService } from '../../../shared/encryption/encryption.service';
 import { EventsGateway } from '../../../infrastructure/websocket/events.gateway';
 import {
   CreateSessionDto,
-  SendMessageDto,
   SessionListResponseDto,
   SessionDetailResponseDto,
 } from '../dto/session.dto';
@@ -47,7 +44,6 @@ export class SessionsController {
     private readonly sessionsService: SessionsService,
     private readonly containerService: SessionContainerService,
     private readonly prisma: PrismaService,
-    private readonly encryption: EncryptionService,
     private readonly eventsGateway: EventsGateway,
   ) {}
 
@@ -61,26 +57,11 @@ export class SessionsController {
   ) {
     const userId = (req as any).userId || 'system';
 
-    // Create session in DB
     const session = await this.sessionsService.create(
       organizationId,
       userId,
       dto,
     );
-
-    // Decrypt API key if credential provided
-    let apiKey: string | undefined;
-    if (session.aiCredentialId) {
-      const credential = await this.prisma.aICredential.findFirst({
-        where: { id: session.aiCredentialId, organizationId },
-      });
-      if (credential) {
-        apiKey = this.encryption.decrypt(
-          Buffer.from(credential.encryptedKey),
-          Buffer.from(credential.keyIv),
-        );
-      }
-    }
 
     // Build repo configs
     const repos = session.repositories.map((sr) => ({
@@ -97,7 +78,6 @@ export class SessionsController {
           organizationId,
           repos,
           instructions: session.instructions,
-          anthropicApiKey: apiKey,
         });
 
         await this.sessionsService.updateStatus(
@@ -106,21 +86,18 @@ export class SessionsController {
           containerId,
         );
 
-        this.eventsGateway.emitToOrganization(
+        this.eventsGateway.emitSessionStatus(
           organizationId,
-          'session:status',
-          { sessionId: session.id, status: 'RUNNING' },
+          session.id,
+          'RUNNING',
         );
       } catch (err) {
         await this.sessionsService.updateStatus(session.id, 'FAILED');
-        this.eventsGateway.emitToOrganization(
+        this.eventsGateway.emitSessionStatus(
           organizationId,
-          'session:status',
-          {
-            sessionId: session.id,
-            status: 'FAILED',
-            error: (err as Error).message,
-          },
+          session.id,
+          'FAILED',
+          (err as Error).message,
         );
       }
     });
@@ -146,7 +123,7 @@ export class SessionsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get agent session with messages' })
+  @ApiOperation({ summary: 'Get agent session' })
   @ApiResponse({ status: 200, type: SessionDetailResponseDto })
   async findOne(
     @OrganizationId() organizationId: string,
@@ -165,6 +142,8 @@ export class SessionsController {
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 
+    this.containerService.closeInteractiveSession(id);
+
     if (session.containerId) {
       await this.containerService.stopContainer(session.containerId);
       await this.containerService.removeContainer(session.containerId);
@@ -173,14 +152,12 @@ export class SessionsController {
     await this.sessionsService.remove(organizationId, id);
   }
 
-  @Post(':id/messages')
-  @ApiOperation({ summary: 'Send a message to the agent' })
+  @Post(':id/terminal')
+  @ApiOperation({ summary: 'Start interactive Claude Code terminal session' })
   @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 409, description: 'Agent is already processing' })
-  async sendMessage(
+  async startTerminal(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
-    @Body() dto: SendMessageDto,
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 
@@ -192,86 +169,54 @@ export class SessionsController {
       throw new BadRequestException('Session has no container');
     }
 
-    if (!this.sessionsService.acquireExecLock(id)) {
-      throw new ConflictException('Agent is already processing a message');
+    if (this.containerService.hasActiveSession(id)) {
+      return { status: 'already_active' };
     }
 
-    // Save user message
-    await this.sessionsService.saveMessage(id, 'user', dto.content);
-    await this.sessionsService.touchLastActive(id);
-
-    // Emit user message to subscribers
-    this.eventsGateway.emitToOrganization(
-      organizationId,
-      'session:message',
-      { sessionId: id, role: 'user', content: dto.content },
+    await this.containerService.startInteractiveSession(
+      id,
+      session.containerId,
+      // onData: forward terminal output to WebSocket
+      (data) => {
+        this.eventsGateway.emitSessionOutput(id, data);
+      },
+      // onEnd: Claude process exited
+      () => {
+        this.eventsGateway.emitSessionOutput(
+          id,
+          '\r\n[Session ended]\r\n',
+        );
+      },
     );
 
-    // Execute Claude in background and stream events
-    const containerId = session.containerId;
-    setImmediate(async () => {
-      let fullResponse = '';
-
-      try {
-        await this.containerService.execClaudeMessage(
-          containerId,
-          dto.content,
-          (event) => {
-            // Stream each event to WebSocket subscribers
-            this.eventsGateway.emitToOrganization(
-              organizationId,
-              'session:event',
-              { sessionId: id, event },
-            );
-
-            // Accumulate assistant text from various Claude event formats
-            if (typeof event.content === 'string' && event.content) {
-              fullResponse += event.content;
-            } else if (
-              typeof event.message === 'string' &&
-              event.message &&
-              event.type !== 'log'
-            ) {
-              fullResponse += event.message;
-            } else if (
-              event.type === 'content_block_delta' &&
-              typeof event.delta === 'object' &&
-              event.delta &&
-              'text' in event.delta
-            ) {
-              fullResponse += (event.delta as any).text;
-            } else if (
-              event.type === 'result' &&
-              typeof event.result === 'string'
-            ) {
-              fullResponse += event.result;
-            }
-          },
-        );
-
-        // Save assistant response
-        if (fullResponse) {
-          await this.sessionsService.saveMessage(id, 'assistant', fullResponse);
-        }
-
-        // Signal completion
-        this.eventsGateway.emitToOrganization(
-          organizationId,
-          'session:message-complete',
-          { sessionId: id },
-        );
-      } catch (err) {
-        this.eventsGateway.emitToOrganization(
-          organizationId,
-          'session:error',
-          { sessionId: id, error: (err as Error).message },
-        );
-      } finally {
-        this.sessionsService.releaseExecLock(id);
-      }
+    // Listen for input from WebSocket clients
+    this.eventsGateway.server?.on?.('connection', () => {
+      // Input forwarding is handled via session:input events in the gateway
     });
 
-    return { status: 'processing' };
+    return { status: 'started' };
+  }
+
+  /**
+   * Send terminal input (called from WebSocket handler or REST)
+   */
+  @Post(':id/input')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send input to the terminal session' })
+  async sendInput(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() body: { input: string },
+  ) {
+    await this.sessionsService.findOne(organizationId, id);
+
+    const sent = this.containerService.sendInput(id, body.input);
+    if (!sent) {
+      throw new BadRequestException('No active terminal session');
+    }
+
+    await this.sessionsService.touchLastActive(id);
+    return { status: 'sent' };
   }
 
   @Post(':id/pause')
@@ -285,11 +230,10 @@ export class SessionsController {
     if (session.status !== 'RUNNING') {
       throw new BadRequestException('Can only pause a running session');
     }
+
+    this.containerService.closeInteractiveSession(id);
     await this.sessionsService.updateStatus(id, 'PAUSED');
-    this.eventsGateway.emitToOrganization(organizationId, 'session:status', {
-      sessionId: id,
-      status: 'PAUSED',
-    });
+    this.eventsGateway.emitSessionStatus(organizationId, id, 'PAUSED');
     return { status: 'paused' };
   }
 
@@ -305,21 +249,15 @@ export class SessionsController {
       throw new BadRequestException('Can only resume a paused session');
     }
 
-    // Check if container is still running
     if (
       session.containerId &&
       !(await this.containerService.isContainerRunning(session.containerId))
     ) {
-      throw new BadRequestException(
-        'Container is no longer running, session cannot be resumed',
-      );
+      throw new BadRequestException('Container is no longer running');
     }
 
     await this.sessionsService.updateStatus(id, 'RUNNING');
-    this.eventsGateway.emitToOrganization(organizationId, 'session:status', {
-      sessionId: id,
-      status: 'RUNNING',
-    });
+    this.eventsGateway.emitSessionStatus(organizationId, id, 'RUNNING');
     return { status: 'running' };
   }
 
@@ -335,16 +273,15 @@ export class SessionsController {
       throw new BadRequestException('Session is already stopped');
     }
 
+    this.containerService.closeInteractiveSession(id);
+
     if (session.containerId) {
       await this.containerService.stopContainer(session.containerId);
       await this.containerService.removeContainer(session.containerId);
     }
 
     await this.sessionsService.updateStatus(id, 'COMPLETED', null);
-    this.eventsGateway.emitToOrganization(organizationId, 'session:status', {
-      sessionId: id,
-      status: 'COMPLETED',
-    });
+    this.eventsGateway.emitSessionStatus(organizationId, id, 'COMPLETED');
     return { status: 'completed' };
   }
 
@@ -357,9 +294,7 @@ export class SessionsController {
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 
-    if (!session.containerId) {
-      return { files: [] };
-    }
+    if (!session.containerId) return { files: [] };
 
     if (
       !(await this.containerService.isContainerRunning(session.containerId))

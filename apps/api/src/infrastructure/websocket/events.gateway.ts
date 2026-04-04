@@ -605,6 +605,93 @@ export class EventsGateway
     return { event: 'unsubscribed', data: { executionId } };
   }
 
+  // ─── Session Terminal Subscriptions ──────────────────────────────
+
+  @SubscribeMessage('subscribe:session')
+  async handleSubscribeSession(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() sessionId: string,
+  ) {
+    if (!this.isClientAuthenticated(client)) {
+      return { event: 'error', data: { message: 'Authentication required' } };
+    }
+
+    const clientData = this.connectedClients.get(client.id);
+    if (!clientData?.organizationId) {
+      return { event: 'error', data: { message: 'Organization not set' } };
+    }
+
+    const session = await this.prisma.agentSession.findFirst({
+      where: { id: sessionId, organizationId: clientData.organizationId },
+      select: { id: true },
+    });
+
+    if (!session) {
+      return {
+        event: 'error',
+        data: { message: 'Session not found or not authorized' },
+      };
+    }
+
+    void client.join(`session:${sessionId}`);
+    clientData.rooms.add(`session:${sessionId}`);
+    this.logger.log(
+      `Client ${client.id} subscribed to session:${sessionId}`,
+    );
+    return { event: 'subscribed', data: { sessionId } };
+  }
+
+  @SubscribeMessage('unsubscribe:session')
+  handleUnsubscribeSession(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() sessionId: string,
+  ) {
+    void client.leave(`session:${sessionId}`);
+    this.logger.log(
+      `Client ${client.id} unsubscribed from session:${sessionId}`,
+    );
+    return { event: 'unsubscribed', data: { sessionId } };
+  }
+
+  @SubscribeMessage('session:input')
+  handleSessionInput(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { sessionId: string; input: string },
+  ) {
+    if (!this.isClientAuthenticated(client)) {
+      return { event: 'error', data: { message: 'Authentication required' } };
+    }
+
+    // Emit to room so the session controller can pick it up
+    this.server
+      .to(`session:${data.sessionId}`)
+      .emit('session:input:forward', data);
+  }
+
+  /**
+   * Emit terminal output for a session
+   */
+  emitSessionOutput(sessionId: string, output: string) {
+    this.server.to(`session:${sessionId}`).emit('session:output', {
+      sessionId,
+      data: output,
+    });
+  }
+
+  /**
+   * Emit session status change
+   */
+  emitSessionStatus(
+    organizationId: string,
+    sessionId: string,
+    status: string,
+    error?: string,
+  ) {
+    this.server
+      .to(`org:${organizationId}`)
+      .emit('session:status', { sessionId, status, error });
+  }
+
   /**
    * Get connection statistics
    */

@@ -4,11 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Loader2,
-  Send,
   Pause,
   Play,
   Square,
@@ -19,63 +17,63 @@ import {
   ChevronRight,
   ChevronDown,
   Radio,
+  Terminal as TerminalIcon,
 } from "lucide-react";
 import {
   useSession,
-  useSendSessionMessage,
+  useStartTerminal,
+  useSendInput,
   usePauseSession,
   useResumeSession,
   useStopSession,
   useSessionFiles,
 } from "@/lib/api/hooks";
-import { useSessionUpdates } from "@/lib/socket/socket-context";
+import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
-import type { SessionMessage, SessionStatus } from "@/lib/api/types";
+import type { SessionStatus } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
-// ─── File Tree Component ────────────────────────────────────────────
+// ─── File Tree ──────────────────────────────────────────────────────
 
-function buildFileTree(
-  paths: string[],
-  basePath: string,
-): FileTreeNode[] {
-  const root: Record<string, FileTreeNode> = {};
+interface FileTreeNode {
+  name: string;
+  path: string;
+  type: "file" | "directory";
+  children?: FileTreeNode[];
+}
+
+function buildFileTree(paths: string[], basePath: string): FileTreeNode[] {
+  const root: Record<string, any> = {};
 
   for (const filePath of paths) {
     const relative = filePath.startsWith(basePath)
       ? filePath.slice(basePath.length + 1)
       : filePath;
     const parts = relative.split("/").filter(Boolean);
-
     let current = root;
+
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       const isFile = i === parts.length - 1;
-
       if (!current[part]) {
         current[part] = {
           name: part,
           path: parts.slice(0, i + 1).join("/"),
           type: isFile ? "file" : "directory",
-          children: isFile ? undefined : {},
+          _children: isFile ? null : {},
         };
       }
-
-      if (!isFile && current[part].children) {
-        current = current[part].children as Record<string, FileTreeNode>;
-      }
+      if (!isFile) current = current[part]._children;
     }
   }
 
-  function toArray(
-    obj: Record<string, FileTreeNode>,
-  ): FileTreeNode[] {
+  function toArray(obj: Record<string, any>): FileTreeNode[] {
     return Object.values(obj)
-      .map((node) => ({
-        ...node,
-        children: node.children
-          ? toArray(node.children as Record<string, FileTreeNode>)
-          : undefined,
+      .map((n) => ({
+        name: n.name,
+        path: n.path,
+        type: n.type as "file" | "directory",
+        children: n._children ? toArray(n._children) : undefined,
       }))
       .sort((a, b) => {
         if (a.type !== b.type) return a.type === "directory" ? -1 : 1;
@@ -86,26 +84,13 @@ function buildFileTree(
   return toArray(root);
 }
 
-interface FileTreeNode {
-  name: string;
-  path: string;
-  type: "file" | "directory";
-  children?: FileTreeNode[] | Record<string, FileTreeNode>;
-}
-
-function FileTreeItem({
-  node,
-  depth = 0,
-}: {
-  node: FileTreeNode & { children?: FileTreeNode[] };
-  depth?: number;
-}) {
+function FileTreeItem({ node, depth = 0 }: { node: FileTreeNode; depth?: number }) {
   const [isOpen, setIsOpen] = useState(depth < 2);
 
   if (node.type === "file") {
     return (
       <div
-        className="flex items-center gap-1.5 py-0.5 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded cursor-default"
+        className="flex items-center gap-1.5 py-0.5 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded"
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
         <FileText className="w-3.5 h-3.5 shrink-0" />
@@ -121,60 +106,179 @@ function FileTreeItem({
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={() => setIsOpen(!isOpen)}
       >
-        {isOpen ? (
-          <ChevronDown className="w-3.5 h-3.5 shrink-0" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        )}
-        {isOpen ? (
-          <FolderOpen className="w-3.5 h-3.5 shrink-0 text-blue-500" />
-        ) : (
-          <Folder className="w-3.5 h-3.5 shrink-0 text-blue-500" />
-        )}
+        {isOpen ? <ChevronDown className="w-3.5 h-3.5 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
+        {isOpen ? <FolderOpen className="w-3.5 h-3.5 shrink-0 text-blue-500" /> : <Folder className="w-3.5 h-3.5 shrink-0 text-blue-500" />}
         <span className="truncate">{node.name}</span>
       </div>
-      {isOpen &&
-        (node.children as FileTreeNode[])?.map((child) => (
-          <FileTreeItem
-            key={child.path}
-            node={child as FileTreeNode & { children?: FileTreeNode[] }}
-            depth={depth + 1}
-          />
-        ))}
+      {isOpen && node.children?.map((child) => <FileTreeItem key={child.path} node={child} depth={depth + 1} />)}
     </div>
   );
 }
 
-// ─── Chat Message Component ─────────────────────────────────────────
+// ─── XTerm Terminal Component ───────────────────────────────────────
 
-function ChatMessage({ message }: { message: SessionMessage }) {
-  const isUser = message.role === "user";
+function TerminalView({
+  sessionId,
+  isRunning,
+}: {
+  sessionId: string;
+  isRunning: boolean;
+}) {
+  const termRef = useRef<HTMLDivElement>(null);
+  const xtermRef = useRef<any>(null);
+  const fitRef = useRef<any>(null);
+  const { socket, subscribeToSession, unsubscribeFromSession } = useSocket();
+  const startTerminal = useStartTerminal();
+  const [terminalReady, setTerminalReady] = useState(false);
+
+  // Initialize xterm
+  useEffect(() => {
+    if (!termRef.current) return;
+
+    let terminal: any;
+    let fitAddon: any;
+
+    const init = async () => {
+      const { Terminal } = await import("@xterm/xterm");
+      const { FitAddon } = await import("@xterm/addon-fit");
+      // @ts-expect-error CSS import for xterm styles
+      await import("@xterm/xterm/css/xterm.css");
+
+      terminal = new Terminal({
+        cursorBlink: true,
+        fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+        fontSize: 13,
+        lineHeight: 1.2,
+        theme: {
+          background: "#0a0a0a",
+          foreground: "#e4e4e7",
+          cursor: "#e4e4e7",
+          selectionBackground: "#3f3f46",
+          black: "#18181b",
+          red: "#ef4444",
+          green: "#22c55e",
+          yellow: "#eab308",
+          blue: "#3b82f6",
+          magenta: "#a855f7",
+          cyan: "#06b6d4",
+          white: "#e4e4e7",
+          brightBlack: "#52525b",
+          brightRed: "#f87171",
+          brightGreen: "#4ade80",
+          brightYellow: "#facc15",
+          brightBlue: "#60a5fa",
+          brightMagenta: "#c084fc",
+          brightCyan: "#22d3ee",
+          brightWhite: "#fafafa",
+        },
+      });
+
+      fitAddon = new FitAddon();
+      terminal.loadAddon(fitAddon);
+      terminal.open(termRef.current!);
+      fitAddon.fit();
+
+      xtermRef.current = terminal;
+      fitRef.current = fitAddon;
+      setTerminalReady(true);
+
+      terminal.writeln("\x1b[1;36m● mitshe session terminal\x1b[0m");
+      terminal.writeln("");
+    };
+
+    init();
+
+    return () => {
+      terminal?.dispose();
+      xtermRef.current = null;
+      fitRef.current = null;
+      setTerminalReady(false);
+    };
+  }, []);
+
+  // Resize handling
+  useEffect(() => {
+    if (!fitRef.current) return;
+
+    const handleResize = () => fitRef.current?.fit();
+    window.addEventListener("resize", handleResize);
+
+    // Also fit after a short delay (layout might not be stable yet)
+    const timer = setTimeout(handleResize, 100);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(timer);
+    };
+  }, [terminalReady]);
+
+  // Subscribe to session output via WebSocket
+  useEffect(() => {
+    if (!socket || !sessionId || !terminalReady) return;
+
+    subscribeToSession(sessionId);
+
+    const handleOutput = (payload: { sessionId: string; data: string }) => {
+      if (payload.sessionId === sessionId && xtermRef.current) {
+        xtermRef.current.write(payload.data);
+      }
+    };
+
+    const handleStatus = (payload: { sessionId: string; status: string }) => {
+      if (payload.sessionId === sessionId && xtermRef.current) {
+        if (payload.status === "RUNNING") {
+          xtermRef.current.writeln("\x1b[1;32m● Session is running\x1b[0m");
+        } else if (payload.status === "PAUSED") {
+          xtermRef.current.writeln("\x1b[1;33m● Session paused\x1b[0m");
+        } else if (payload.status === "COMPLETED") {
+          xtermRef.current.writeln("\x1b[1;36m● Session completed\x1b[0m");
+        } else if (payload.status === "FAILED") {
+          xtermRef.current.writeln(`\x1b[1;31m● Session failed\x1b[0m`);
+        }
+      }
+    };
+
+    socket.on("session:output", handleOutput);
+    socket.on("session:status", handleStatus);
+
+    return () => {
+      unsubscribeFromSession(sessionId);
+      socket.off("session:output", handleOutput);
+      socket.off("session:status", handleStatus);
+    };
+  }, [socket, sessionId, terminalReady, subscribeToSession, unsubscribeFromSession]);
+
+  // Forward keyboard input to backend via REST
+  const sendInput = useSendInput();
+  useEffect(() => {
+    if (!xtermRef.current || !isRunning) return;
+
+    const disposable = xtermRef.current.onData((data: string) => {
+      sendInput.mutate({ id: sessionId, input: data });
+    });
+
+    return () => disposable.dispose();
+  }, [terminalReady, sessionId, isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Start terminal session when ready and running
+  useEffect(() => {
+    if (!terminalReady || !isRunning) return;
+
+    startTerminal.mutateAsync(sessionId).then((res) => {
+      if (res.status === "started") {
+        xtermRef.current?.writeln("\x1b[1;32m● Claude Code starting...\x1b[0m\r\n");
+      }
+    }).catch(() => {
+      // May already be active - that's fine
+    });
+  }, [terminalReady, isRunning, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className={cn("flex gap-3 py-3", isUser && "flex-row-reverse")}>
-      <div
-        className={cn(
-          "max-w-[80%] rounded-lg px-4 py-2 text-sm",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted",
-        )}
-      >
-        <div className="whitespace-pre-wrap break-words">{message.content}</div>
-        <div
-          className={cn(
-            "text-[10px] mt-1 opacity-60",
-            isUser ? "text-right" : "text-left",
-          )}
-        >
-          {new Date(message.createdAt).toLocaleTimeString()}
-        </div>
-      </div>
-    </div>
+    <div ref={termRef} className="w-full h-full" />
   );
 }
 
-// ─── Main Session Page ──────────────────────────────────────────────
+// ─── Main Page ──────────────────────────────────────────────────────
 
 export default function SessionDetailPage() {
   const params = useParams();
@@ -183,90 +287,39 @@ export default function SessionDetailPage() {
 
   const { data: session, isLoading, refetch } = useSession(sessionId);
   const { data: files = [] } = useSessionFiles(sessionId);
-  const sendMessage = useSendSessionMessage();
   const pauseSession = usePauseSession();
   const resumeSession = useResumeSession();
   const stopSession = useStopSession();
 
-  const { status: wsStatus, events, isProcessing } =
-    useSessionUpdates(sessionId);
+  const { socket } = useSocket();
 
-  const [input, setInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-scroll to bottom on new messages
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
+  // Listen for status changes
   useEffect(() => {
-    scrollToBottom();
-  }, [session?.messages, events, scrollToBottom]);
+    if (!socket || !sessionId) return;
 
-  // Refetch session when status changes via WS
-  useEffect(() => {
-    if (wsStatus) {
-      refetch();
-    }
-  }, [wsStatus, refetch]);
+    const handleStatus = (payload: { sessionId: string; status: string }) => {
+      if (payload.sessionId === sessionId) {
+        refetch();
+      }
+    };
 
-  // Refetch with delay when processing completes (wait for DB save)
-  const prevProcessing = useRef(isProcessing);
-  useEffect(() => {
-    if (prevProcessing.current && !isProcessing) {
-      const timer = setTimeout(() => refetch(), 1000);
-      return () => clearTimeout(timer);
-    }
-    prevProcessing.current = isProcessing;
-  }, [isProcessing, refetch]);
-
-  const handleSend = async () => {
-    const content = input.trim();
-    if (!content || isProcessing) return;
-
-    setInput("");
-    try {
-      await sendMessage.mutateAsync({ id: sessionId, content });
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to send message",
-      );
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+    socket.on("session:status", handleStatus);
+    return () => { socket.off("session:status", handleStatus); };
+  }, [socket, sessionId, refetch]);
 
   const handlePause = async () => {
-    try {
-      await pauseSession.mutateAsync(sessionId);
-      refetch();
-    } catch {
-      toast.error("Failed to pause session");
-    }
+    try { await pauseSession.mutateAsync(sessionId); refetch(); }
+    catch { toast.error("Failed to pause session"); }
   };
 
   const handleResume = async () => {
-    try {
-      await resumeSession.mutateAsync(sessionId);
-      refetch();
-    } catch {
-      toast.error("Failed to resume session");
-    }
+    try { await resumeSession.mutateAsync(sessionId); refetch(); }
+    catch { toast.error("Failed to resume session"); }
   };
 
   const handleStop = async () => {
-    try {
-      await stopSession.mutateAsync(sessionId);
-      refetch();
-    } catch {
-      toast.error("Failed to stop session");
-    }
+    try { await stopSession.mutateAsync(sessionId); refetch(); }
+    catch { toast.error("Failed to stop session"); }
   };
 
   if (isLoading) {
@@ -285,7 +338,7 @@ export default function SessionDetailPage() {
     );
   }
 
-  const currentStatus = (wsStatus || session.status) as SessionStatus;
+  const currentStatus = session.status as SessionStatus;
   const isRunning = currentStatus === "RUNNING";
   const isPaused = currentStatus === "PAUSED";
   const isActive = isRunning || isPaused;
@@ -301,28 +354,15 @@ export default function SessionDetailPage() {
           </Button>
           <div>
             <div className="flex items-center gap-2">
+              <TerminalIcon className="w-4 h-4" />
               <h1 className="font-semibold text-sm">{session.name}</h1>
               <Badge
-                variant={
-                  isRunning
-                    ? "default"
-                    : isPaused
-                      ? "secondary"
-                      : currentStatus === "FAILED"
-                        ? "destructive"
-                        : "outline"
-                }
+                variant={isRunning ? "default" : isPaused ? "secondary" : currentStatus === "FAILED" ? "destructive" : "outline"}
                 className="gap-1"
               >
                 {isRunning && <Radio className="w-3 h-3 animate-pulse" />}
                 {currentStatus}
               </Badge>
-              {isProcessing && (
-                <Badge variant="outline" className="gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Processing
-                </Badge>
-              )}
             </div>
             <p className="text-xs text-muted-foreground">
               {session.project?.name || "No project"}
@@ -333,20 +373,17 @@ export default function SessionDetailPage() {
         <div className="flex items-center gap-2">
           {isRunning && (
             <Button variant="outline" size="sm" onClick={handlePause}>
-              <Pause className="w-4 h-4 mr-1" />
-              Pause
+              <Pause className="w-4 h-4 mr-1" /> Pause
             </Button>
           )}
           {isPaused && (
             <Button variant="outline" size="sm" onClick={handleResume}>
-              <Play className="w-4 h-4 mr-1" />
-              Resume
+              <Play className="w-4 h-4 mr-1" /> Resume
             </Button>
           )}
           {isActive && (
             <Button variant="destructive" size="sm" onClick={handleStop}>
-              <Square className="w-4 h-4 mr-1" />
-              Stop
+              <Square className="w-4 h-4 mr-1" /> Stop
             </Button>
           )}
         </div>
@@ -354,12 +391,10 @@ export default function SessionDetailPage() {
 
       {/* Main Content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* File Browser - Left Panel */}
+        {/* File Browser */}
         <div className="w-60 border-r shrink-0 flex flex-col overflow-hidden">
           <div className="px-3 py-2 border-b">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Files
-            </p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Files</p>
           </div>
           <ScrollArea className="flex-1">
             <div className="py-1">
@@ -368,110 +403,24 @@ export default function SessionDetailPage() {
                   {isActive ? "Loading files..." : "No files"}
                 </p>
               ) : (
-                fileTree.map((node) => (
-                  <FileTreeItem
-                    key={node.path}
-                    node={node as FileTreeNode & { children?: FileTreeNode[] }}
-                  />
-                ))
+                fileTree.map((node) => <FileTreeItem key={node.path} node={node} />)
               )}
             </div>
           </ScrollArea>
         </div>
 
-        {/* Chat - Main Panel */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <ScrollArea className="flex-1 px-4">
-            <div className="py-4 space-y-1">
-              {session.instructions && (
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg px-4 py-3 mb-4">
-                  <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">
-                    Session Instructions
-                  </p>
-                  <p className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap">
-                    {session.instructions}
-                  </p>
-                </div>
-              )}
-
-              {(!session.messages || session.messages.length === 0) &&
-                !isProcessing && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p className="text-sm">
-                      {isRunning
-                        ? "Session is ready. Send a message to start working with the agent."
-                        : currentStatus === "CREATING"
-                          ? "Setting up the environment..."
-                          : "Session is not active."}
-                    </p>
-                  </div>
-                )}
-
-              {session.messages?.map((msg) => (
-                <ChatMessage key={msg.id} message={msg} />
-              ))}
-
-              {/* Streaming events indicator */}
-              {isProcessing && (
-                <div className="flex gap-3 py-3">
-                  <div className="bg-muted rounded-lg px-4 py-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Agent is working...
-                    </div>
-                    {events.length > 0 && (
-                      <div className="mt-2 max-h-40 overflow-y-auto">
-                        {events.slice(-10).map((evt, i) => (
-                          <div
-                            key={i}
-                            className="text-xs text-muted-foreground font-mono truncate"
-                          >
-                            {evt.type === "log"
-                              ? String(evt.message || "")
-                              : `[${evt.type}]`}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
+        {/* Terminal */}
+        <div className="flex-1 min-w-0 bg-[#0a0a0a] p-1">
+          {isActive ? (
+            <TerminalView sessionId={sessionId} isRunning={isRunning} />
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center">
+                <TerminalIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Session is {currentStatus.toLowerCase()}</p>
+              </div>
             </div>
-          </ScrollArea>
-
-          {/* Input Bar */}
-          <div className="px-4 py-3 border-t bg-background shrink-0">
-            <div className="flex items-center gap-2">
-              <Input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  isRunning
-                    ? "Send a message to the agent..."
-                    : "Session is not running"
-                }
-                disabled={!isRunning || isProcessing}
-                className="flex-1"
-              />
-              <Button
-                onClick={handleSend}
-                disabled={
-                  !isRunning || isProcessing || !input.trim()
-                }
-                size="icon"
-              >
-                {isProcessing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

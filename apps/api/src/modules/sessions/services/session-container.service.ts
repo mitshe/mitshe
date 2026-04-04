@@ -1,18 +1,22 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Docker from 'dockerode';
+import { Duplex } from 'stream';
 
 export interface SessionContainerConfig {
   sessionId: string;
   organizationId: string;
   repos: Array<{ name: string; cloneUrl: string; branch: string }>;
   instructions: string;
-  anthropicApiKey?: string;
 }
 
-export interface ClaudeEvent {
-  type: string;
-  [key: string]: unknown;
+/**
+ * Represents a running interactive Claude session inside a container.
+ * The stream is a bidirectional PTY: write to send keystrokes, read to get terminal output.
+ */
+export interface InteractiveSession {
+  exec: Docker.Exec;
+  stream: Duplex;
 }
 
 @Injectable()
@@ -21,6 +25,9 @@ export class SessionContainerService implements OnModuleInit {
   private docker: Docker;
   private readonly executorImage: string;
   private readonly containerPrefix = 'mitshe-session';
+
+  /** Active interactive sessions: sessionId → InteractiveSession */
+  private readonly activeSessions = new Map<string, InteractiveSession>();
 
   constructor(private configService: ConfigService) {
     this.docker = new Docker();
@@ -46,18 +53,13 @@ export class SessionContainerService implements OnModuleInit {
       }),
     ).toString('base64');
 
-    const env = [`SESSION_CONFIG=${sessionConfig}`];
-    if (config.anthropicApiKey) {
-      env.push(`ANTHROPIC_API_KEY=${config.anthropicApiKey}`);
-    }
-
     this.logger.log(`Creating session container: ${containerName}`);
 
     const container = await this.docker.createContainer({
       Image: this.executorImage,
       name: containerName,
       Entrypoint: ['node', '/session/server.js'],
-      Env: env,
+      Env: [`SESSION_CONFIG=${sessionConfig}`],
       WorkingDir: '/workspace',
       Labels: {
         'mitshe.type': 'session',
@@ -87,117 +89,99 @@ export class SessionContainerService implements OnModuleInit {
   }
 
   /**
-   * Execute a Claude Code message in the container and stream events
+   * Start an interactive Claude Code session inside the container.
+   * Returns a bidirectional PTY stream — write stdin, read stdout.
    */
-  async execClaudeMessage(
+  async startInteractiveSession(
+    sessionId: string,
     containerId: string,
-    message: string,
-    onEvent: (event: ClaudeEvent) => void,
-  ): Promise<{ exitCode: number }> {
+    onData: (data: string) => void,
+    onEnd: () => void,
+  ): Promise<void> {
+    // Kill previous session if exists
+    this.closeInteractiveSession(sessionId);
+
     const container = this.docker.getContainer(containerId);
 
-    // Escape message for shell
-    const escapedMessage = message.replace(/'/g, "'\\''");
-
     const exec = await container.exec({
-      Cmd: [
-        'bash',
-        '-c',
-        `cd /workspace && claude -p '${escapedMessage}' --continue --output-format stream-json --verbose 2>&1`,
-      ],
+      Cmd: ['claude'],
+      AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,
+      Tty: true,
       WorkingDir: '/workspace',
+      Env: ['TERM=xterm-256color', 'COLUMNS=120', 'LINES=40'],
     });
 
-    return new Promise((resolve) => {
-      exec.start({ hijack: true, stdin: false }, (err, stream) => {
-        if (err || !stream) {
-          this.logger.error(
-            `Exec start failed: ${err?.message || 'no stream'}`,
-          );
-          resolve({ exitCode: 1 });
-          return;
-        }
-
-        let buffer = '';
-
-        const processOutput = (data: Buffer) => {
-          buffer += data.toString('utf8');
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (!line.trim()) continue;
-
-            try {
-              const event = JSON.parse(line) as ClaudeEvent;
-              onEvent(event);
-            } catch {
-              // Not JSON — emit as raw log
-              onEvent({
-                type: 'log',
-                level: 'debug',
-                message: line,
-              });
-            }
+    const stream: Duplex = await new Promise((resolve, reject) => {
+      exec.start(
+        { hijack: true, stdin: true, Tty: true },
+        (err, s) => {
+          if (err || !s) {
+            reject(err || new Error('No stream returned'));
+            return;
           }
-        };
-
-        // Demux Docker multiplexed stream (8-byte header + data)
-        stream.on('data', (chunk: Buffer) => {
-          let offset = 0;
-          while (offset < chunk.length) {
-            if (offset + 8 > chunk.length) {
-              processOutput(chunk.slice(offset));
-              break;
-            }
-
-            const type = chunk[offset];
-            const size = chunk.readUInt32BE(offset + 4);
-
-            if (offset + 8 + size > chunk.length) {
-              processOutput(chunk.slice(offset));
-              break;
-            }
-
-            const data = chunk.slice(offset + 8, offset + 8 + size);
-
-            if (type === 1 || type === 2) {
-              processOutput(data);
-            }
-
-            offset += 8 + size;
-          }
-        });
-
-        stream.on('end', () => {
-          // Process remaining buffer
-          if (buffer.trim()) {
-            try {
-              const event = JSON.parse(buffer) as ClaudeEvent;
-              onEvent(event);
-            } catch {
-              // ignore
-            }
-          }
-
-          exec
-            .inspect()
-            .then((info) => {
-              resolve({ exitCode: info.ExitCode ?? 0 });
-            })
-            .catch(() => {
-              resolve({ exitCode: 0 });
-            });
-        });
-
-        stream.on('error', (streamErr) => {
-          this.logger.error(`Exec stream error: ${streamErr.message}`);
-          resolve({ exitCode: 1 });
-        });
-      });
+          resolve(s);
+        },
+      );
     });
+
+    this.activeSessions.set(sessionId, { exec, stream });
+
+    // Forward terminal output — TTY mode means no demuxing needed
+    stream.on('data', (chunk: Buffer) => {
+      onData(chunk.toString('utf8'));
+    });
+
+    stream.on('end', () => {
+      this.activeSessions.delete(sessionId);
+      onEnd();
+    });
+
+    stream.on('error', (err) => {
+      this.logger.warn(`Session ${sessionId} stream error: ${err.message}`);
+      this.activeSessions.delete(sessionId);
+      onEnd();
+    });
+
+    this.logger.log(`Interactive Claude session started for ${sessionId}`);
+  }
+
+  /**
+   * Send raw terminal input (keystrokes) to the interactive session
+   */
+  sendInput(sessionId: string, data: string): boolean {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) return false;
+
+    try {
+      session.stream.write(data);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Close the interactive session stream
+   */
+  closeInteractiveSession(sessionId: string): void {
+    const session = this.activeSessions.get(sessionId);
+    if (session) {
+      try {
+        session.stream.end();
+      } catch {
+        // ignore
+      }
+      this.activeSessions.delete(sessionId);
+    }
+  }
+
+  /**
+   * Check if there's an active interactive session
+   */
+  hasActiveSession(sessionId: string): boolean {
+    return this.activeSessions.has(sessionId);
   }
 
   /**
@@ -229,6 +213,7 @@ export class SessionContainerService implements OnModuleInit {
       ],
       AttachStdout: true,
       AttachStderr: true,
+      Tty: false,
     });
 
     return new Promise((resolve) => {
@@ -240,7 +225,7 @@ export class SessionContainerService implements OnModuleInit {
 
         let output = '';
         stream.on('data', (chunk: Buffer) => {
-          // Demux
+          // Non-TTY: demux multiplexed stream
           let offset = 0;
           while (offset < chunk.length) {
             if (offset + 8 > chunk.length) {
@@ -254,7 +239,9 @@ export class SessionContainerService implements OnModuleInit {
               break;
             }
             if (type === 1) {
-              output += chunk.slice(offset + 8, offset + 8 + size).toString('utf8');
+              output += chunk
+                .slice(offset + 8, offset + 8 + size)
+                .toString('utf8');
             }
             offset += 8 + size;
           }
@@ -274,7 +261,7 @@ export class SessionContainerService implements OnModuleInit {
   }
 
   /**
-   * Stop a container (SIGTERM with grace period)
+   * Stop a container
    */
   async stopContainer(containerId: string): Promise<void> {
     try {
@@ -328,7 +315,7 @@ export class SessionContainerService implements OnModuleInit {
         filters: { label: ['mitshe.type=session'] },
       });
 
-      const maxAge = 48 * 60 * 60 * 1000; // 48 hours
+      const maxAge = 48 * 60 * 60 * 1000;
       const now = Date.now();
 
       for (const containerInfo of containers) {
