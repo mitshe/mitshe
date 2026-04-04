@@ -121,8 +121,14 @@ export class SessionContainerService implements OnModuleInit {
       AttachStdout: true,
       AttachStderr: true,
       Tty: true,
+      User: 'executor',
       WorkingDir: '/workspace',
-      Env: ['TERM=xterm-256color', 'COLUMNS=120', 'LINES=40'],
+      Env: [
+        'TERM=xterm-256color',
+        'COLUMNS=120',
+        'LINES=40',
+        'HOME=/home/executor',
+      ],
     });
 
     const stream: Duplex = await new Promise((resolve, reject) => {
@@ -246,6 +252,7 @@ export class SessionContainerService implements OnModuleInit {
       ],
       AttachStdout: true,
       AttachStderr: true,
+      User: 'executor',
       Tty: false,
     });
 
