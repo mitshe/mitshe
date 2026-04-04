@@ -102,6 +102,7 @@ export class SessionsController {
           organizationId,
           repos,
           instructions: session.instructions,
+          provider: session.aiCredential?.provider,
           environment: envConfig,
         });
 

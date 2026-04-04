@@ -77,6 +77,7 @@ const providerLabels: Record<string, string> = {
   GEMINI: "Gemini",
   GROQ: "Groq",
   CLAUDE_CODE_LOCAL: "Claude Code",
+  OPENCLAW: "OpenClaw",
 };
 
 const statusConfig: Record<

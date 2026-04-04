@@ -64,8 +64,8 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
-# Install Claude Code CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install AI agent CLIs globally
+RUN npm install -g @anthropic-ai/claude-code openclaw@latest
 
 # Install common global npm packages (yarn is already in node image)
 RUN npm install -g \
@@ -134,7 +134,7 @@ RUN git config --global init.defaultBranch main \
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node --version && git --version && claude --version || exit 1
+    CMD node --version && git --version && claude --version && openclaw --version || exit 1
 
 # Default entrypoint for workflow execution
 # Job JSON is passed via stdin or --job argument

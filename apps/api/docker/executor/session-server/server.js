@@ -67,11 +67,24 @@ async function setup() {
     }
   }
 
-  // Write instructions as CLAUDE.md
+  // Write instructions file based on provider
   if (config.instructions) {
-    const claudeMdPath = path.join(WORKSPACE, 'CLAUDE.md');
-    fs.writeFileSync(claudeMdPath, config.instructions, 'utf-8');
-    log('Written CLAUDE.md with session instructions');
+    const provider = config.provider || '';
+
+    if (provider === 'OPENCLAW') {
+      const soulMdPath = path.join(WORKSPACE, 'SOUL.md');
+      fs.writeFileSync(soulMdPath, config.instructions, 'utf-8');
+      log('Written SOUL.md with session instructions (OpenClaw)');
+    } else if (provider === 'CLAUDE_CODE_LOCAL') {
+      const claudeMdPath = path.join(WORKSPACE, 'CLAUDE.md');
+      fs.writeFileSync(claudeMdPath, config.instructions, 'utf-8');
+      log('Written CLAUDE.md with session instructions (Claude Code)');
+    } else {
+      // Unknown or no provider — write both for compatibility
+      fs.writeFileSync(path.join(WORKSPACE, 'CLAUDE.md'), config.instructions, 'utf-8');
+      fs.writeFileSync(path.join(WORKSPACE, 'SOUL.md'), config.instructions, 'utf-8');
+      log('Written CLAUDE.md + SOUL.md with session instructions');
+    }
   }
 
   log('Session workspace setup complete');

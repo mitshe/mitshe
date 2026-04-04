@@ -330,6 +330,7 @@ enum AIProvider {
   GEMINI
   GROQ
   CLAUDE_CODE_LOCAL
+  OPENCLAW
 }
 
 model AICredential {

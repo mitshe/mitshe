@@ -7,6 +7,7 @@ export interface SessionContainerConfig {
   organizationId: string;
   repos: Array<{ name: string; cloneUrl: string; branch: string }>;
   instructions: string;
+  provider?: string; // e.g. CLAUDE_CODE_LOCAL, OPENCLAW
   environment?: {
     memoryMb?: number | null;
     cpuCores?: number | null;
@@ -47,6 +48,7 @@ export class SessionContainerService implements OnModuleInit {
       JSON.stringify({
         repos: config.repos,
         instructions: config.instructions,
+        provider: config.provider,
       }),
     ).toString('base64');
 

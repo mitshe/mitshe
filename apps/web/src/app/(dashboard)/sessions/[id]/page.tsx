@@ -49,6 +49,7 @@ const providerLabels: Record<string, string> = {
   GEMINI: "Gemini",
   GROQ: "Groq",
   CLAUDE_CODE_LOCAL: "Claude Code",
+  OPENCLAW: "OpenClaw",
 };
 
 let terminalCounter = 0;
@@ -74,13 +75,25 @@ export default function SessionDetailPage() {
 
   // Build agent terminal command from session config
   const buildAgentCmd = useCallback((): string[] => {
-    if (!session?.aiCredentialId) {
+    const provider = session?.aiCredential?.provider;
+    if (!provider) {
       return ["bash"]; // No AI provider = plain bash
     }
+
     const args = session.startArguments?.trim() || "";
-    const claudeCmd = args ? `claude ${args}` : "claude";
-    return ["bash", "-c", `${claudeCmd} && exec bash`];
-  }, [session?.aiCredentialId, session?.startArguments]);
+
+    // Map provider to CLI command
+    let cli: string;
+    if (provider === "OPENCLAW") {
+      cli = "openclaw tui";
+    } else {
+      // CLAUDE_CODE_LOCAL and others default to claude
+      cli = "claude";
+    }
+
+    const fullCmd = args ? `${cli} ${args}` : cli;
+    return ["bash", "-c", `${fullCmd} && exec bash`];
+  }, [session?.aiCredential?.provider, session?.startArguments]);
 
   const [tabs, setTabs] = useState<Tab[]>([]);
 
