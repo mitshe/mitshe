@@ -20,6 +20,7 @@ import {
   useStopSession,
   useSessionFiles,
   useReadSessionFile,
+  useWriteSessionFile,
 } from "@/lib/api/hooks";
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
@@ -52,6 +53,7 @@ export default function SessionDetailPage() {
   const resumeSession = useResumeSession();
   const stopSession = useStopSession();
   const readFile = useReadSessionFile();
+  const writeFile = useWriteSessionFile();
   const [resumedFromCompleted, setResumedFromCompleted] = useState(false);
 
   // Tab state
@@ -133,6 +135,37 @@ export default function SessionDetailPage() {
           ...prev,
           [tabId]: { content: null, loading: false },
         }));
+      }
+    },
+    [tabs, sessionId, readFile],
+  );
+
+  const handleSaveFile = useCallback(
+    (tabId: string, content: string) => {
+      const tab = tabs.find((t) => t.id === tabId);
+      if (!tab?.filePath) return;
+      const fullPath = `/workspace/${tab.filePath}`;
+      writeFile.mutate({ id: sessionId, path: fullPath, content });
+    },
+    [tabs, sessionId, writeFile],
+  );
+
+  const handleRefreshFile = useCallback(
+    async (tabId: string) => {
+      const tab = tabs.find((t) => t.id === tabId);
+      if (!tab?.filePath) return;
+      const fullPath = `/workspace/${tab.filePath}`;
+      try {
+        const result = await readFile.mutateAsync({
+          id: sessionId,
+          path: fullPath,
+        });
+        setFileContents((prev) => ({
+          ...prev,
+          [tabId]: { content: result.content, loading: false },
+        }));
+      } catch {
+        // ignore refresh errors
       }
     },
     [tabs, sessionId, readFile],
@@ -348,6 +381,8 @@ export default function SessionDetailPage() {
                     filePath={tab.filePath || ""}
                     content={fileContents[tab.id]?.content ?? null}
                     isLoading={fileContents[tab.id]?.loading ?? true}
+                    onSave={(content) => handleSaveFile(tab.id, content)}
+                    onContentRefresh={() => handleRefreshFile(tab.id)}
                   />
                 </div>
               ))}

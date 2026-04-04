@@ -342,4 +342,32 @@ export class SessionsController {
     );
     return { path: filePath, content };
   }
+
+  @Post(':id/file')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Write file content to session container' })
+  async writeFile(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() body: { path: string; content: string },
+  ) {
+    const session = await this.sessionsService.findOne(organizationId, id);
+
+    if (!session.containerId) {
+      throw new BadRequestException('Session has no container');
+    }
+
+    if (
+      !(await this.containerService.isContainerRunning(session.containerId))
+    ) {
+      throw new BadRequestException('Container is not running');
+    }
+
+    await this.containerService.writeFile(
+      session.containerId,
+      body.path,
+      body.content,
+    );
+    return { status: 'saved' };
+  }
 }

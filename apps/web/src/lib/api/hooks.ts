@@ -1212,3 +1212,22 @@ export function useReadSessionFile() {
     },
   });
 }
+
+export function useWriteSessionFile() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      path,
+      content,
+    }: {
+      id: string;
+      path: string;
+      content: string;
+    }) => {
+      const token = await getToken();
+      return api.sessions.writeFile(id, path, content, token);
+    },
+  });
+}

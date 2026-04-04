@@ -654,5 +654,12 @@ export const api = {
         `/sessions/${id}/file?path=${encodeURIComponent(filePath)}`,
         { token },
       ),
+
+    writeFile: (id: string, path: string, content: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/file`, {
+        method: "POST",
+        body: JSON.stringify({ path, content }),
+        token,
+      }),
   },
 };

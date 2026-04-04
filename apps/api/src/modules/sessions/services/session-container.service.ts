@@ -283,6 +283,43 @@ export class SessionContainerService implements OnModuleInit {
   }
 
   /**
+   * Write content to a file in the container
+   */
+  async writeFile(
+    containerId: string,
+    filePath: string,
+    content: string,
+  ): Promise<void> {
+    const container = this.docker.getContainer(containerId);
+
+    // Use tee to write file content via stdin
+    const exec = await container.exec({
+      Cmd: ['tee', filePath],
+      AttachStdin: true,
+      AttachStdout: true,
+      AttachStderr: true,
+      User: 'executor',
+      Tty: false,
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      exec.start(
+        { hijack: true, stdin: true },
+        (err, stream) => {
+          if (err || !stream) {
+            reject(err || new Error('No stream'));
+            return;
+          }
+          stream.write(content);
+          stream.end();
+          stream.on('end', () => resolve());
+          stream.on('error', reject);
+        },
+      );
+    });
+  }
+
+  /**
    * Check if there's an active interactive session
    */
   hasActiveSession(sessionId: string): boolean {
