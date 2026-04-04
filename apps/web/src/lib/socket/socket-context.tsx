@@ -22,6 +22,8 @@ interface SocketContextValue {
   unsubscribeFromWorkflow: (workflowId: string) => void;
   subscribeToExecution: (executionId: string) => void;
   unsubscribeFromExecution: (executionId: string) => void;
+  subscribeToSession: (sessionId: string) => void;
+  unsubscribeFromSession: (sessionId: string) => void;
 }
 
 const SocketContext = createContext<SocketContextValue | null>(null);
@@ -180,6 +182,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     [socket],
   );
 
+  const subscribeToSession = useCallback(
+    (sessionId: string) => {
+      socket?.emit("subscribe:session", sessionId);
+    },
+    [socket],
+  );
+
+  const unsubscribeFromSession = useCallback(
+    (sessionId: string) => {
+      socket?.emit("unsubscribe:session", sessionId);
+    },
+    [socket],
+  );
+
   return (
     <SocketContext.Provider
       value={{
@@ -192,6 +208,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         unsubscribeFromWorkflow,
         subscribeToExecution,
         unsubscribeFromExecution,
+        subscribeToSession,
+        unsubscribeFromSession,
       }}
     >
       {children}
@@ -404,4 +422,79 @@ export function useNotifications() {
   }, []);
 
   return { notifications, clearNotifications, removeNotification };
+}
+
+export function useSessionUpdates(sessionId: string | null) {
+  const { socket, subscribeToSession, unsubscribeFromSession } = useSocket();
+  const [status, setStatus] = useState<string | null>(null);
+  const [events, setEvents] = useState<Record<string, unknown>[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!socket || !sessionId) return;
+
+    subscribeToSession(sessionId);
+
+    const handleStatus = (
+      payload: SocketEventPayloads["session:status"],
+    ) => {
+      if (payload.sessionId === sessionId) {
+        setStatus(payload.status);
+        if (payload.error) setError(payload.error);
+      }
+    };
+
+    const handleMessage = (
+      payload: SocketEventPayloads["session:message"],
+    ) => {
+      if (payload.sessionId === sessionId) {
+        setIsProcessing(true);
+      }
+    };
+
+    const handleEvent = (
+      payload: SocketEventPayloads["session:event"],
+    ) => {
+      if (payload.sessionId === sessionId) {
+        setEvents((prev) => [...prev, payload.event]);
+      }
+    };
+
+    const handleComplete = (
+      payload: SocketEventPayloads["session:message-complete"],
+    ) => {
+      if (payload.sessionId === sessionId) {
+        setIsProcessing(false);
+      }
+    };
+
+    const handleError = (
+      payload: SocketEventPayloads["session:error"],
+    ) => {
+      if (payload.sessionId === sessionId) {
+        setError(payload.error);
+        setIsProcessing(false);
+      }
+    };
+
+    socket.on("session:status", handleStatus);
+    socket.on("session:message", handleMessage);
+    socket.on("session:event", handleEvent);
+    socket.on("session:message-complete", handleComplete);
+    socket.on("session:error", handleError);
+
+    return () => {
+      unsubscribeFromSession(sessionId);
+      socket.off("session:status", handleStatus);
+      socket.off("session:message", handleMessage);
+      socket.off("session:event", handleEvent);
+      socket.off("session:message-complete", handleComplete);
+      socket.off("session:error", handleError);
+    };
+  }, [socket, sessionId, subscribeToSession, unsubscribeFromSession]);
+
+  const clearEvents = useCallback(() => setEvents([]), []);
+
+  return { status, events, isProcessing, error, clearEvents };
 }

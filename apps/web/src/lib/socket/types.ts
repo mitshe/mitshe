@@ -46,6 +46,32 @@ export interface NotificationPayload {
   data?: Record<string, unknown>;
 }
 
+export interface SessionStatusPayload {
+  sessionId: string;
+  status: string;
+  error?: string;
+}
+
+export interface SessionMessagePayload {
+  sessionId: string;
+  role: string;
+  content: string;
+}
+
+export interface SessionEventPayload {
+  sessionId: string;
+  event: Record<string, unknown>;
+}
+
+export interface SessionMessageCompletePayload {
+  sessionId: string;
+}
+
+export interface SessionErrorPayload {
+  sessionId: string;
+  error: string;
+}
+
 export type SocketEvent =
   | "task:update"
   | "task:completed"
@@ -57,7 +83,12 @@ export type SocketEvent =
   | "workflow:execution:cancelled"
   | "workflow:node:update"
   | "integration:event"
-  | "notification";
+  | "notification"
+  | "session:status"
+  | "session:message"
+  | "session:event"
+  | "session:message-complete"
+  | "session:error";
 
 export interface SocketEventPayloads {
   "task:update": TaskUpdatePayload;
@@ -77,4 +108,9 @@ export interface SocketEventPayloads {
   "workflow:node:update": WorkflowNodeExecutionPayload;
   "integration:event": IntegrationEventPayload;
   notification: NotificationPayload;
+  "session:status": SessionStatusPayload;
+  "session:message": SessionMessagePayload;
+  "session:event": SessionEventPayload;
+  "session:message-complete": SessionMessageCompletePayload;
+  "session:error": SessionErrorPayload;
 }
