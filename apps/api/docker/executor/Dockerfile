@@ -113,6 +113,9 @@ RUN mkdir -p /runner && chown executor:executor /runner
 # Copy workflow runner source
 COPY --chown=executor:executor workflow-runner /runner
 
+# Copy session server
+COPY --chown=executor:executor session-server /session
+
 # Install runner dependencies and build
 WORKDIR /runner
 RUN npm install && npm run build
