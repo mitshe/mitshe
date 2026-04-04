@@ -1913,15 +1913,15 @@ npx prisma migrate deploy
 
   api: `# REST API
 
-Access mitshe programmatically.
+Access mitshe programmatically. Interactive Swagger docs available at \`/api\` on your API server.
 
 ## Authentication
 
 \`\`\`bash
-curl https://api.ai-tasks.app/v1/tasks -H "Authorization: Bearer YOUR_API_KEY"
+curl http://localhost:3001/api/v1/tasks -H "Authorization: Bearer YOUR_API_KEY"
 \`\`\`
 
-Get your key at [Settings → API Keys](/settings/api-keys).
+Get your key at [Settings - API Keys](/settings/api-keys).
 
 :::warning
 Keep your API key secret. Never commit to version control.
@@ -1933,20 +1933,104 @@ Keep your API key secret. Never commit to version control.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| \`GET\` | \`/tasks\` | List tasks |
-| \`POST\` | \`/tasks\` | Create task |
-| \`GET\` | \`/tasks/:id\` | Get task |
-| \`POST\` | \`/tasks/:id/process\` | Start processing |
+| \`GET\` | \`/api/v1/tasks\` | List tasks |
+| \`POST\` | \`/api/v1/tasks\` | Create task |
+| \`GET\` | \`/api/v1/tasks/:id\` | Get task |
+| \`PUT\` | \`/api/v1/tasks/:id\` | Update task |
+| \`DELETE\` | \`/api/v1/tasks/:id\` | Delete task |
+| \`POST\` | \`/api/v1/tasks/:id/process\` | Start AI processing |
 
 ### Workflows
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| \`GET\` | \`/workflows\` | List workflows |
-| \`GET\` | \`/workflows/:id\` | Get workflow |
-| \`POST\` | \`/workflows/:id/run\` | Execute workflow |
+| \`GET\` | \`/api/v1/workflows\` | List workflows |
+| \`POST\` | \`/api/v1/workflows\` | Create workflow |
+| \`GET\` | \`/api/v1/workflows/:id\` | Get workflow |
+| \`PUT\` | \`/api/v1/workflows/:id\` | Update workflow |
+| \`DELETE\` | \`/api/v1/workflows/:id\` | Delete workflow |
+| \`POST\` | \`/api/v1/workflows/:id/run\` | Execute workflow |
 
-## Rate limits
+### Sessions
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/sessions\` | List sessions (filter: ?status=RUNNING&projectId=...) |
+| \`POST\` | \`/api/v1/sessions\` | Create and start session |
+| \`GET\` | \`/api/v1/sessions/:id\` | Get session with messages |
+| \`DELETE\` | \`/api/v1/sessions/:id\` | Delete session and stop container |
+| \`POST\` | \`/api/v1/sessions/:id/pause\` | Pause session |
+| \`POST\` | \`/api/v1/sessions/:id/resume\` | Resume paused/stopped session |
+| \`POST\` | \`/api/v1/sessions/:id/stop\` | Stop session (container stays for resume) |
+| \`POST\` | \`/api/v1/sessions/:id/exec\` | Execute command in container (non-interactive) |
+| \`POST\` | \`/api/v1/sessions/:id/terminals\` | Start a terminal (bash or agent) |
+| \`DELETE\` | \`/api/v1/sessions/:id/terminals/:terminalId\` | Close a terminal |
+| \`GET\` | \`/api/v1/sessions/:id/files\` | List files in workspace |
+| \`GET\` | \`/api/v1/sessions/:id/file?path=...\` | Read file content |
+| \`POST\` | \`/api/v1/sessions/:id/file\` | Write file content |
+| \`DELETE\` | \`/api/v1/sessions/:id/file?path=...\` | Delete file |
+| \`GET\` | \`/api/v1/sessions/:id/git-status\` | Get git status |
+
+### Presets
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/presets\` | List presets |
+| \`POST\` | \`/api/v1/presets\` | Create preset |
+| \`GET\` | \`/api/v1/presets/:id\` | Get preset |
+| \`PUT\` | \`/api/v1/presets/:id\` | Update preset |
+| \`DELETE\` | \`/api/v1/presets/:id\` | Delete preset |
+
+### Environments
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/environments\` | List environments |
+| \`POST\` | \`/api/v1/environments\` | Create environment |
+| \`GET\` | \`/api/v1/environments/:id\` | Get environment |
+| \`PUT\` | \`/api/v1/environments/:id\` | Update environment |
+| \`DELETE\` | \`/api/v1/environments/:id\` | Delete environment |
+
+### Projects
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/projects\` | List projects |
+| \`POST\` | \`/api/v1/projects\` | Create project |
+| \`GET\` | \`/api/v1/projects/:id\` | Get project |
+| \`PUT\` | \`/api/v1/projects/:id\` | Update project |
+| \`DELETE\` | \`/api/v1/projects/:id\` | Delete project |
+
+### Integrations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/integrations\` | List integrations |
+| \`POST\` | \`/api/v1/integrations\` | Create integration |
+| \`POST\` | \`/api/v1/integrations/:id/test\` | Test connection |
+| \`DELETE\` | \`/api/v1/integrations/:id\` | Delete integration |
+
+### AI Credentials
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/ai-credentials\` | List AI credentials |
+| \`POST\` | \`/api/v1/ai-credentials\` | Create credential |
+| \`POST\` | \`/api/v1/ai-credentials/:id/test\` | Test connection |
+| \`DELETE\` | \`/api/v1/ai-credentials/:id\` | Delete credential |
+
+### Repositories
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/repositories\` | List repositories |
+| \`GET\` | \`/api/v1/repositories/remote\` | List remote repos from providers |
+| \`POST\` | \`/api/v1/repositories/sync/existing\` | Sync existing repos |
+| \`POST\` | \`/api/v1/repositories/sync/selective\` | Import selected repos |
+| \`DELETE\` | \`/api/v1/repositories/:id\` | Delete repository |
+| \`DELETE\` | \`/api/v1/repositories/bulk\` | Bulk delete |
+
+## Rate Limits
 
 | Type | Limit |
 |------|-------|
@@ -1954,17 +2038,38 @@ Keep your API key secret. Never commit to version control.
 | Workflow runs | 10/min |
 | AI processing | 20/min |
 
-## Example
+## Examples
+
+### Create a session
 
 \`\`\`bash
-curl -X POST https://api.ai-tasks.app/v1/workflows/abc123/run \\
+curl -X POST http://localhost:3001/api/v1/sessions \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Fix login bug",
+    "repositoryIds": ["repo_123"],
+    "aiCredentialId": "cred_456",
+    "instructions": "Fix the login bug described in JIRA-789"
+  }'
+\`\`\`
+
+### Execute command in session
+
+\`\`\`bash
+curl -X POST http://localhost:3001/api/v1/sessions/sess_123/exec \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"command": "git diff --stat"}'
+\`\`\`
+
+### Run a workflow
+
+\`\`\`bash
+curl -X POST http://localhost:3001/api/v1/workflows/wf_123/run \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"input": {"issueKey": "PROJ-456"}}'
-\`\`\`
-
-\`\`\`json
-{ "executionId": "exec_789", "status": "running" }
 \`\`\`
 `,
 
