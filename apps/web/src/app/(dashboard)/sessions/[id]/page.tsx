@@ -12,8 +12,15 @@ import {
   ArrowLeft,
   Radio,
   Plus,
+  Info,
   Terminal as TerminalIcon,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   useSession,
   useCloseTerminal,
@@ -486,14 +493,45 @@ export default function SessionDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {isRunning && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNewTerminal}
-              title="New Terminal"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNewTerminal}
+                title="New Terminal"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Info className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    className="max-w-xs text-xs space-y-1 p-3"
+                  >
+                    <p className="font-semibold mb-1.5">Keyboard Shortcuts</p>
+                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+                      <kbd className="bg-muted px-1 rounded text-[10px] font-mono">Ctrl+S</kbd>
+                      <span>Save file</span>
+                      <kbd className="bg-muted px-1 rounded text-[10px] font-mono">Ctrl+F</kbd>
+                      <span>Find in file</span>
+                      <kbd className="bg-muted px-1 rounded text-[10px] font-mono">Ctrl+H</kbd>
+                      <span>Find &amp; Replace</span>
+                      <kbd className="bg-muted px-1 rounded text-[10px] font-mono">Ctrl+G</kbd>
+                      <span>Go to line</span>
+                      <kbd className="bg-muted px-1 rounded text-[10px] font-mono">Ctrl+P</kbd>
+                      <span>Command palette</span>
+                      <kbd className="bg-muted px-1 rounded text-[10px] font-mono">Middle Click</kbd>
+                      <span>Close tab</span>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </>
           )}
           {isRunning && (
             <Button variant="outline" size="sm" onClick={handlePause}>

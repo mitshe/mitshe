@@ -89,27 +89,28 @@ export function FileEditor({
     });
   }, []);
 
-  // Update local content when remote content changes (and not dirty)
+  // Update local content when remote content changes (only if not dirty and content actually changed)
   useEffect(() => {
-    if (!isDirty && content !== null) {
-      setLocalContent(content);
-    }
-  }, [content, isDirty]);
+    if (isDirty || content === null) return;
+    // Don't update if content is the same — prevents cursor jumping
+    if (content === localContent) return;
+    setLocalContent(content);
+  }, [content]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-refresh open file periodically (when not dirty)
+  // Auto-refresh open file periodically (only when not dirty, longer interval)
   useEffect(() => {
     if (!onContentRefresh) return;
 
     refreshTimerRef.current = setInterval(() => {
-      if (!isDirty) {
+      if (!isDirty && !isSaving) {
         onContentRefresh();
       }
-    }, 5000);
+    }, 10000);
 
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
     };
-  }, [onContentRefresh, isDirty]);
+  }, [onContentRefresh, isDirty, isSaving]);
 
   const handleChange = useCallback(
     (value: string | undefined) => {
@@ -117,14 +118,17 @@ export function FileEditor({
       setLocalContent(value);
       setIsDirty(true);
 
-      // Debounced auto-save (1.5s after last keystroke)
+      // Debounced auto-save (2s after last keystroke)
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         setIsSaving(true);
         onSave(value);
-        setIsDirty(false);
-        setIsSaving(false);
-      }, 1500);
+        // Small delay before clearing dirty to prevent immediate remote overwrite
+        setTimeout(() => {
+          setIsDirty(false);
+          setIsSaving(false);
+        }, 500);
+      }, 2000);
     },
     [onSave],
   );
