@@ -87,7 +87,11 @@ export class SessionsService {
     return session;
   }
 
-  async updateStatus(id: string, status: SessionStatus, containerId?: string) {
+  async updateStatus(
+    id: string,
+    status: SessionStatus,
+    containerId?: string | null,
+  ) {
     return this.prisma.agentSession.update({
       where: { id },
       data: {
