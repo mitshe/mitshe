@@ -297,10 +297,16 @@ function TerminalView({
   useEffect(() => {
     if (!terminalReady || !isRunning) return;
 
+    // Clear terminal when restarting after stop
+    if (wasCompleted && xtermRef.current) {
+      xtermRef.current.clear();
+    }
+
     startTerminal
       .mutateAsync({ id: sessionId, continueSession: wasCompleted })
       .then((res: any) => {
-        if (res.buffer && xtermRef.current) {
+        // Only write buffer on reconnect (not restart)
+        if (!wasCompleted && res.buffer && xtermRef.current) {
           xtermRef.current.write(res.buffer);
         }
       })

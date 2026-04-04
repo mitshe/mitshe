@@ -114,6 +114,11 @@ export class SessionContainerService implements OnModuleInit {
     // Kill previous session if exists
     this.closeInteractiveSession(sessionId);
 
+    // Clear output buffer on restart (not reconnect)
+    if (options?.continue) {
+      this.outputBuffers.delete(sessionId);
+    }
+
     const container = this.docker.getContainer(containerId);
 
     const cmd = options?.continue ? ['claude', '--continue'] : ['claude'];
