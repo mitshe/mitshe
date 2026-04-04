@@ -33,6 +33,9 @@ import type {
   RemoteRepository,
   SyncRepositoriesResult,
   SyncAllRepositoriesResult,
+  AgentSession,
+  CreateSessionDto,
+  SessionFileNode,
   WorkflowTemplateMetadata,
   WorkflowTemplate,
   CreateFromTemplateDto,
@@ -573,5 +576,66 @@ export const api = {
         method: "POST",
         token,
       }),
+  },
+
+  sessions: {
+    list: (token: string, status?: string, projectId?: string) => {
+      const params = new URLSearchParams();
+      if (status) params.set("status", status);
+      if (projectId) params.set("projectId", projectId);
+      const qs = params.toString();
+      return request<{ sessions: AgentSession[] }>(
+        `/sessions${qs ? `?${qs}` : ""}`,
+        { token },
+      );
+    },
+
+    get: (id: string, token: string) =>
+      request<{ session: AgentSession }>(`/sessions/${id}`, { token }),
+
+    create: (data: CreateSessionDto, token: string) =>
+      request<{ session: AgentSession }>("/sessions", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    delete: (id: string, token: string) =>
+      request<void>(`/sessions/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+
+    sendMessage: (id: string, content: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+        token,
+      }),
+
+    pause: (id: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/pause`, {
+        method: "POST",
+        token,
+      }),
+
+    resume: (id: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/resume`, {
+        method: "POST",
+        token,
+      }),
+
+    stop: (id: string, token: string) =>
+      request<{ status: string }>(`/sessions/${id}/stop`, {
+        method: "POST",
+        token,
+      }),
+
+    getFiles: (id: string, token: string, path?: string) => {
+      const qs = path ? `?path=${encodeURIComponent(path)}` : "";
+      return request<{ files: string[] }>(`/sessions/${id}/files${qs}`, {
+        token,
+      });
+    },
   },
 };

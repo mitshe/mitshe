@@ -21,6 +21,7 @@ import type {
   UpdateRepositoryDto,
   BulkUpdateRepositoriesDto,
   CreateFromTemplateDto,
+  CreateSessionDto,
 } from "./types";
 
 export const queryKeys = {
@@ -76,6 +77,15 @@ export const queryKeys = {
     available: () => [...queryKeys.repositories.all, "available"] as const,
     detail: (id: string) =>
       [...queryKeys.repositories.all, "detail", id] as const,
+  },
+  sessions: {
+    all: ["sessions"] as const,
+    list: (status?: string, projectId?: string) =>
+      [...queryKeys.sessions.all, "list", { status, projectId }] as const,
+    detail: (id: string) =>
+      [...queryKeys.sessions.all, "detail", id] as const,
+    files: (id: string) =>
+      [...queryKeys.sessions.all, "files", id] as const,
   },
 };
 
@@ -1036,5 +1046,139 @@ export function useSyncSelectiveRepositories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.repositories.all });
     },
+  });
+}
+
+// =========================================================================
+// Sessions
+// =========================================================================
+
+export function useSessions(status?: string, projectId?: string) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: queryKeys.sessions.list(status, projectId),
+    queryFn: async () => {
+      const token = await getToken();
+      const { sessions } = await api.sessions.list(token, status, projectId);
+      return sessions;
+    },
+  });
+}
+
+export function useSession(id: string) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: queryKeys.sessions.detail(id),
+    queryFn: async () => {
+      const token = await getToken();
+      const { session } = await api.sessions.get(id, token);
+      return session;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateSessionDto) => {
+      const token = await getToken();
+      const { session } = await api.sessions.create(data, token);
+      return session;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useDeleteSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      await api.sessions.delete(id, token);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useSendSessionMessage() {
+  const getToken = useAuthToken();
+
+  return useMutation({
+    mutationFn: async ({ id, content }: { id: string; content: string }) => {
+      const token = await getToken();
+      return api.sessions.sendMessage(id, content, token);
+    },
+  });
+}
+
+export function usePauseSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.sessions.pause(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useResumeSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.sessions.resume(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useStopSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.sessions.stop(id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useSessionFiles(id: string) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: queryKeys.sessions.files(id),
+    queryFn: async () => {
+      const token = await getToken();
+      const { files } = await api.sessions.getFiles(id, token);
+      return files;
+    },
+    enabled: !!id,
+    refetchInterval: 10000, // Refresh every 10s
   });
 }
