@@ -200,6 +200,7 @@ function FileTreeItem({
             ? colorClass
             : "text-muted-foreground hover:text-foreground",
         )}
+        data-file-item
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={() => actions.onFileClick(node.path)}
         onContextMenu={handleContextMenu}
@@ -227,6 +228,7 @@ function FileTreeItem({
           "flex items-center gap-1 py-0.5 px-2 text-xs font-medium hover:bg-muted/50 rounded cursor-pointer",
           hasChangedChildren && "text-yellow-500",
         )}
+        data-file-item
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={() => setIsOpen(!isOpen)}
         onContextMenu={handleContextMenu}
@@ -302,7 +304,29 @@ export function FileTree({
           Files
         </p>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div
+        className="flex-1 min-h-0 overflow-y-auto"
+        onContextMenu={(e) => {
+          // Context menu on empty space — New File / New Folder at root
+          if ((e.target as HTMLElement).closest("[data-file-item]")) return;
+          const items: ContextMenuItem[] = [];
+          if (onNewFile) {
+            items.push({
+              label: "New File...",
+              action: () => onNewFile("."),
+            });
+          }
+          if (onNewFolder) {
+            items.push({
+              label: "New Folder...",
+              action: () => onNewFolder("."),
+            });
+          }
+          if (items.length > 0) {
+            showContextMenu(e, items);
+          }
+        }}
+      >
         <div className="py-1">
           {fileTree.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">
