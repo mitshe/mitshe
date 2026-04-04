@@ -98,8 +98,9 @@ model Organization {
   repositories  Repository[]
   aiCredentials AICredential[]
   workflows     Workflow[]
-  apiKeys       ApiKey[]
-  agentSessions AgentSession[]
+  apiKeys          ApiKey[]
+  agentDefinitions AgentDefinition[]
+  agentSessions    AgentSession[]
 
   @@index([ownerId])
   @@map("organizations")
@@ -158,9 +159,10 @@ model Project {
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   repository   Repository?  @relation("ProjectRepository", fields: [repositoryId], references: [id], onDelete: SetNull)
-  tasks         Task[]
-  workflows     Workflow[]
-  agentSessions AgentSession[]
+  tasks            Task[]
+  workflows        Workflow[]
+  agentDefinitions AgentDefinition[]
+  agentSessions    AgentSession[]
 
   @@unique([organizationId, key])
   @@index([repositoryId])
@@ -306,8 +308,9 @@ model Repository {
   // Relations
   organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   integration        Integration         @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  projects           Project[]           @relation("ProjectRepository")
-  sessionRepositories SessionRepository[]
+  projects                    Project[]                    @relation("ProjectRepository")
+  sessionRepositories         SessionRepository[]
+  agentDefinitionRepositories AgentDefinitionRepository[]
 
   @@unique([organizationId, provider, externalId])
   @@index([organizationId])
@@ -346,8 +349,9 @@ model AICredential {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agentSessions AgentSession[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentSessions    AgentSession[]
+  agentDefinitions AgentDefinition[]
 
   @@unique([organizationId, provider])
   @@map("ai_credentials")
@@ -569,6 +573,47 @@ model AuditLog {
 }
 
 // ============================================================================
+// AGENT DEFINITIONS (Reusable Agent Presets)
+// ============================================================================
+
+model AgentDefinition {
+  id                   String   @id @default(cuid())
+  organizationId       String   @map("organization_id")
+  name                 String
+  description          String?
+  aiCredentialId       String?  @map("ai_credential_id")
+  startArguments       String?  @map("start_arguments")
+  instructions         String   @default("")
+  maxSessionDurationMs Int?     @map("max_session_duration_ms")
+  defaultProjectId     String?  @map("default_project_id")
+  createdBy            String   @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aiCredential        AICredential? @relation(fields: [aiCredentialId], references: [id], onDelete: SetNull)
+  defaultProject      Project? @relation(fields: [defaultProjectId], references: [id], onDelete: SetNull)
+  defaultRepositories AgentDefinitionRepository[]
+  sessions            AgentSession[]
+
+  @@index([organizationId])
+  @@map("agent_definitions")
+}
+
+model AgentDefinitionRepository {
+  agentDefinitionId String @map("agent_definition_id")
+  repositoryId      String @map("repository_id")
+
+  agentDefinition AgentDefinition @relation(fields: [agentDefinitionId], references: [id], onDelete: Cascade)
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@id([agentDefinitionId, repositoryId])
+  @@map("agent_definition_repositories")
+}
+
+// ============================================================================
 // AGENT SESSIONS (Interactive AI Sessions)
 // ============================================================================
 
@@ -581,26 +626,29 @@ enum SessionStatus {
 }
 
 model AgentSession {
-  id             String        @id @default(cuid())
-  organizationId String        @map("organization_id")
-  projectId      String?       @map("project_id")
-  name           String
-  instructions   String        @default("")
-  status         SessionStatus @default(CREATING)
-  aiCredentialId String?       @map("ai_credential_id")
-  containerId    String?       @map("container_id")
-  createdBy      String        @map("created_by")
+  id                String        @id @default(cuid())
+  organizationId    String        @map("organization_id")
+  projectId         String?       @map("project_id")
+  agentDefinitionId String?       @map("agent_definition_id")
+  name              String
+  instructions      String        @default("")
+  startArguments    String?       @map("start_arguments")
+  status            SessionStatus @default(CREATING)
+  aiCredentialId    String?       @map("ai_credential_id")
+  containerId       String?       @map("container_id")
+  createdBy         String        @map("created_by")
 
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
   lastActiveAt DateTime @default(now()) @map("last_active_at")
 
   // Relations
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  project      Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  aiCredential AICredential? @relation(fields: [aiCredentialId], references: [id], onDelete: SetNull)
-  messages     SessionMessage[]
-  repositories SessionRepository[]
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project         Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  aiCredential    AICredential?     @relation(fields: [aiCredentialId], references: [id], onDelete: SetNull)
+  agentDefinition AgentDefinition?  @relation(fields: [agentDefinitionId], references: [id], onDelete: SetNull)
+  messages        SessionMessage[]
+  repositories    SessionRepository[]
 
   @@index([organizationId])
   @@index([status])
