@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   ListTodo,
+  MessageSquareCode,
   Workflow,
   History,
   Plug,
@@ -41,6 +42,12 @@ const coreNavItems = [
     href: "/tasks",
     icon: ListTodo,
     tourId: "nav-tasks",
+  },
+  {
+    title: "Sessions",
+    href: "/sessions",
+    icon: MessageSquareCode,
+    tourId: "nav-sessions",
   },
   {
     title: "Workflows",
