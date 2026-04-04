@@ -33,6 +33,10 @@ import { EncryptionService } from '../../../shared/encryption/encryption.service
 import { EventsGateway } from '../../../infrastructure/websocket/events.gateway';
 import {
   CreateSessionDto,
+  ExecCommandDto,
+  WriteFileDto,
+  StartTerminalDto,
+  TerminalInputDto,
   SessionListResponseDto,
   SessionDetailResponseDto,
 } from '../dto/session.dto';
@@ -319,7 +323,7 @@ export class SessionsController {
   async exec(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
-    @Body() body: { command: string; timeout?: number },
+    @Body() body: ExecCommandDto,
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 
@@ -352,7 +356,7 @@ export class SessionsController {
   async startTerminal(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
-    @Body() body?: { terminalId?: string; cmd?: string[] },
+    @Body() body?: StartTerminalDto,
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 
@@ -413,7 +417,7 @@ export class SessionsController {
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
     @Param('terminalId') terminalId: string,
-    @Body() body: { input: string },
+    @Body() body: TerminalInputDto,
   ) {
     await this.sessionsService.findOne(organizationId, id);
 
@@ -526,7 +530,7 @@ export class SessionsController {
   async writeFile(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
-    @Body() body: { path: string; content: string },
+    @Body() body: WriteFileDto,
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 

@@ -3,6 +3,9 @@ import {
   IsOptional,
   IsArray,
   IsNotEmpty,
+  IsInt,
+  MaxLength,
+  Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionStatus } from '@prisma/client';
@@ -72,4 +75,50 @@ export class SessionListResponseDto {
 export class SessionDetailResponseDto {
   @ApiProperty({ type: SessionResponseDto })
   session: SessionResponseDto;
+}
+
+export class ExecCommandDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(10000)
+  @ApiProperty({ description: 'Shell command to execute' })
+  command: string;
+
+  @IsInt()
+  @Min(1000)
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Timeout in milliseconds (default: 60000)' })
+  timeout?: number;
+}
+
+export class WriteFileDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'File path (must be within /workspace)' })
+  path: string;
+
+  @IsString()
+  @ApiProperty({ description: 'File content' })
+  content: string;
+}
+
+export class TerminalInputDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(10000)
+  @ApiProperty({ description: 'Raw terminal input' })
+  input: string;
+}
+
+export class StartTerminalDto {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Terminal ID' })
+  terminalId?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Command to run (default: bash)' })
+  cmd?: string[];
 }
