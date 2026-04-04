@@ -62,7 +62,12 @@ export class SessionContainerService implements OnModuleInit {
     const container = await this.docker.createContainer({
       Image: this.executorImage,
       name: containerName,
-      Entrypoint: ['node', '/session/server.js'],
+      // Start as root to fix volume permissions, then drop to executor
+      User: 'root',
+      Entrypoint: ['bash', '-c'],
+      Cmd: [
+        'chown -R executor:executor /home/executor/.claude 2>/dev/null; exec su -s /bin/bash executor -c "node /session/server.js"',
+      ],
       Env: [`SESSION_CONFIG=${sessionConfig}`],
       WorkingDir: '/workspace',
       Labels: {
