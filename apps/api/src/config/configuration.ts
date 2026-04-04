@@ -1,7 +1,54 @@
 import * as Joi from 'joi';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const authMode = process.env.AUTH_MODE || 'selfhosted';
 const isClerkMode = authMode === 'clerk';
+
+/**
+ * Auto-generate and persist a secret if not provided.
+ * Saves to ~/.mitshe/secrets/{name} so it survives restarts.
+ */
+function getOrGenerateSecret(envVar: string, name: string): string {
+  const fromEnv = process.env[envVar];
+  if (fromEnv && fromEnv.length >= 32) return fromEnv;
+
+  const secretsDir = path.join(
+    process.env.HOME || '/tmp',
+    '.mitshe',
+    'secrets',
+  );
+  const secretFile = path.join(secretsDir, name);
+
+  // Read existing persisted secret
+  try {
+    const existing = fs.readFileSync(secretFile, 'utf-8').trim();
+    if (existing.length >= 32) {
+      process.env[envVar] = existing;
+      return existing;
+    }
+  } catch {
+    // File doesn't exist yet
+  }
+
+  // Generate and persist
+  const generated = crypto.randomBytes(32).toString('hex');
+  try {
+    fs.mkdirSync(secretsDir, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(secretFile, generated, { mode: 0o600 });
+  } catch {
+    // Can't persist - use ephemeral (will warn)
+  }
+
+  process.env[envVar] = generated;
+  return generated;
+}
+
+// Auto-generate JWT_SECRET in selfhosted mode if not set
+if (!isClerkMode && !process.env.JWT_SECRET) {
+  getOrGenerateSecret('JWT_SECRET', 'jwt-secret');
+}
 
 /**
  * Environment configuration schema with validation
@@ -19,6 +66,13 @@ export const configValidationSchema = Joi.object({
   ENCRYPTION_KEY: Joi.string()
     .optional()
     .description('AES-256 encryption key (32-byte hex string)'),
+
+  JWT_SECRET: Joi.string()
+    .min(32)
+    .optional()
+    .description(
+      'JWT secret for signing tokens (min 32 chars). Auto-generated if not set.',
+    ),
 
   CLERK_SECRET_KEY: isClerkMode
     ? Joi.string()

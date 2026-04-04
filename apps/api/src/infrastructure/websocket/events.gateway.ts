@@ -104,9 +104,7 @@ export class EventsGateway
       this.configService.get<string>('CLERK_SECRET_KEY') || '';
     const authMode =
       this.configService.get<string>('AUTH_MODE') || 'selfhosted';
-    this.jwtSecret =
-      this.configService.get<string>('JWT_SECRET') ||
-      (authMode === 'selfhosted' ? 'dev-secret-change-in-production' : '');
+    this.jwtSecret = this.configService.get<string>('JWT_SECRET') || '';
     this.authMode = authMode;
 
     if (authMode === 'clerk' && !this.clerkSecretKey) {
