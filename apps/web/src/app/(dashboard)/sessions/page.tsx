@@ -33,6 +33,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   Loader2,
   MessageSquareCode,
@@ -40,11 +51,13 @@ import {
   Pause,
   Square,
   Clock,
+  Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import {
   useSessions,
   useCreateSession,
+  useDeleteSession,
   useProjects,
   useRepositories,
   useAICredentials,
@@ -90,6 +103,7 @@ export default function SessionsPage() {
   const { data: repositories = [] } = useRepositories();
   const { data: aiCredentials = [] } = useAICredentials();
   const createSession = useCreateSession();
+  const deleteSession = useDeleteSession();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState({
@@ -141,6 +155,16 @@ export default function SessionsPage() {
       const message =
         error instanceof Error ? error.message : "Failed to create session";
       toast.error(message);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      await deleteSession.mutateAsync(id);
+      toast.success("Session deleted");
+    } catch {
+      toast.error("Failed to delete session");
     }
   };
 
@@ -346,6 +370,58 @@ export default function SessionsPage() {
                           {formatDistanceToNow(new Date(session.lastActiveAt))}
                         </span>
                       </div>
+                    </div>
+
+                    <div
+                      className="flex items-center gap-1 shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {(session.status === "COMPLETED" ||
+                        session.status === "FAILED" ||
+                        session.status === "PAUSED") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            router.push(`/sessions/${session.id}`)
+                          }
+                        >
+                          <Play className="w-3.5 h-3.5 mr-1" />
+                          Open
+                        </Button>
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Delete Session
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete &quot;
+                              {session.name}&quot;? The container and all
+                              data will be permanently removed.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={(e) => handleDelete(e, session.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 );
