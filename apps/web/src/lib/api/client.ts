@@ -36,6 +36,9 @@ import type {
   AgentDefinition,
   CreateAgentDefinitionDto,
   UpdateAgentDefinitionDto,
+  Environment,
+  CreateEnvironmentDto,
+  UpdateEnvironmentDto,
   AgentSession,
   CreateSessionDto,
   SessionFileNode,
@@ -604,6 +607,34 @@ export const api = {
 
     delete: (id: string, token: string) =>
       request<void>(`/presets/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+  },
+
+  environments: {
+    list: (token: string) =>
+      request<{ environments: Environment[] }>("/environments", { token }),
+
+    get: (id: string, token: string) =>
+      request<{ environment: Environment }>(`/environments/${id}`, { token }),
+
+    create: (data: CreateEnvironmentDto, token: string) =>
+      request<{ environment: Environment }>("/environments", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    update: (id: string, data: UpdateEnvironmentDto, token: string) =>
+      request<{ environment: Environment }>(`/environments/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    delete: (id: string, token: string) =>
+      request<void>(`/environments/${id}`, {
         method: "DELETE",
         token,
       }),

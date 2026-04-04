@@ -8,6 +8,7 @@ import {
   ListTodo,
   MessageSquareCode,
   BotMessageSquare,
+  Box,
   Workflow,
   History,
   Plug,
@@ -70,6 +71,12 @@ const workspaceNavItems = [
     href: "/presets",
     icon: BotMessageSquare,
     tourId: "nav-presets",
+  },
+  {
+    title: "Environments",
+    href: "/environments",
+    icon: Box,
+    tourId: "nav-environments",
   },
 ];
 
