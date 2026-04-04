@@ -45,9 +45,12 @@ function getOrGenerateSecret(envVar: string, name: string): string {
   return generated;
 }
 
-// Auto-generate JWT_SECRET in selfhosted mode if not set
+// Auto-generate secrets if not set
 if (!isClerkMode && !process.env.JWT_SECRET) {
   getOrGenerateSecret('JWT_SECRET', 'jwt-secret');
+}
+if (!process.env.ENCRYPTION_KEY) {
+  getOrGenerateSecret('ENCRYPTION_KEY', 'encryption-key');
 }
 
 /**
@@ -64,8 +67,12 @@ export const configValidationSchema = Joi.object({
     .description('Database connection string (PostgreSQL or SQLite file:)'),
 
   ENCRYPTION_KEY: Joi.string()
+    .length(64)
+    .pattern(/^[0-9a-f]+$/i)
     .optional()
-    .description('AES-256 encryption key (32-byte hex string)'),
+    .description(
+      'AES-256 encryption key (64 hex chars / 32 bytes). Auto-generated if not set.',
+    ),
 
   JWT_SECRET: Joi.string()
     .min(32)
