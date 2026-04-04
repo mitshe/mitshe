@@ -196,19 +196,29 @@ function TerminalView({
     };
   }, []);
 
-  // Resize handling
+  // Resize handling with ResizeObserver
   useEffect(() => {
-    if (!fitRef.current) return;
+    if (!fitRef.current || !termRef.current) return;
 
-    const handleResize = () => fitRef.current?.fit();
+    const handleResize = () => {
+      try { fitRef.current?.fit(); } catch { /* ignore */ }
+    };
+
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(termRef.current);
     window.addEventListener("resize", handleResize);
 
-    // Also fit after a short delay (layout might not be stable yet)
-    const timer = setTimeout(handleResize, 100);
+    // Fit after layout settles
+    const t1 = setTimeout(handleResize, 50);
+    const t2 = setTimeout(handleResize, 200);
+    const t3 = setTimeout(handleResize, 500);
 
     return () => {
+      observer.disconnect();
       window.removeEventListener("resize", handleResize);
-      clearTimeout(timer);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, [terminalReady]);
 
@@ -274,7 +284,9 @@ function TerminalView({
   }, [terminalReady, isRunning, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div ref={termRef} className="w-full h-full" />
+    <div className="relative w-full h-full overflow-hidden">
+      <div ref={termRef} className="absolute inset-0" />
+    </div>
   );
 }
 
@@ -410,7 +422,7 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Terminal */}
-        <div className="flex-1 min-w-0 bg-[#0a0a0a] p-1">
+        <div className="flex-1 min-w-0 bg-[#0a0a0a] overflow-hidden">
           {isActive ? (
             <TerminalView sessionId={sessionId} isRunning={isRunning} />
           ) : (
