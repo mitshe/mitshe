@@ -121,6 +121,9 @@ export default function DashboardPage() {
   const successRate =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const activeWorkflows = workflows.filter((w) => w.isActive).length;
+  const activeSessions = sessions.filter(
+    (s) => s.status === "RUNNING" || s.status === "PAUSED",
+  ).length;
 
   const recentTasks = tasks.slice(0, 5);
   const recentSessions = sessions.slice(0, 5);
@@ -244,6 +247,13 @@ export default function DashboardPage() {
           <span>Active Workflows</span>
           <span className="font-semibold text-foreground">
             {activeWorkflows}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <MessageSquareCode className="h-4 w-4 text-blue-500" />
+          <span>Active Sessions</span>
+          <span className="font-semibold text-foreground">
+            {activeSessions}
           </span>
         </div>
       </div>

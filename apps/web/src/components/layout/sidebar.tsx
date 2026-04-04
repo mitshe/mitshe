@@ -7,7 +7,7 @@ import {
   FolderKanban,
   ListTodo,
   MessageSquareCode,
-  BotMessageSquare,
+  SlidersHorizontal,
   Box,
   Workflow,
   History,
@@ -69,7 +69,7 @@ const workspaceNavItems = [
   {
     title: "Presets",
     href: "/presets",
-    icon: BotMessageSquare,
+    icon: SlidersHorizontal,
     tourId: "nav-presets",
   },
   {

@@ -489,6 +489,14 @@ export default function SessionsPage() {
                         {session.aiCredential && (
                           <span>{providerLabels[session.aiCredential.provider] || session.aiCredential.provider}</span>
                         )}
+                        {session.repositories && session.repositories.length > 0 && (
+                          <span className="truncate max-w-[200px]">
+                            {session.repositories
+                              .map((r) => r.repository?.name || "")
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatDistanceToNow(new Date(session.lastActiveAt))}
