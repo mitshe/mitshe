@@ -7,6 +7,17 @@
 
 mitshe automates development workflows using AI agents. Connect your tools (Jira, GitLab, Slack) and let AI handle repetitive tasks - from code analysis to merge request creation.
 
+![mitshe dashboard](docs/dashboard.png)
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Dashboard](docs/dashboard.png) | ![Projects](docs/projects.png) |
+| ![Tasks](docs/tasks.png) | ![Workflows](docs/workflows.png) |
+| ![Executions](docs/executions.png) | ![Integrations](docs/integrations.png) |
+| ![Documentation](docs/documentation.png) | |
+
 ## Run it
 
 ```bash
