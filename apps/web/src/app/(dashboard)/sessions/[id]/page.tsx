@@ -14,6 +14,8 @@ import {
   Plus,
   Info,
   Terminal as TerminalIcon,
+  PanelLeft,
+  X,
 } from "lucide-react";
 import {
   Tooltip,
@@ -116,6 +118,61 @@ export default function SessionDetailPage() {
   const [fileContents, setFileContents] = useState<
     Record<string, { content: string | null; loading: boolean }>
   >({});
+
+  // ─── Resizable sidebar ──────────────────────────────────────
+  const SIDEBAR_MIN = 160;
+  const SIDEBAR_MAX = 480;
+  const SIDEBAR_DEFAULT = 240;
+  const MAIN_MIN = 300;
+  const MOBILE_BREAKPOINT = 768;
+
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const isResizing = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Desktop drag-resize
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      if (isMobile) return;
+      e.preventDefault();
+      isResizing.current = true;
+
+      const startX = e.clientX;
+      const startWidth = sidebarWidth;
+
+      const onMove = (ev: MouseEvent) => {
+        if (!isResizing.current) return;
+        const containerWidth = containerRef.current?.offsetWidth ?? window.innerWidth;
+        let newWidth = startWidth + (ev.clientX - startX);
+        newWidth = Math.max(SIDEBAR_MIN, Math.min(newWidth, SIDEBAR_MAX, containerWidth - MAIN_MIN));
+        setSidebarWidth(newWidth);
+      };
+
+      const onUp = () => {
+        isResizing.current = false;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [isMobile, sidebarWidth],
+  );
 
   const { socket } = useSocket();
 
@@ -621,19 +678,82 @@ export default function SessionDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* File Browser */}
-        <FileTree
-          files={files}
-          basePath="/workspace"
-          isLoading={filesLoading}
-          onFileClick={handleOpenFile}
-          onDelete={handleDeleteFile}
-          onRename={handleRenameFile}
-          onNewFile={handleNewFile}
-          onNewFolder={handleNewFolder}
-          gitStatuses={gitStatuses}
-        />
+      <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden relative">
+        {/* Mobile sidebar toggle */}
+        {isMobile && !mobileSidebarOpen && (
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="absolute top-2 left-2 z-20 p-1.5 rounded-md bg-background border shadow-sm hover:bg-muted transition-colors"
+            title="Show files"
+          >
+            <PanelLeft className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Mobile overlay */}
+        {isMobile && mobileSidebarOpen && (
+          <div
+            className="absolute inset-0 z-30 bg-black/40"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* File Browser Sidebar */}
+        {isMobile ? (
+          <div
+            className={`absolute top-0 left-0 z-40 h-full w-64 bg-background shadow-xl transition-transform duration-200 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          >
+            <div className="flex items-center justify-between px-3 py-2 border-b">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Files
+              </p>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-1 rounded hover:bg-muted"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="h-[calc(100%-37px)]">
+              <FileTree
+                files={files}
+                basePath="/workspace"
+                isLoading={filesLoading}
+                onFileClick={(path) => {
+                  handleOpenFile(path);
+                  setMobileSidebarOpen(false);
+                }}
+                onDelete={handleDeleteFile}
+                onRename={handleRenameFile}
+                onNewFile={handleNewFile}
+                onNewFolder={handleNewFolder}
+                gitStatuses={gitStatuses}
+                hideHeader
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ width: sidebarWidth }} className="shrink-0 h-full">
+              <FileTree
+                files={files}
+                basePath="/workspace"
+                isLoading={filesLoading}
+                onFileClick={handleOpenFile}
+                onDelete={handleDeleteFile}
+                onRename={handleRenameFile}
+                onNewFile={handleNewFile}
+                onNewFolder={handleNewFolder}
+                gitStatuses={gitStatuses}
+              />
+            </div>
+            {/* Resize handle */}
+            <div
+              onMouseDown={handleResizeStart}
+              className="w-1 shrink-0 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
+            />
+          </>
+        )}
 
         {/* Editor / Terminal Area */}
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">

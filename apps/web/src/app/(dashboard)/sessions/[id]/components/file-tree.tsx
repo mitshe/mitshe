@@ -271,6 +271,7 @@ export function FileTree({
   onNewFile,
   onNewFolder,
   gitStatuses,
+  hideHeader,
 }: {
   files: string[];
   basePath: string;
@@ -281,6 +282,7 @@ export function FileTree({
   onNewFile?: (dirPath: string) => void;
   onNewFolder?: (dirPath: string) => void;
   gitStatuses?: Array<{ path: string; status: string }>;
+  hideHeader?: boolean;
 }) {
   const fileTree = buildFileTree(files, basePath);
 
@@ -300,12 +302,14 @@ export function FileTree({
   };
 
   return (
-    <div className="w-60 border-r shrink-0 flex flex-col overflow-hidden min-h-0">
-      <div className="px-3 py-2 border-b shrink-0">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Files
-        </p>
-      </div>
+    <div className="border-r shrink-0 flex flex-col overflow-hidden min-h-0 h-full">
+      {!hideHeader && (
+        <div className="px-3 py-2 border-b shrink-0">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Files
+          </p>
+        </div>
+      )}
       <div
         className="flex-1 min-h-0 overflow-y-auto"
         onContextMenu={(e) => {
