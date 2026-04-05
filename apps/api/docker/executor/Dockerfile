@@ -102,7 +102,7 @@ RUN curl -fsSL https://get.docker.com | sh
 
 # Install Docker Compose plugin
 RUN mkdir -p /usr/local/lib/docker/cli-plugins && \
-    ARCH=$(dpkg --print-architecture) && \
+    ARCH=$(uname -m) && \
     curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH}" \
       -o /usr/local/lib/docker/cli-plugins/docker-compose && \
     chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
