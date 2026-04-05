@@ -85,7 +85,7 @@ function SetupForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <img src="/logo.svg" alt="mitshe" className="mx-auto mb-4 h-16 w-16" />
-          <CardTitle className="text-2xl">Welcome to mitshe</CardTitle>
+          <CardTitle className="text-2xl">Welcome to <span className="font-brand">mitshe</span></CardTitle>
           <CardDescription>
             Create your admin account to get started
           </CardDescription>
@@ -236,7 +236,7 @@ function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <img src="/logo.svg" alt="mitshe" className="mx-auto mb-4 h-16 w-16" />
-          <CardTitle className="text-2xl">Sign in to mitshe</CardTitle>
+          <CardTitle className="text-2xl">Sign in to <span className="font-brand">mitshe</span></CardTitle>
           <CardDescription>
             Enter your credentials to continue
           </CardDescription>

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-const integrations = ["Jira", "GitHub", "GitLab", "Slack", "Discord", "Telegram", "Linear", "Claude", "OpenAI"];
+const integrations = ["Jira", "GitHub", "GitLab", "Slack", "Discord", "Telegram", "Linear", "Claude", "OpenAI", "and more"];
 
 export default function TrustBar() {
   return (

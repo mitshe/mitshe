@@ -81,7 +81,7 @@ export default function BottomCTA() {
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-2">
-                  mitshe Cloud
+                  <span className="font-brand">mitshe</span> Cloud
                 </h3>
                 <p className="text-sm text-white/30 mb-5 leading-relaxed">
                   Same features, zero infrastructure. We host it, you use it.

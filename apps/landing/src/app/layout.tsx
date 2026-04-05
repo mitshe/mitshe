@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-brand" });
 
 export const metadata: Metadata = {
   title: "mitshe - AI Workflow Automation",
@@ -28,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={`${inter.variable} ${spaceGrotesk.variable}`}>{children}</body>
     </html>
   );
 }

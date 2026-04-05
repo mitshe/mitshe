@@ -74,8 +74,8 @@ export default function Hero() {
 
           <motion.h1 variants={fadeUp} initial="hidden" animate="visible" custom={1}
             className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
-            <span className="block">Jira ticket to merged PR.</span>
-            <span className="block bg-gradient-to-r from-[var(--primary)] to-[#a78bfa] bg-clip-text text-transparent">Zero manual steps.</span>
+            <span className="block">From issue to merged PR.</span>
+            <span className="block bg-gradient-to-r from-[var(--primary)] to-[#a78bfa] bg-clip-text text-transparent">Fully automated.</span>
           </motion.h1>
 
           <motion.p variants={fadeUp} initial="hidden" animate="visible" custom={2}

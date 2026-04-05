@@ -13,8 +13,12 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+.font-brand {
+  font-family: var(--font-brand), system-ui, sans-serif;
 }
 
 /* Subtle dot grid background */

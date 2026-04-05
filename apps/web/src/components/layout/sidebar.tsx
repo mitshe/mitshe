@@ -226,7 +226,7 @@ export function Sidebar() {
           className="flex items-center gap-2 font-semibold"
         >
           <img src="/logo.svg" alt="mitshe" className="h-8 w-8" />
-          <span>mitshe</span>
+          <span className="font-brand">mitshe</span>
         </Link>
       </div>
 

@@ -26,7 +26,7 @@ export default function Navbar() {
         <div className="px-4 sm:px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5">
             <img src="/logo.svg" alt="mitshe" className="h-7 w-7" />
-            <span className="text-lg font-bold tracking-tight">mitshe</span>
+            <span className="text-lg font-bold tracking-tight font-brand">mitshe</span>
           </a>
 
           <div className="hidden md:flex items-center gap-6">
