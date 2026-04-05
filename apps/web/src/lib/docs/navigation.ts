@@ -64,8 +64,8 @@ export const docsNav: DocNavSection[] = [
   {
     title: "Deployment",
     items: [
-      { title: "Light Mode", slug: "deployment/light", icon: Zap },
-      { title: "Selfhosted", slug: "deployment/selfhosted", icon: Box },
+      { title: "Docker", slug: "deployment/docker", icon: Box },
+      { title: "Development", slug: "deployment/development", icon: Code },
     ],
   },
 ];

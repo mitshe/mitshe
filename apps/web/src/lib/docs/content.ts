@@ -731,7 +731,7 @@ Sync issues, automate transitions, and trigger workflows from Jira events.
 
 1. In Jira: **Settings → System → WebHooks**
 2. Click **Create a WebHook**
-3. URL: \`https://api.ai-tasks.app/webhooks/jira/YOUR_ORG_ID\`
+3. URL: \`https://localhost:3001/webhooks/jira/YOUR_ORG_ID\`
 4. Select issue events (created, updated, etc.)
 5. Save
 :::
@@ -1179,7 +1179,7 @@ Sync issues and automate project management with JetBrains YouTrack.
 
 1. In YouTrack: **Administration → Integrations → Webhooks**
 2. Click **New webhook**
-3. URL: \`https://api.ai-tasks.app/webhooks/youtrack/YOUR_ORG_ID\`
+3. URL: \`https://localhost:3001/webhooks/youtrack/YOUR_ORG_ID\`
 4. Select events (issue created, updated, etc.)
 5. Save
 :::
@@ -1478,437 +1478,217 @@ assignee: john
 :::
 `,
 
-  "deployment/light": `# Light Mode
+  "deployment/docker": `# Docker Deployment
 
-Run mitshe as a single Docker container. Perfect for personal use, demos, and trying out the platform.
-
-## What is Light Mode?
-
-Light Mode bundles everything into **one Docker container**:
-- Next.js frontend
-- NestJS backend
-- SQLite database
-- Redis (embedded)
-
-No external dependencies. Just Docker.
+Run mitshe with a single Docker command. Everything included — frontend, API, SQLite, Redis.
 
 ## Quick Start
 
 \`\`\`bash
-docker run -d -p 3000:3000 -p 3001:3001 \\
-  -v mitshe-data:/app/data \\
-  ghcr.io/mitshe/light:latest
+docker run -d --name mitshe \\
+  -p 3000:3000 -p 3001:3001 \\
+  -v mitshe-data:/build/data \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  ghcr.io/mitshe/mitshe:latest
 \`\`\`
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and create your admin account.
 
-That's it. You're running mitshe.
+:::info
+**Docker socket** is mounted so mitshe can run workflow tasks in isolated containers on the host.
+:::
+
+## What's Included
+
+The container bundles:
+- **Next.js** frontend (port 3000)
+- **NestJS** API (port 3001)
+- **SQLite** database
+- **Redis** for queues and caching
+- **Workflow executor** image (auto-pulled on first workflow run)
 
 ## Data Persistence
 
-All data is stored in a single volume:
+All data is stored in the \`mitshe-data\` volume:
 
 | Path | Contents |
 |------|----------|
-| \`/app/data/mitshe.db\` | SQLite database |
-| \`/app/data/redis/\` | Redis persistence |
+| \`/build/data/mitshe.db\` | SQLite database (users, workflows, tasks) |
 
 :::warning
-**Backup your volume.** The \`mitshe-data\` volume contains all your workflows, executions, and settings.
+**Backup your volume.** The \`mitshe-data\` volume contains all your data.
 :::
+
+## First Setup
+
+1. Open \`http://localhost:3000\`
+2. Create your admin account (first user = admin)
+3. Go to **Settings → Integrations** and add your GitHub/Jira token
+4. Go to **Settings → AI Providers** and add your Claude/OpenAI key
+5. Create a workflow from a template or from scratch
+
+## Update
+
+Your data persists across updates:
+
+\`\`\`bash
+docker stop mitshe && docker rm mitshe
+docker pull ghcr.io/mitshe/mitshe:latest
+docker run -d --name mitshe \\
+  -p 3000:3000 -p 3001:3001 \\
+  -v mitshe-data:/build/data \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  ghcr.io/mitshe/mitshe:latest
+\`\`\`
 
 ## Configuration
 
-Environment variables:
-
 | Variable | Default | Description |
 |----------|---------|-------------|
-| \`PORT\` | \`3000\` | Web UI port |
-| \`API_PORT\` | \`3001\` | API port |
-| \`ENCRYPTION_KEY\` | auto-generated | For credential encryption |
+| \`AUTH_MODE\` | \`selfhosted\` | \`selfhosted\` (email/password) or \`clerk\` |
+| \`ENCRYPTION_KEY\` | auto-generated | AES-256 key for credential encryption |
+| \`EXECUTOR_IMAGE\` | \`ghcr.io/mitshe/mitshe-executor:latest\` | Workflow executor Docker image |
 
-### With custom encryption key
-
-\`\`\`bash
-docker run -d -p 3000:3000 -p 3001:3001 \\
-  -v mitshe-data:/app/data \\
-  -e ENCRYPTION_KEY="your-32-byte-hex-key" \\
-  ghcr.io/mitshe/light:latest
-\`\`\`
-
-Generate a secure key:
-\`\`\`bash
-openssl rand -hex 32
-\`\`\`
-
-## Docker Compose
-
-For easier management, use Docker Compose:
-
-\`\`\`yaml
-# docker-compose.yml
-services:
-  mitshe:
-    image: ghcr.io/mitshe/light:latest
-    ports:
-      - "3000:3000"
-      - "3001:3001"
-    volumes:
-      - mitshe-data:/app/data
-    restart: unless-stopped
-
-volumes:
-  mitshe-data:
-\`\`\`
+### Custom encryption key
 
 \`\`\`bash
-docker compose up -d
+docker run -d --name mitshe \\
+  -p 3000:3000 -p 3001:3001 \\
+  -v mitshe-data:/build/data \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  -e ENCRYPTION_KEY=$(openssl rand -hex 32) \\
+  ghcr.io/mitshe/mitshe:latest
 \`\`\`
-
-## Upgrading
-
-\`\`\`bash
-docker compose pull
-docker compose up -d
-\`\`\`
-
-Your data is preserved in the volume.
-
-## Limitations
-
-Light Mode is great for personal use but has constraints:
-
-| Feature | Light Mode | Production |
-|---------|------------|------------|
-| **Database** | SQLite | PostgreSQL |
-| **Scaling** | Single instance | Horizontal |
-| **Backups** | Manual | Automated |
-| **Team** | 1 user | Multi-user |
-
-:::info
-**Scaling up?** See [Selfhosted](/docs/deployment/selfhosted) for team deployments with PostgreSQL.
-:::
 
 ## Troubleshooting
 
 ### Container won't start
 
-Check logs:
 \`\`\`bash
 docker logs mitshe
 \`\`\`
 
-### Permission errors
+### Workflows fail with "executor image not found"
 
-Ensure the data volume is writable:
+The executor image is pulled automatically on first run. If it fails, pull manually:
+
 \`\`\`bash
-docker exec mitshe ls -la /app/data
+docker pull ghcr.io/mitshe/mitshe-executor:latest
 \`\`\`
 
 ### Port conflicts
 
-Change ports if 3000/3001 are in use:
 \`\`\`bash
 docker run -p 8080:3000 -p 8081:3001 ...
 \`\`\`
 `,
 
-  "deployment/selfhosted": `# Selfhosted Deployment
+  "deployment/development": `# Development Setup
 
-Deploy mitshe for your team with user accounts, organizations, and PostgreSQL.
+Set up mitshe for local development with hot-reload.
 
-## Overview
+## Prerequisites
 
-Selfhosted mode provides:
-- **User authentication** (email/password, no external provider needed)
-- **Organizations** for team management
-- **PostgreSQL** for production-grade data storage
-- **Horizontal scaling** across multiple instances
+- **Node.js 20+**
+- **pnpm 9+** — \`corepack enable && corepack prepare pnpm@9 --activate\`
+- **Docker** — for databases and workflow execution
+- **just** — task runner: \`brew install just\` (macOS)
 
-## Architecture
-
-\`\`\`
-                    ┌─────────────┐
-                    │   Browser   │
-                    └──────┬──────┘
-                           │
-                    ┌──────▼──────┐
-                    │   Nginx     │ (optional reverse proxy)
-                    └──────┬──────┘
-           ┌───────────────┼───────────────┐
-           │               │               │
-    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
-    │  Web (3000) │ │  API (3001) │ │  Worker     │
-    └──────┬──────┘ └──────┬──────┘ └──────┬──────┘
-           │               │               │
-           └───────────────┼───────────────┘
-                           │
-           ┌───────────────┼───────────────┐
-           │               │               │
-    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
-    │ PostgreSQL  │ │    Redis    │ │ (Optional)  │
-    └─────────────┘ └─────────────┘ │   S3/Minio  │
-                                    └─────────────┘
-\`\`\`
-
-## Quick Start
-
-### 1. Clone the repository
+## Setup
 
 \`\`\`bash
 git clone https://github.com/mitshe/mitshe.git
 cd mitshe
+just setup
 \`\`\`
 
-### 2. Configure environment
+## Run
 
 \`\`\`bash
-cp .env.example .env
-\`\`\`
-
-Edit \`.env\`:
-\`\`\`bash
-# Database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mitshe
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# Security (generate with: openssl rand -hex 32)
-ENCRYPTION_KEY=your-32-byte-hex-key
-JWT_SECRET=your-jwt-secret
-
-# Auth mode
-AUTH_MODE=selfhosted
-NEXT_PUBLIC_AUTH_MODE=selfhosted
-\`\`\`
-
-### 3. Start infrastructure
-
-\`\`\`bash
-just infra
-\`\`\`
-
-This starts PostgreSQL and Redis in Docker.
-
-### 4. Run migrations
-
-\`\`\`bash
-just db-migrate
-\`\`\`
-
-### 5. Start the application
-
-\`\`\`bash
+# Start databases + dev servers with hot-reload
 just dev
 \`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) and create your first account.
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- API: [http://localhost:3001](http://localhost:3001)
+- API Docs (Swagger): [http://localhost:3001/api](http://localhost:3001/api)
 
-## Docker Compose (Production)
+First visit: create your admin account.
 
-For production, use the full Docker Compose stack:
+## Build Workflow Executor
 
-\`\`\`yaml
-# docker-compose.prod.yml
-services:
-  web:
-    image: ghcr.io/mitshe/web:latest
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api:3001
-      - AUTH_MODE=selfhosted
-      - NEXT_PUBLIC_AUTH_MODE=selfhosted
-    depends_on:
-      - api
-
-  api:
-    image: ghcr.io/mitshe/api:latest
-    ports:
-      - "3001:3001"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/mitshe
-      - REDIS_URL=redis://redis:6379
-      - ENCRYPTION_KEY=\${ENCRYPTION_KEY}
-      - JWT_SECRET=\${JWT_SECRET}
-      - AUTH_MODE=selfhosted
-    depends_on:
-      - postgres
-      - redis
-
-  postgres:
-    image: postgres:16-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=mitshe
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-
-volumes:
-  postgres_data:
-  redis_data:
-\`\`\`
+To run workflows locally, build the executor image once:
 
 \`\`\`bash
-docker compose -f docker-compose.prod.yml up -d
+just executor-build
 \`\`\`
 
-## User Management
+## Key Commands
 
-### First user
+| Command | Description |
+|---------|-------------|
+| \`just dev\` | Start dev servers (selfhosted auth) |
+| \`just build\` | Build all packages |
+| \`just typecheck\` | TypeScript check |
+| \`just lint\` | ESLint |
+| \`just test\` | Run tests |
+| \`just check\` | Lint + typecheck + test |
+| \`just db-migrate\` | Run database migrations |
+| \`just db-studio\` | Open Prisma Studio |
+| \`just executor-build\` | Build workflow executor image |
 
-The first user to register becomes the **organization owner**.
+## Project Structure
 
-### Inviting users
-
-1. Go to **Settings → Team**
-2. Click **Invite Member**
-3. Enter email and select role
-
-### Roles
-
-| Role | Permissions |
-|------|-------------|
-| **Owner** | Full access, manage billing, delete org |
-| **Admin** | Manage members, all workflows |
-| **Member** | Create and edit own workflows |
-| **Viewer** | View-only access |
+\`\`\`
+mitshe/
+├── apps/
+│   ├── web/          # Next.js 16 frontend
+│   ├── api/          # NestJS 11 backend
+│   └── landing/      # Landing page
+├── packages/
+│   └── types/        # Shared TypeScript types
+├── docker/
+│   ├── light/        # All-in-one container
+│   ├── dev/          # Dev infrastructure
+│   ├── nginx/        # Nginx config
+│   └── prod/         # Production compose
+├── justfile          # Task runner
+└── turbo.json        # Turborepo config
+\`\`\`
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| \`DATABASE_URL\` | Yes | PostgreSQL connection string |
-| \`REDIS_URL\` | Yes | Redis connection string |
-| \`ENCRYPTION_KEY\` | Yes | 32-byte hex key for credential encryption |
-| \`JWT_SECRET\` | Yes | Secret for JWT token signing |
-| \`AUTH_MODE\` | Yes | Must be \`selfhosted\` |
-| \`NEXT_PUBLIC_AUTH_MODE\` | Yes | Must be \`selfhosted\` |
-| \`NEXT_PUBLIC_API_URL\` | No | API URL (default: http://localhost:3001) |
+Copy \`.env.example\` to \`.env\`. Key variables:
 
-## SSL/HTTPS
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`AUTH_MODE\` | \`selfhosted\` | \`selfhosted\` or \`clerk\` |
+| \`DATABASE_URL\` | PostgreSQL localhost | Database connection |
+| \`REDIS_URL\` | \`redis://localhost:6379\` | Redis connection |
+| \`ENCRYPTION_KEY\` | (empty) | AES-256 key, auto-generated in Docker |
 
-For production, always use HTTPS. Use a reverse proxy like Nginx or Caddy:
+## Auth Modes
 
-### Caddy (recommended)
-
-\`\`\`
-mitshe.yourdomain.com {
-    reverse_proxy localhost:3000
-}
-
-api.mitshe.yourdomain.com {
-    reverse_proxy localhost:3001
-}
-\`\`\`
-
-### Nginx
-
-\`\`\`nginx
-server {
-    listen 443 ssl;
-    server_name mitshe.yourdomain.com;
-
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-    }
-}
-\`\`\`
-
-## Backups
-
-### PostgreSQL
-
-\`\`\`bash
-# Backup
-pg_dump -h localhost -U postgres mitshe > backup.sql
-
-# Restore
-psql -h localhost -U postgres mitshe < backup.sql
-\`\`\`
-
-### Full backup script
-
-\`\`\`bash
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-pg_dump -h localhost -U postgres mitshe > backup_$DATE.sql
-gzip backup_$DATE.sql
-# Upload to S3, etc.
-\`\`\`
-
-## Scaling
-
-### Horizontal scaling
-
-Run multiple API instances behind a load balancer:
-
-\`\`\`yaml
-services:
-  api:
-    image: ghcr.io/mitshe/api:latest
-    deploy:
-      replicas: 3
-    # ... rest of config
-\`\`\`
-
-Redis handles session sharing and queue coordination automatically.
-
-## Monitoring
-
-### Health checks
-
-\`\`\`bash
-# API health
-curl http://localhost:3001/health
-
-# Web health
-curl http://localhost:3000/api/health
-\`\`\`
-
-### Logs
-
-\`\`\`bash
-docker compose logs -f api
-docker compose logs -f web
-\`\`\`
+| Mode | Description |
+|------|-------------|
+| **Selfhosted** | Email/password JWT auth (default) |
+| **Clerk** | Clerk auth with organizations, SSO |
 
 ## Troubleshooting
 
-### Database connection failed
+### Port 5432/6379 in use
 
-Check PostgreSQL is running and accessible:
-\`\`\`bash
-psql -h localhost -U postgres -d mitshe -c "SELECT 1"
-\`\`\`
+Stop existing databases or change ports in \`docker/dev/docker-compose.yml\`.
 
-### Redis connection failed
+### Prisma client not generated
 
 \`\`\`bash
-redis-cli ping
+just db-generate
 \`\`\`
 
-### Migrations failed
+### Workflow execution fails
 
-Run manually:
-\`\`\`bash
-npx prisma migrate deploy
-\`\`\`
+Build the executor image: \`just executor-build\`
 `,
 
   api: `# REST API
@@ -1918,7 +1698,7 @@ Access mitshe programmatically.
 ## Authentication
 
 \`\`\`bash
-curl https://api.ai-tasks.app/v1/tasks -H "Authorization: Bearer YOUR_API_KEY"
+curl https://localhost:3001/v1/tasks -H "Authorization: Bearer YOUR_API_KEY"
 \`\`\`
 
 Get your key at [Settings → API Keys](/settings/api-keys).
@@ -1957,7 +1737,7 @@ Keep your API key secret. Never commit to version control.
 ## Example
 
 \`\`\`bash
-curl -X POST https://api.ai-tasks.app/v1/workflows/abc123/run \\
+curl -X POST https://localhost:3001/v1/workflows/abc123/run \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"input": {"issueKey": "PROJ-456"}}'
