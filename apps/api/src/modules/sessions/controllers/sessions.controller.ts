@@ -243,7 +243,7 @@ export class SessionsController {
 
     if (session.containerId) {
       await this.containerService.stopContainer(session.containerId);
-      await this.containerService.removeContainer(session.containerId);
+      await this.containerService.removeContainer(session.containerId, id);
     }
 
     await this.sessionsService.remove(organizationId, id);

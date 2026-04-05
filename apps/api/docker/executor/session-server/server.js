@@ -92,6 +92,39 @@ async function setup() {
     }
   }
 
+  // Start Docker daemon if /var/lib/docker is mounted (DinD mode)
+  if (fs.existsSync('/var/lib/docker')) {
+    log('Docker-in-Docker mode detected, starting dockerd...');
+    try {
+      const { spawn } = require('child_process');
+      const dockerd = spawn('dockerd', [], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        detached: true,
+      });
+      dockerd.unref();
+
+      // Wait for Docker daemon to be ready
+      let ready = false;
+      for (let i = 0; i < 30; i++) {
+        try {
+          execSync('docker info', { stdio: 'pipe', timeout: 2000 });
+          ready = true;
+          break;
+        } catch {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+
+      if (ready) {
+        log('Docker daemon is ready');
+      } else {
+        logError('Docker daemon failed to start within 30s');
+      }
+    } catch (e) {
+      logError(`Failed to start Docker daemon: ${e.message}`);
+    }
+  }
+
   log('Session workspace setup complete');
 }
 

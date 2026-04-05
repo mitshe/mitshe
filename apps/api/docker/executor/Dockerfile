@@ -97,8 +97,18 @@ RUN ARCH=$(dpkg --print-architecture) && \
     rm /tmp/glab.deb \
     || echo "glab installation failed, skipping..."
 
-# Create non-root user for execution
-RUN useradd -m -s /bin/bash -G sudo executor \
+# Install Docker CE for DinD support
+RUN curl -fsSL https://get.docker.com | sh
+
+# Install Docker Compose plugin
+RUN mkdir -p /usr/local/lib/docker/cli-plugins && \
+    ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH}" \
+      -o /usr/local/lib/docker/cli-plugins/docker-compose && \
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Create non-root user for execution (with docker group)
+RUN useradd -m -s /bin/bash -G sudo,docker executor \
     && echo "executor ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Create workspace directory

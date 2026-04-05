@@ -94,23 +94,24 @@ export class SessionContainerService implements OnModuleInit {
       HostConfig: {
         Binds: [
           `mitshe-executor-home-${config.organizationId}:/home/executor`,
+          // DinD: dedicated Docker data volume per session (isolated daemon)
           ...(config.enableDocker
-            ? ['/var/run/docker.sock:/var/run/docker.sock']
+            ? [`mitshe-dind-${config.sessionId}:/var/lib/docker`]
             : []),
         ],
         Memory: (config.environment?.memoryMb || 4096) * 1024 * 1024,
         NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
-        PidsLimit: 512,
+        PidsLimit: config.enableDocker ? 1024 : 512,
         NetworkMode: process.env.DOCKER_NETWORK || 'bridge',
-        SecurityOpt: ['no-new-privileges:true'],
-        CapDrop: ['ALL'],
-        CapAdd: [
-          'CHOWN',
-          'SETUID',
-          'SETGID',
-          'DAC_OVERRIDE',
-          ...(config.enableDocker ? ['NET_ADMIN'] : []),
-        ],
+        // DinD requires privileged mode to run nested Docker daemon
+        Privileged: config.enableDocker || false,
+        SecurityOpt: config.enableDocker
+          ? [] // privileged mode overrides security opts
+          : ['no-new-privileges:true'],
+        CapDrop: config.enableDocker ? [] : ['ALL'],
+        CapAdd: config.enableDocker
+          ? [] // privileged grants all capabilities
+          : ['CHOWN', 'SETUID', 'SETGID', 'DAC_OVERRIDE'],
       },
     });
 
@@ -135,12 +136,25 @@ export class SessionContainerService implements OnModuleInit {
     }
   }
 
-  async removeContainer(containerId: string): Promise<void> {
+  async removeContainer(
+    containerId: string,
+    sessionId?: string,
+  ): Promise<void> {
     try {
       const container = this.docker.getContainer(containerId);
       await container.remove({ force: true });
     } catch (err) {
       this.logger.warn(`Failed to remove container: ${(err as Error).message}`);
+    }
+
+    // Cleanup DinD volume if exists
+    if (sessionId) {
+      try {
+        const volume = this.docker.getVolume(`mitshe-dind-${sessionId}`);
+        await volume.remove();
+      } catch {
+        // Volume may not exist (non-DinD session)
+      }
     }
   }
 
