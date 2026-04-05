@@ -433,11 +433,10 @@ export class RepositoriesService {
   async syncOne(organizationId: string, id: string) {
     const repo = await this.findOne(organizationId, id);
 
-    const adapter =
-      await this.adapterFactory.createGitProviderFromIntegration(
-        organizationId,
-        repo.integrationId,
-      );
+    const adapter = await this.adapterFactory.createGitProviderFromIntegration(
+      organizationId,
+      repo.integrationId,
+    );
 
     const remoteRepos = await adapter.listRepositories({ limit: 100 });
     const remote = remoteRepos.find((r) => r.id === repo.externalId);

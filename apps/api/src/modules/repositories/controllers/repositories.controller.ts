@@ -97,8 +97,7 @@ export class RepositoriesController {
     type: SyncResultResponseDto,
   })
   async syncExisting(@OrganizationId() organizationId: string) {
-    const result =
-      await this.repositoriesService.syncExisting(organizationId);
+    const result = await this.repositoriesService.syncExisting(organizationId);
     return { result };
   }
 

@@ -144,7 +144,10 @@ export class RemoteRepositoryResponseDto {
   @ApiProperty({ description: 'Full repository path' })
   fullPath: string;
 
-  @ApiPropertyOptional({ description: 'Repository description', nullable: true })
+  @ApiPropertyOptional({
+    description: 'Repository description',
+    nullable: true,
+  })
   description: string | null;
 
   @ApiProperty({ description: 'Default branch name' })

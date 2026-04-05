@@ -175,9 +175,12 @@ export class AICredentialsService {
     provider: AIProvider,
     apiKey?: string,
   ): Promise<{ success: boolean; message: string }> {
-    const result = await this.adapterFactory.testAIProviderConnection(provider, {
-      apiKey: apiKey || 'local',
-    });
+    const result = await this.adapterFactory.testAIProviderConnection(
+      provider,
+      {
+        apiKey: apiKey || 'local',
+      },
+    );
 
     return {
       success: result.success,

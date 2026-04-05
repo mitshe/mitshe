@@ -1,0 +1,95 @@
+# mitshe production deployment
+# Usage: docker compose -f docker/prod/docker-compose.yml up -d
+#
+# Prerequisites:
+# - Set environment variables in .env or pass via -e flags
+# - Point DNS: mitshe.com, app.mitshe.com, docs.mitshe.com, api.mitshe.com → VPS IP
+# - Run certbot for SSL after first deployment
+
+services:
+  # ─── Reverse Proxy ───
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-var:/var/lib/letsencrypt
+    depends_on:
+      - landing
+      - web
+      - api
+
+  # ─── Landing Page (mitshe.com) ───
+  landing:
+    image: ghcr.io/mitshe/landing:latest
+    restart: unless-stopped
+    expose:
+      - "3002"
+    environment:
+      - PORT=3002
+
+  # ─── Web App (app.mitshe.com + docs.mitshe.com) ───
+  web:
+    image: ghcr.io/mitshe/mitshe:latest
+    restart: unless-stopped
+    expose:
+      - "3000"
+    volumes:
+      - mitshe-data:/build/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - AUTH_MODE=${AUTH_MODE:-selfhosted}
+      - NEXT_PUBLIC_AUTH_MODE=${AUTH_MODE:-selfhosted}
+      - NEXT_PUBLIC_API_URL=https://api.mitshe.com
+      - DATABASE_URL=file:/build/data/mitshe.db
+      - REDIS_URL=redis://redis:6379
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      - redis
+
+  # ─── API (api.mitshe.com) ───
+  api:
+    image: ghcr.io/mitshe/mitshe:latest
+    restart: unless-stopped
+    expose:
+      - "3001"
+    volumes:
+      - mitshe-data:/build/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - AUTH_MODE=${AUTH_MODE:-selfhosted}
+      - DATABASE_URL=file:/build/data/mitshe.db
+      - REDIS_URL=redis://redis:6379
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+
+  # ─── Redis ───
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── SSL (run once) ───
+  # docker compose run certbot certonly --webroot -w /var/lib/letsencrypt -d mitshe.com -d app.mitshe.com -d docs.mitshe.com -d api.mitshe.com
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    profiles:
+      - ssl
+
+volumes:
+  mitshe-data:
+  redis-data:
+  certbot-etc:
+  certbot-var:

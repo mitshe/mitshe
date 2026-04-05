@@ -80,7 +80,9 @@ export class TestAICredentialDto {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'API key (optional for local providers)' })
+  @ApiPropertyOptional({
+    description: 'API key (optional for local providers)',
+  })
   apiKey?: string;
 }
 

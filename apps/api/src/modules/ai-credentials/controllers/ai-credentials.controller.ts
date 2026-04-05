@@ -90,7 +90,10 @@ export class AICredentialsController {
     type: TestAIConnectionResponseDto,
   })
   async testBeforeConnect(@Body() dto: TestAICredentialDto) {
-    return this.aiCredentialsService.testBeforeConnect(dto.provider, dto.apiKey);
+    return this.aiCredentialsService.testBeforeConnect(
+      dto.provider,
+      dto.apiKey,
+    );
   }
 
   @Get(':id')
