@@ -117,12 +117,12 @@ export class SessionsController {
           const config = this.encryption.decryptJson(
             Buffer.from(integration.config),
             Buffer.from(integration.configIv),
-          );
+          ) as Record<string, string>;
 
-          const token = config.accessToken || config.apiToken || config.token;
+          const token =
+            config.accessToken || config.apiToken || config.token;
 
           if (token && cloneUrl.startsWith('https://')) {
-            // Inject token into clone URL
             const url = new URL(cloneUrl);
             if (sr.repository.provider === 'GITLAB') {
               url.username = 'oauth2';
