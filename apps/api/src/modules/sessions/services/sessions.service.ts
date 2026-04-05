@@ -22,6 +22,7 @@ export class SessionsService {
         agentDefinitionId: dto.agentDefinitionId || null,
         startArguments: dto.startArguments || null,
         environmentId: dto.environmentId || null,
+        enableDocker: dto.enableDocker ?? false,
         instructions: dto.instructions || '',
         createdBy: userId,
         repositories: {

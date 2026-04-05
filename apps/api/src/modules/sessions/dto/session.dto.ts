@@ -1,6 +1,7 @@
 import {
   IsString,
   IsOptional,
+  IsBoolean,
   IsArray,
   IsNotEmpty,
   IsInt,
@@ -50,6 +51,11 @@ export class CreateSessionDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'System instructions' })
   instructions?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Enable Docker socket in container' })
+  enableDocker?: boolean;
 }
 
 export class SessionResponseDto {

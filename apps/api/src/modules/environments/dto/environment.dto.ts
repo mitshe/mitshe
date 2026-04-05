@@ -1,10 +1,10 @@
 import {
   IsString,
   IsOptional,
+  IsBoolean,
   IsArray,
   IsNotEmpty,
   IsInt,
-  IsBoolean,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -54,6 +54,13 @@ export class CreateEnvironmentDto {
   })
   setupScript?: string;
 
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Enable Docker socket binding for Docker-in-Docker',
+  })
+  enableDocker?: boolean;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => EnvironmentVariableDto)
@@ -84,6 +91,10 @@ export class UpdateEnvironmentDto {
   @IsString()
   @IsOptional()
   setupScript?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  enableDocker?: boolean;
 
   @IsArray()
   @ValidateNested({ each: true })

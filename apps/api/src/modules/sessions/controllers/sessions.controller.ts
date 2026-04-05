@@ -173,6 +173,7 @@ export class SessionsController {
           repos,
           instructions: session.instructions,
           provider: session.aiCredential?.provider,
+          enableDocker: session.enableDocker,
           environment: envConfig,
         });
 

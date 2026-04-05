@@ -150,6 +150,7 @@ export default function SessionsPage() {
     aiCredentialId: "",
     startArguments: "",
     environmentId: "",
+    enableDocker: false,
     instructions: "",
   });
 
@@ -197,6 +198,7 @@ export default function SessionsPage() {
         agentDefinitionId: form.agentDefinitionId || undefined,
         startArguments: form.startArguments || undefined,
         environmentId: form.environmentId || undefined,
+        enableDocker: form.enableDocker || undefined,
         instructions: form.instructions || undefined,
       });
       toast.success("Session created");
@@ -208,7 +210,8 @@ export default function SessionsPage() {
         repositoryIds: [],
         aiCredentialId: "",
         startArguments: "",
-    environmentId: "",
+        environmentId: "",
+        enableDocker: false,
         instructions: "",
       });
       router.push(`/sessions/${session.id}`);
@@ -381,8 +384,14 @@ export default function SessionsPage() {
                 <Label>Environment (optional)</Label>
                 <Select
                   value={form.environmentId}
-                  onValueChange={(v) =>
-                    setForm({ ...form, environmentId: v })
+                  onValueChange={(v) => {
+                    const env = environmentsList.find((e) => e.id === v);
+                    setForm({
+                      ...form,
+                      environmentId: v,
+                      enableDocker: env?.enableDocker ?? form.enableDocker,
+                    })
+                  }
                   }
                 >
                   <SelectTrigger>
@@ -401,6 +410,19 @@ export default function SessionsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="enableDocker"
+                  checked={form.enableDocker}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, enableDocker: checked === true })
+                  }
+                />
+                <Label htmlFor="enableDocker" className="font-normal cursor-pointer text-sm">
+                  Enable Docker
+                </Label>
               </div>
 
               <div className="space-y-2">

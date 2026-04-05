@@ -8,6 +8,7 @@ export interface SessionContainerConfig {
   repos: Array<{ name: string; cloneUrl: string; branch: string }>;
   instructions: string;
   provider?: string; // e.g. CLAUDE_CODE_LOCAL, OPENCLAW
+  enableDocker?: boolean;
   environment?: {
     memoryMb?: number | null;
     cpuCores?: number | null;
@@ -91,14 +92,25 @@ export class SessionContainerService implements OnModuleInit {
         'mitshe.created-at': new Date().toISOString(),
       },
       HostConfig: {
-        Binds: [`mitshe-executor-home-${config.organizationId}:/home/executor`],
+        Binds: [
+          `mitshe-executor-home-${config.organizationId}:/home/executor`,
+          ...(config.enableDocker
+            ? ['/var/run/docker.sock:/var/run/docker.sock']
+            : []),
+        ],
         Memory: (config.environment?.memoryMb || 4096) * 1024 * 1024,
         NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
         PidsLimit: 512,
         NetworkMode: process.env.DOCKER_NETWORK || 'bridge',
         SecurityOpt: ['no-new-privileges:true'],
         CapDrop: ['ALL'],
-        CapAdd: ['CHOWN', 'SETUID', 'SETGID', 'DAC_OVERRIDE'],
+        CapAdd: [
+          'CHOWN',
+          'SETUID',
+          'SETGID',
+          'DAC_OVERRIDE',
+          ...(config.enableDocker ? ['NET_ADMIN'] : []),
+        ],
       },
     });
 

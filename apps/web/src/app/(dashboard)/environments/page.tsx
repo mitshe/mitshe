@@ -67,6 +67,7 @@ const emptyForm = {
   memoryMb: "",
   cpuCores: "",
   setupScript: "",
+  enableDocker: false,
   variables: [] as VarEntry[],
 };
 
@@ -94,6 +95,7 @@ export default function EnvironmentsPage() {
       memoryMb: env.memoryMb ? String(env.memoryMb) : "",
       cpuCores: env.cpuCores ? String(env.cpuCores) : "",
       setupScript: env.setupScript || "",
+      enableDocker: env.enableDocker || false,
       variables:
         env.variables?.map((v) => ({
           key: v.key,
@@ -116,6 +118,7 @@ export default function EnvironmentsPage() {
       memoryMb: form.memoryMb ? Number(form.memoryMb) : undefined,
       cpuCores: form.cpuCores ? Number(form.cpuCores) : undefined,
       setupScript: form.setupScript || undefined,
+      enableDocker: form.enableDocker || undefined,
       variables:
         form.variables.length > 0
           ? form.variables.filter((v) => v.key.trim())
@@ -268,6 +271,19 @@ export default function EnvironmentsPage() {
                 </p>
               </div>
 
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="enableDocker"
+                  checked={form.enableDocker}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, enableDocker: checked === true })
+                  }
+                />
+                <Label htmlFor="enableDocker" className="font-normal cursor-pointer text-sm">
+                  Enable Docker (mount host Docker socket)
+                </Label>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Environment Variables</Label>
@@ -403,6 +419,14 @@ export default function EnvironmentsPage() {
                         >
                           <Cpu className="w-2.5 h-2.5" />
                           {env.cpuCores} cores
+                        </Badge>
+                      )}
+                      {env.enableDocker && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] gap-0.5"
+                        >
+                          Docker
                         </Badge>
                       )}
                       {env.variables && env.variables.length > 0 && (

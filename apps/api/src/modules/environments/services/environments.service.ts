@@ -26,6 +26,7 @@ export class EnvironmentsService {
         memoryMb: dto.memoryMb || null,
         cpuCores: dto.cpuCores || null,
         setupScript: dto.setupScript || null,
+        enableDocker: dto.enableDocker ?? false,
         createdBy: userId,
         variables: dto.variables
           ? {
@@ -98,6 +99,9 @@ export class EnvironmentsService {
         }),
         ...(dto.setupScript !== undefined && {
           setupScript: dto.setupScript || null,
+        }),
+        ...(dto.enableDocker !== undefined && {
+          enableDocker: dto.enableDocker,
         }),
       },
       include: INCLUDE_RELATIONS,

@@ -8,6 +8,7 @@ export interface Environment {
   memoryMb: number | null;
   cpuCores: number | null;
   setupScript: string | null;
+  enableDocker: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -28,6 +29,7 @@ export interface CreateEnvironmentDto {
   memoryMb?: number;
   cpuCores?: number;
   setupScript?: string;
+  enableDocker?: boolean;
   variables?: Array<{ key: string; value: string; isSecret?: boolean }>;
 }
 
@@ -37,5 +39,6 @@ export interface UpdateEnvironmentDto {
   memoryMb?: number;
   cpuCores?: number;
   setupScript?: string;
+  enableDocker?: boolean;
   variables?: Array<{ key: string; value: string; isSecret?: boolean }>;
 }
