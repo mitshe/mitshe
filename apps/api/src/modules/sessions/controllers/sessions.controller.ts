@@ -114,10 +114,10 @@ export class SessionsController {
         });
 
         if (integration?.config && integration?.configIv) {
-          const config = this.encryption.decryptJson(
+          const config = this.encryption.decryptJson<Record<string, string>>(
             Buffer.from(integration.config),
             Buffer.from(integration.configIv),
-          ) as Record<string, string>;
+          );
 
           const token =
             config.accessToken || config.apiToken || config.token;
