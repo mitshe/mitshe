@@ -1,43 +1,22 @@
-# Dependencies
 node_modules/
 .pnpm-store/
 package-lock.json
-
-# Build outputs
 dist/
 .next/
 .turbo/
 *.tsbuildinfo
-
-# Environment
 .env
 .env.production
 .env.local
 .env.*.local
-
-# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 .DS_Store
-
-# Testing
 coverage/
-
-# Logs
 *.log
-npm-debug.log*
-pnpm-debug.log*
-
-# Database (local)
 *.db
 *.db-journal
-prisma/*.db
-
-# Docker
-docker/light/mitshe.db
-
-# Misc
 .cache/
 tmp/

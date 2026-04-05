@@ -1,40 +1,18 @@
-# Dependencies (installed inside container)
 node_modules/
 **/node_modules/
-
-# Build outputs
 dist/
 .next/
 .turbo/
 *.tsbuildinfo
-
-# Environment files
 .env
 .env.local
 .env.*.local
-
-# IDE
 .idea/
 .vscode/
-*.swp
-*.swo
-
-# Git
 .git/
-
-# OS
 .DS_Store
-Thumbs.db
-
-# Testing
 coverage/
-
-# Logs
 *.log
-
-# Local databases
 *.db
 *.db-journal
-
-# Claude
 .claude/
