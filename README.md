@@ -1,11 +1,11 @@
 # mitshe
 
-> Open-source AI-powered workflow automation platform
+> Open-source AI-powered workflow automation platform with interactive agent workspaces
 
 [![CI](https://github.com/mitshe/mitshe/actions/workflows/ci.yml/badge.svg)](https://github.com/mitshe/mitshe/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-mitshe automates development workflows using AI agents. Connect your tools (Jira, GitLab, Slack) and let AI handle repetitive tasks - from code analysis to merge request creation.
+mitshe automates development workflows using AI agents and provides interactive workspaces for hands-on collaboration with AI. Connect your tools (Jira, GitHub, GitLab, Slack), build visual automation pipelines, and work with AI agents like Claude Code or OpenClaw directly in your browser - complete with a terminal, code editor, and file browser. Each session runs in an isolated Docker container with full access to your repositories.
 
 ## Run it
 
@@ -49,14 +49,19 @@ docker run -d \
 ```bash
 # Prerequisites: Node.js 20+, pnpm 9+, Docker, just
 corepack enable && corepack prepare pnpm@9 --activate
-brew install just  # macOS
+brew install just  # macOS (or: curl -sSf https://just.systems/install.sh | bash)
 
 # Setup
 git clone https://github.com/mitshe/mitshe.git
 cd mitshe
 just setup
 
-# Build workflow executor image (one-time)
+# Configure environment
+cp .env.example .env
+cp apps/api/.env.example apps/api/.env
+# Edit .env files - ENCRYPTION_KEY and JWT_SECRET auto-generate if not set
+
+# Build workflow executor image (one-time, required for sessions and workflows)
 just executor-build
 
 # Start databases + dev servers
