@@ -556,6 +556,7 @@ export default function SessionDetailPage() {
               {session.project?.name || "No project"}
               {session.aiCredential &&
                 ` · ${providerLabels[session.aiCredential.provider] || session.aiCredential.provider}`}
+              {session.enableDocker && " · Docker"}
             </p>
           </div>
         </div>

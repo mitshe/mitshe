@@ -512,6 +512,9 @@ export default function SessionsPage() {
                         {session.aiCredential && (
                           <span>{providerLabels[session.aiCredential.provider] || session.aiCredential.provider}</span>
                         )}
+                        {session.enableDocker && (
+                          <span className="text-blue-500">Docker</span>
+                        )}
                         {session.repositories && session.repositories.length > 0 && (
                           <span className="truncate max-w-[200px]">
                             {session.repositories
