@@ -374,7 +374,10 @@ export class SessionContainerService implements OnModuleInit {
           this.logger.log(
             `Cleaning up stale container: ${containerInfo.Names[0]}`,
           );
-          await this.removeContainer(containerInfo.Id);
+          await this.removeContainer(
+            containerInfo.Id,
+            containerInfo.Labels['mitshe.session-id'],
+          );
         }
       }
     } catch (err) {
