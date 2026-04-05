@@ -1211,6 +1211,22 @@ export function useStopSession() {
   });
 }
 
+export function useCloneSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      const { session } = await api.sessions.clone(id, token);
+      return session;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
 export function useSessionFiles(id: string) {
   const getToken = useAuthToken();
 

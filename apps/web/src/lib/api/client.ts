@@ -708,6 +708,12 @@ export const api = {
         token,
       }),
 
+    clone: (id: string, token: string) =>
+      request<{ session: AgentSession }>(`/sessions/${id}/clone`, {
+        method: "POST",
+        token,
+      }),
+
     getFiles: (id: string, token: string, path?: string) => {
       const qs = path ? `?path=${encodeURIComponent(path)}` : "";
       return request<{ files: string[] }>(`/sessions/${id}/files${qs}`, {

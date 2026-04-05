@@ -196,6 +196,118 @@ export class SessionContainerService implements OnModuleInit {
     );
   }
 
+  // ─── Clone Operations ───────────────────────────────────────────
+
+  /**
+   * Commit a container's current state to a Docker image (snapshot).
+   * Returns the image name in format "mitshe-clone:{sessionId}".
+   */
+  async commitContainer(
+    containerId: string,
+    sessionId: string,
+  ): Promise<string> {
+    const container = this.docker.getContainer(containerId);
+    const repo = 'mitshe-clone';
+    const tag = sessionId;
+
+    await container.commit({ repo, tag, comment: `Clone snapshot of session ${sessionId}` });
+    const imageName = `${repo}:${tag}`;
+    this.logger.log(
+      `Committed container ${containerId.slice(0, 12)} → image ${imageName}`,
+    );
+    return imageName;
+  }
+
+  /**
+   * Create and start a container from a previously committed image.
+   * Simplified variant of createAndStart — skips repo cloning and setup scripts
+   * since those are already baked into the committed image.
+   */
+  async createFromCommittedImage(
+    image: string,
+    config: {
+      sessionId: string;
+      organizationId: string;
+      enableDocker?: boolean;
+      environment?: { memoryMb?: number | null; cpuCores?: number | null };
+    },
+  ): Promise<string> {
+    const containerName = `${this.containerPrefix}-${config.sessionId}`;
+    this.logger.log(
+      `Creating cloned container from image ${image}: ${containerName}`,
+    );
+
+    const container = await this.docker.createContainer({
+      Image: image,
+      name: containerName,
+      User: 'root',
+      Entrypoint: ['bash', '-c'],
+      Cmd: [
+        [
+          'chown -R executor:executor /home/executor 2>/dev/null',
+          config.enableDocker
+            ? 'if [ -d /var/lib/docker ]; then dockerd &>/var/log/dockerd.log & for i in $(seq 1 30); do docker info &>/dev/null && break || sleep 1; done; fi'
+            : '',
+          'exec su -s /bin/bash executor -c "node /session/server.js"',
+        ]
+          .filter(Boolean)
+          .join('; '),
+      ],
+      WorkingDir: '/workspace',
+      Labels: {
+        'mitshe.type': 'session',
+        'mitshe.session-id': config.sessionId,
+        'mitshe.organization-id': config.organizationId,
+        'mitshe.created-at': new Date().toISOString(),
+        'mitshe.cloned': 'true',
+      },
+      HostConfig: {
+        Binds: [
+          `mitshe-executor-home-${config.organizationId}:/home/executor`,
+          ...(config.enableDocker
+            ? [`mitshe-dind-${config.sessionId}:/var/lib/docker`]
+            : []),
+        ],
+        Memory:
+          (config.environment?.memoryMb || 4096) * 1024 * 1024,
+        NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
+        PidsLimit: config.enableDocker ? 1024 : 512,
+        NetworkMode: process.env.DOCKER_NETWORK || 'bridge',
+        Privileged: config.enableDocker || false,
+        SecurityOpt: config.enableDocker
+          ? []
+          : ['no-new-privileges:true'],
+        CapDrop: config.enableDocker ? [] : ['ALL'],
+        CapAdd: config.enableDocker
+          ? []
+          : ['CHOWN', 'SETUID', 'SETGID', 'DAC_OVERRIDE'],
+      },
+    });
+
+    await container.start();
+
+    const containerId = container.id;
+    this.logger.log(
+      `Cloned container started: ${containerName} (${containerId.slice(0, 12)})`,
+    );
+    return containerId;
+  }
+
+  /**
+   * Remove a Docker image (used to cleanup after clone).
+   */
+  async removeImage(imageName: string): Promise<void> {
+    try {
+      const image = this.docker.getImage(imageName);
+      await image.remove();
+      this.logger.log(`Removed clone image: ${imageName}`);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to remove image ${imageName}: ${(err as Error).message}`,
+      );
+    }
+  }
+
   // ─── File Operations ────────────────────────────────────────────
 
   async readFile(containerId: string, filePath: string): Promise<string> {

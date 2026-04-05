@@ -53,12 +53,16 @@ import {
   Square,
   Clock,
   Trash2,
+  Copy,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import {
   useSessions,
   useCreateSession,
   useDeleteSession,
+  usePauseSession,
+  useStopSession,
+  useCloneSession,
   usePresets,
   useProjects,
   useRepositories,
@@ -130,6 +134,9 @@ export default function SessionsPage() {
   const { data: environmentsList = [] } = useEnvironments();
   const createSession = useCreateSession();
   const deleteSession = useDeleteSession();
+  const pauseSession = usePauseSession();
+  const stopSession = useStopSession();
+  const cloneSession = useCloneSession();
 
   // Auto-refresh list when session status changes
   useEffect(() => {
@@ -229,6 +236,37 @@ export default function SessionsPage() {
       toast.success("Session deleted");
     } catch {
       toast.error("Failed to delete session");
+    }
+  };
+
+  const handlePause = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      await pauseSession.mutateAsync(id);
+      toast.success("Session paused");
+    } catch {
+      toast.error("Failed to pause session");
+    }
+  };
+
+  const handleStop = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      await stopSession.mutateAsync(id);
+      toast.success("Session stopped");
+    } catch {
+      toast.error("Failed to stop session");
+    }
+  };
+
+  const handleClone = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      const session = await cloneSession.mutateAsync(id);
+      toast.success("Session cloned");
+      router.push(`/sessions/${session.id}`);
+    } catch {
+      toast.error("Failed to clone session");
     }
   };
 
@@ -534,6 +572,28 @@ export default function SessionsPage() {
                       className="flex items-center gap-1 shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
+                      {session.status === "RUNNING" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => handlePause(e, session.id)}
+                            title="Pause"
+                          >
+                            <Pause className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => handleStop(e, session.id)}
+                            title="Stop"
+                          >
+                            <Square className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
+                      )}
                       {(session.status === "COMPLETED" ||
                         session.status === "FAILED" ||
                         session.status === "PAUSED") && (
@@ -546,6 +606,17 @@ export default function SessionsPage() {
                         >
                           <Play className="w-3.5 h-3.5 mr-1" />
                           Open
+                        </Button>
+                      )}
+                      {session.containerId && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={(e) => handleClone(e, session.id)}
+                          title="Clone"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
                         </Button>
                       )}
                       <AlertDialog>

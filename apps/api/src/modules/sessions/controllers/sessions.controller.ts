@@ -249,6 +249,91 @@ export class SessionsController {
     await this.sessionsService.remove(organizationId, id);
   }
 
+  @Post(':id/clone')
+  @ApiOperation({ summary: 'Clone session with Docker snapshot' })
+  @ApiResponse({ status: 201, type: SessionDetailResponseDto })
+  async clone(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Req() req: Request,
+  ) {
+    const userId = (req as any).userId || 'system';
+    const sourceSession = await this.sessionsService.findOne(
+      organizationId,
+      id,
+    );
+
+    if (!sourceSession.containerId) {
+      throw new BadRequestException(
+        'Source session has no container to clone',
+      );
+    }
+
+    const cloned = await this.sessionsService.clone(
+      organizationId,
+      userId,
+      id,
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    setImmediate(async () => {
+      try {
+        // 1. Commit source container to image
+        const imageName = await this.containerService.commitContainer(
+          sourceSession.containerId!,
+          cloned.id,
+        );
+
+        // 2. Load environment config for resource limits
+        let envConfig:
+          | { memoryMb?: number | null; cpuCores?: number | null }
+          | undefined;
+        if (sourceSession.environmentId) {
+          const env = await this.prisma.environment.findFirst({
+            where: { id: sourceSession.environmentId, organizationId },
+          });
+          if (env) {
+            envConfig = { memoryMb: env.memoryMb, cpuCores: env.cpuCores };
+          }
+        }
+
+        // 3. Create new container from committed image
+        const containerId =
+          await this.containerService.createFromCommittedImage(imageName, {
+            sessionId: cloned.id,
+            organizationId,
+            enableDocker: sourceSession.enableDocker,
+            environment: envConfig,
+          });
+
+        // 4. Update status to RUNNING
+        await this.sessionsService.updateStatus(
+          cloned.id,
+          'RUNNING',
+          containerId,
+        );
+        this.eventsGateway.emitSessionStatus(
+          organizationId,
+          cloned.id,
+          'RUNNING',
+        );
+
+        // 5. Cleanup: remove the committed image to save disk space
+        await this.containerService.removeImage(imageName);
+      } catch (err) {
+        await this.sessionsService.updateStatus(cloned.id, 'FAILED');
+        this.eventsGateway.emitSessionStatus(
+          organizationId,
+          cloned.id,
+          'FAILED',
+          (err as Error).message,
+        );
+      }
+    });
+
+    return { session: cloned };
+  }
+
   // ─── Session Lifecycle ─────────────────────────────────────────
 
   @Post(':id/pause')

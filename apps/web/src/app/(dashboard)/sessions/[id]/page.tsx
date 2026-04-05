@@ -16,6 +16,8 @@ import {
   Terminal as TerminalIcon,
   PanelLeft,
   X,
+  Trash2,
+  Copy,
 } from "lucide-react";
 import {
   Tooltip,
@@ -24,11 +26,24 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   useSession,
   useCloseTerminal,
   usePauseSession,
   useResumeSession,
   useStopSession,
+  useDeleteSession,
+  useCloneSession,
   useSessionFiles,
   useSessionGitStatus,
   useReadSessionFile,
@@ -67,6 +82,8 @@ export default function SessionDetailPage() {
   const pauseSession = usePauseSession();
   const resumeSession = useResumeSession();
   const stopSession = useStopSession();
+  const deleteSession = useDeleteSession();
+  const cloneSession = useCloneSession();
   const closeTerminalMutation = useCloseTerminal();
   const readFile = useReadSessionFile();
   const deleteFile = useDeleteSessionFile();
@@ -553,6 +570,26 @@ export default function SessionDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await deleteSession.mutateAsync(sessionId);
+      toast.success("Session deleted");
+      router.push("/sessions");
+    } catch {
+      toast.error("Failed to delete session");
+    }
+  };
+
+  const handleClone = async () => {
+    try {
+      const cloned = await cloneSession.mutateAsync(sessionId);
+      toast.success("Session cloned");
+      router.push(`/sessions/${cloned.id}`);
+    } catch {
+      toast.error("Failed to clone session");
+    }
+  };
+
   // ─── Render ────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -659,6 +696,21 @@ export default function SessionDetailPage() {
               </TooltipProvider>
             </>
           )}
+          {session.containerId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClone}
+              disabled={cloneSession.isPending}
+            >
+              {cloneSession.isPending ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Copy className="w-4 h-4 mr-1" />
+              )}
+              Clone
+            </Button>
+          )}
           {isRunning && (
             <Button variant="outline" size="sm" onClick={handlePause}>
               <Pause className="w-4 h-4 mr-1" /> Pause
@@ -674,6 +726,35 @@ export default function SessionDetailPage() {
               <Square className="w-4 h-4 mr-1" /> Stop
             </Button>
           )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete &quot;{session.name}&quot;? The
+                  container and all data will be permanently removed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 

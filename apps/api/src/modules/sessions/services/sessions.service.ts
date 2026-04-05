@@ -88,6 +88,51 @@ export class SessionsService {
     return session;
   }
 
+  async clone(organizationId: string, userId: string, sourceSessionId: string) {
+    const source = await this.findOne(organizationId, sourceSessionId);
+
+    const cloned = await this.prisma.agentSession.create({
+      data: {
+        organizationId,
+        name: `${source.name} (Clone)`,
+        projectId: source.projectId,
+        agentDefinitionId: source.agentDefinitionId,
+        aiCredentialId: source.aiCredentialId,
+        instructions: source.instructions,
+        startArguments: source.startArguments,
+        environmentId: source.environmentId,
+        enableDocker: source.enableDocker,
+        status: 'CREATING',
+        createdBy: userId,
+        repositories: {
+          create: source.repositories.map((r) => ({
+            repositoryId: r.repositoryId,
+          })),
+        },
+      },
+      include: {
+        repositories: { include: { repository: true } },
+        project: { select: { id: true, name: true, key: true } },
+        aiCredential: { select: { id: true, provider: true } },
+        agentDefinition: { select: { id: true, name: true } },
+      },
+    });
+
+    // Copy messages from source session
+    if (source.messages && source.messages.length > 0) {
+      await this.prisma.sessionMessage.createMany({
+        data: source.messages.map((m) => ({
+          sessionId: cloned.id,
+          role: m.role,
+          content: m.content,
+          metadata: m.metadata ?? Prisma.JsonNull,
+        })),
+      });
+    }
+
+    return cloned;
+  }
+
   async updateStatus(
     id: string,
     status: SessionStatus,
