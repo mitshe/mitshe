@@ -88,6 +88,8 @@ model Organization {
   gitlabWebhookSecretIv Bytes? @map("gitlab_webhook_secret_iv")
   githubWebhookSecret   Bytes? @map("github_webhook_secret")
   githubWebhookSecretIv Bytes? @map("github_webhook_secret_iv")
+  trelloWebhookSecret   Bytes? @map("trello_webhook_secret")
+  trelloWebhookSecretIv Bytes? @map("trello_webhook_secret_iv")
 
   // Relations
   owner         User?    @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: SetNull)
@@ -146,7 +148,7 @@ model Project {
   gitProviderId   String? @map("git_provider_id")
 
   // Issue tracker mapping
-  issueTrackerType    String? @map("issue_tracker_type") // 'jira' | 'youtrack' | 'linear'
+  issueTrackerType    String? @map("issue_tracker_type") // 'jira' | 'youtrack' | 'linear' | 'trello'
   issueTrackerProject String? @map("issue_tracker_project")
   issueTrackerConfig  Json?   @map("issue_tracker_config")
 
@@ -230,6 +232,7 @@ enum IntegrationType {
   JIRA
   YOUTRACK
   LINEAR
+  TRELLO
   GITLAB
   GITHUB
   SLACK
@@ -485,7 +488,7 @@ model ApiKey {
 
 model WebhookLog {
   id        String   @id @default(cuid())
-  source    String // 'jira' | 'gitlab' | 'clerk'
+  source    String // 'jira' | 'gitlab' | 'github' | 'trello' | 'clerk'
   eventType String   @map("event_type")
   payload   Json
   processed Boolean  @default(false)

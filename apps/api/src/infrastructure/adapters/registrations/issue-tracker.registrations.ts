@@ -7,6 +7,7 @@ import { issueTrackerRegistry, AdapterConfig } from '../adapter-registry';
 import { createJiraAdapter } from '../issue-tracker/jira.adapter';
 import { createYouTrackAdapter } from '../issue-tracker/youtrack.adapter';
 import { createLinearAdapter } from '../issue-tracker/linear.adapter';
+import { createTrelloAdapter } from '../issue-tracker/trello.adapter';
 
 // Register JIRA adapter
 issueTrackerRegistry.register('JIRA', (config: AdapterConfig) =>
@@ -30,5 +31,13 @@ issueTrackerRegistry.register('YOUTRACK', (config: AdapterConfig) =>
 issueTrackerRegistry.register('LINEAR', (config: AdapterConfig) =>
   createLinearAdapter({
     apiKey: config.apiKey || config.accessToken || '',
+  }),
+);
+
+// Register Trello adapter
+issueTrackerRegistry.register('TRELLO', (config: AdapterConfig) =>
+  createTrelloAdapter({
+    apiKey: config.apiKey || '',
+    apiToken: config.apiToken || config.accessToken || '',
   }),
 );

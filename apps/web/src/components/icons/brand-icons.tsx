@@ -11,6 +11,7 @@ import {
   SiGitlab,
   SiJira,
   SiLinear,
+  SiTrello,
   SiObsidian,
   SiAnthropic,
   SiOpenai,
@@ -73,6 +74,10 @@ export function YouTrackIcon({ className }: IconProps) {
 
 export function LinearIcon({ className }: IconProps) {
   return <SiLinear className={cn("w-5 h-5", className)} />;
+}
+
+export function TrelloIcon({ className }: IconProps) {
+  return <SiTrello className={cn("w-5 h-5", className)} />;
 }
 
 // ============================================================================

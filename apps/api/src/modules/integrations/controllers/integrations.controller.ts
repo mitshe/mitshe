@@ -104,6 +104,7 @@ export class IntegrationsController {
         jira: `${baseUrl}/webhooks/jira/${settings.webhookToken}`,
         gitlab: `${baseUrl}/webhooks/gitlab/${settings.webhookToken}`,
         github: `${baseUrl}/webhooks/github/${settings.webhookToken}`,
+        trello: `${baseUrl}/webhooks/trello/${settings.webhookToken}`,
       },
     };
   }
@@ -127,6 +128,7 @@ export class IntegrationsController {
         jira: `${baseUrl}/webhooks/jira/${newToken}`,
         gitlab: `${baseUrl}/webhooks/gitlab/${newToken}`,
         github: `${baseUrl}/webhooks/github/${newToken}`,
+        trello: `${baseUrl}/webhooks/trello/${newToken}`,
       },
     };
   }

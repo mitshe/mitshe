@@ -7,12 +7,17 @@ import {
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { AdapterFactoryService } from '../../../infrastructure/adapters/adapter-factory.service';
 import { JiraAdapter } from '../../../infrastructure/adapters/issue-tracker/jira.adapter';
-import { JiraImportPreview } from '../dto/task-import.dto';
+import { TrelloAdapter } from '../../../infrastructure/adapters/issue-tracker/trello.adapter';
+import { JiraImportPreview, TrelloImportPreview } from '../dto/task-import.dto';
 import { Prisma } from '@prisma/client';
 
 interface ParsedJiraUrl {
   baseUrl: string;
   issueKey: string;
+}
+
+interface ParsedTrelloUrl {
+  cardId: string;
 }
 
 @Injectable()
@@ -214,9 +219,195 @@ export class TaskImportService {
       });
     }
 
+    if (task.externalSource === 'TRELLO') {
+      const { cardId } = this.parseTrelloUrl(task.externalIssueUrl);
+      const trelloAdapter = await this.getTrelloAdapter(organizationId);
+
+      if (!trelloAdapter) {
+        throw new BadRequestException('Trello integration no longer configured');
+      }
+
+      const { issue, raw } = await trelloAdapter.getRawCard(cardId);
+
+      return this.prisma.task.update({
+        where: { id: taskId },
+        data: {
+          title: issue.title,
+          description: issue.description,
+          externalData: raw as Prisma.InputJsonValue,
+          externalStatus: issue.status,
+        },
+        include: {
+          project: {
+            select: { id: true, name: true, key: true },
+          },
+        },
+      });
+    }
+
     throw new BadRequestException(
       `Unsupported external source: ${task.externalSource}`,
     );
+  }
+
+  /**
+   * Parse a Trello card URL to extract card ID
+   */
+  parseTrelloUrl(url: string): ParsedTrelloUrl {
+    // Pattern: https://trello.com/c/{shortId}/{slug}
+    const pattern = /^https?:\/\/trello\.com\/c\/([a-zA-Z0-9]+)/i;
+    const match = url.match(pattern);
+
+    if (!match) {
+      throw new BadRequestException(
+        'Invalid Trello URL. Expected format: https://trello.com/c/{cardId}/{slug}',
+      );
+    }
+
+    return { cardId: match[1] };
+  }
+
+  /**
+   * Get preview of a Trello card before importing
+   */
+  async getTrelloImportPreview(
+    organizationId: string,
+    url: string,
+  ): Promise<TrelloImportPreview> {
+    const { cardId } = this.parseTrelloUrl(url);
+
+    const trelloAdapter = await this.getTrelloAdapter(organizationId);
+
+    if (!trelloAdapter) {
+      throw new BadRequestException(
+        'No Trello integration found. Please configure Trello integration first.',
+      );
+    }
+
+    try {
+      const { issue, raw } = await trelloAdapter.getRawCard(cardId);
+
+      return {
+        source: 'TRELLO',
+        cardId: issue.id,
+        title: issue.title,
+        description: issue.description,
+        status: issue.status,
+        assignee: issue.assignee,
+        labels: issue.labels,
+        board: (raw.board as { id: string; name: string }) || {
+          id: '',
+          name: '',
+        },
+        url: issue.url,
+        updated: issue.updatedAt,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch Trello card: ${error.message}`);
+      throw new BadRequestException(`Failed to fetch card: ${error.message}`);
+    }
+  }
+
+  /**
+   * Import a Trello card as a task
+   */
+  async importFromTrello(
+    organizationId: string,
+    userId: string,
+    url: string,
+    projectId?: string,
+  ) {
+    const { cardId } = this.parseTrelloUrl(url);
+
+    // Check for existing import
+    const existing = await this.prisma.task.findFirst({
+      where: {
+        organizationId,
+        externalIssueId: cardId,
+        externalSource: 'TRELLO',
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(
+        `Card has already been imported as task ${existing.id}`,
+      );
+    }
+
+    if (projectId) {
+      const project = await this.prisma.project.findFirst({
+        where: { id: projectId, organizationId },
+      });
+      if (!project) {
+        throw new NotFoundException(`Project ${projectId} not found`);
+      }
+    }
+
+    const trelloAdapter = await this.getTrelloAdapter(organizationId);
+
+    if (!trelloAdapter) {
+      throw new BadRequestException(
+        'No Trello integration found. Please configure Trello integration first.',
+      );
+    }
+
+    const { issue, raw } = await trelloAdapter.getRawCard(cardId);
+
+    const task = await this.prisma.task.create({
+      data: {
+        organizationId,
+        projectId,
+        title: issue.title,
+        description: issue.description,
+        externalSource: 'TRELLO',
+        externalIssueId: cardId,
+        externalIssueUrl: issue.url,
+        externalData: raw as Prisma.InputJsonValue,
+        externalStatus: issue.status,
+        createdBy: userId,
+        agentLogs: [],
+      },
+      include: {
+        project: {
+          select: { id: true, name: true, key: true },
+        },
+      },
+    });
+
+    this.logger.log(`Imported Trello card ${cardId} as task ${task.id}`);
+
+    return task;
+  }
+
+  /**
+   * Get Trello adapter for organization
+   */
+  private async getTrelloAdapter(
+    organizationId: string,
+  ): Promise<TrelloAdapter | null> {
+    const integration = await this.prisma.integration.findFirst({
+      where: {
+        organizationId,
+        type: 'TRELLO',
+        status: 'CONNECTED',
+      },
+    });
+
+    if (!integration) {
+      return null;
+    }
+
+    const adapter =
+      await this.adapterFactory.createIssueTrackerFromIntegration(
+        organizationId,
+        integration.id,
+      );
+
+    if (!adapter || adapter.getProviderType() !== 'trello') {
+      return null;
+    }
+
+    return adapter as TrelloAdapter;
   }
 
   /**

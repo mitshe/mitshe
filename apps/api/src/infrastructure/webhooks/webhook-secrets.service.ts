@@ -3,7 +3,7 @@ import { PrismaService } from '../persistence/prisma/prisma.service';
 import { EncryptionService } from '../../shared/encryption/encryption.service';
 import { randomBytes } from 'crypto';
 
-export type WebhookProvider = 'jira' | 'gitlab' | 'github';
+export type WebhookProvider = 'jira' | 'gitlab' | 'github' | 'trello';
 
 @Injectable()
 export class WebhookSecretsService {
@@ -67,6 +67,8 @@ export class WebhookSecretsService {
         gitlabWebhookSecretIv: true,
         githubWebhookSecret: true,
         githubWebhookSecretIv: true,
+        trelloWebhookSecret: true,
+        trelloWebhookSecretIv: true,
       },
     });
 
@@ -104,6 +106,7 @@ export class WebhookSecretsService {
         jiraWebhookSecret: true,
         gitlabWebhookSecret: true,
         githubWebhookSecret: true,
+        trelloWebhookSecret: true,
       },
     });
 
@@ -118,6 +121,8 @@ export class WebhookSecretsService {
         return !!organization.gitlabWebhookSecret;
       case 'github':
         return !!organization.githubWebhookSecret;
+      case 'trello':
+        return !!organization.trelloWebhookSecret;
     }
   }
 
@@ -159,6 +164,8 @@ export class WebhookSecretsService {
         gitlabWebhookSecretIv: true,
         githubWebhookSecret: true,
         githubWebhookSecretIv: true,
+        trelloWebhookSecret: true,
+        trelloWebhookSecretIv: true,
       },
     });
 
@@ -201,6 +208,8 @@ export class WebhookSecretsService {
         return { gitlabWebhookSecret: encrypted, gitlabWebhookSecretIv: iv };
       case 'github':
         return { githubWebhookSecret: encrypted, githubWebhookSecretIv: iv };
+      case 'trello':
+        return { trelloWebhookSecret: encrypted, trelloWebhookSecretIv: iv };
     }
   }
 
@@ -216,6 +225,8 @@ export class WebhookSecretsService {
       gitlabWebhookSecretIv: Uint8Array | null;
       githubWebhookSecret: Uint8Array | null;
       githubWebhookSecretIv: Uint8Array | null;
+      trelloWebhookSecret: Uint8Array | null;
+      trelloWebhookSecretIv: Uint8Array | null;
     },
     provider: WebhookProvider,
   ): { encrypted: Buffer | null; iv: Buffer | null } {
@@ -234,6 +245,10 @@ export class WebhookSecretsService {
       case 'github':
         encryptedArr = org.githubWebhookSecret;
         ivArr = org.githubWebhookSecretIv;
+        break;
+      case 'trello':
+        encryptedArr = org.trelloWebhookSecret;
+        ivArr = org.trelloWebhookSecretIv;
         break;
     }
 

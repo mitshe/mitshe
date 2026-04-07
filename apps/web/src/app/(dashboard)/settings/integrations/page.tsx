@@ -53,6 +53,7 @@ import {
   JiraIcon,
   YouTrackIcon,
   LinearIcon,
+  TrelloIcon,
   ObsidianIcon,
 } from "@/components/icons/brand-icons";
 import {
@@ -259,6 +260,34 @@ const integrationDefinitions: IntegrationDef[] = [
         type: "password",
         required: true,
         helpText: "Generate from Atlassian account → Security → API tokens",
+      },
+    ],
+  },
+  {
+    id: "TRELLO",
+    category: IntegrationCategory.PROJECT,
+    name: "Trello",
+    description: "Sync cards and boards from Trello",
+    icon: <TrelloIcon />,
+    color: "bg-[#0079BF]",
+    available: true,
+    docsUrl: "https://trello.com/power-ups/admin",
+    fields: [
+      {
+        key: "apiKey",
+        label: "API Key",
+        placeholder: "Your Trello API key",
+        type: "password",
+        required: true,
+        helpText: "Get from trello.com/power-ups/admin → New → API Key",
+      },
+      {
+        key: "apiToken",
+        label: "API Token",
+        placeholder: "Your Trello API token",
+        type: "password",
+        required: true,
+        helpText: "Generate a token after creating your API key",
       },
     ],
   },
@@ -649,6 +678,12 @@ export default function IntegrationsPage() {
                   url={webhookData.urls.github}
                   instructions="Settings → Webhooks"
                   docsUrl="https://docs.github.com/en/webhooks"
+                />
+                <WebhookUrlRow
+                  label="Trello"
+                  url={webhookData.urls.trello}
+                  instructions="Via API or Power-Up"
+                  docsUrl="https://developer.atlassian.com/cloud/trello/guides/rest-api/webhooks/"
                 />
               </div>
             </div>
