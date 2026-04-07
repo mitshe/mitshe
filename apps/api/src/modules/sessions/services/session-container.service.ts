@@ -15,6 +15,10 @@ export interface SessionContainerConfig {
     setupScript?: string | null;
     variables?: Array<{ key: string; value: string }>;
   };
+  integrations?: Array<{
+    type: string;
+    config: Record<string, string>;
+  }>;
 }
 
 /**
@@ -50,6 +54,7 @@ export class SessionContainerService implements OnModuleInit {
         repos: config.repos,
         instructions: config.instructions,
         provider: config.provider,
+        integrations: config.integrations,
       }),
     ).toString('base64');
 

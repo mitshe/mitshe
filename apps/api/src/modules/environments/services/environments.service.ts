@@ -7,6 +7,13 @@ import {
 
 const INCLUDE_RELATIONS = {
   variables: true,
+  integrations: {
+    include: {
+      integration: {
+        select: { id: true, type: true, status: true },
+      },
+    },
+  },
 };
 
 @Injectable()
@@ -34,6 +41,13 @@ export class EnvironmentsService {
                 key: v.key,
                 value: v.value,
                 isSecret: v.isSecret ?? false,
+              })),
+            }
+          : undefined,
+        integrations: dto.integrationIds?.length
+          ? {
+              create: dto.integrationIds.map((integrationId) => ({
+                integrationId,
               })),
             }
           : undefined,
@@ -79,6 +93,22 @@ export class EnvironmentsService {
             key: v.key,
             value: v.value,
             isSecret: v.isSecret ?? false,
+          })),
+        });
+      }
+    }
+
+    // Replace integrations if provided
+    if (dto.integrationIds !== undefined) {
+      await this.prisma.environmentIntegration.deleteMany({
+        where: { environmentId: id },
+      });
+
+      if (dto.integrationIds.length > 0) {
+        await this.prisma.environmentIntegration.createMany({
+          data: dto.integrationIds.map((integrationId) => ({
+            environmentId: id,
+            integrationId,
           })),
         });
       }

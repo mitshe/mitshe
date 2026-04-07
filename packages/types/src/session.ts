@@ -24,6 +24,7 @@ export interface AgentSession {
   updatedAt: string;
   lastActiveAt: string;
   repositories?: SessionRepositoryInfo[];
+  integrations?: SessionIntegrationInfo[];
   project?: {
     id: string;
     name: string;
@@ -52,10 +53,21 @@ export interface SessionRepositoryInfo {
   };
 }
 
+export interface SessionIntegrationInfo {
+  sessionId: string;
+  integrationId: string;
+  integration?: {
+    id: string;
+    type: string;
+    status: string;
+  };
+}
+
 export interface CreateSessionDto {
   name: string;
   projectId?: string;
   repositoryIds: string[];
+  integrationIds?: string[];
   aiCredentialId?: string;
   agentDefinitionId?: string;
   startArguments?: string;

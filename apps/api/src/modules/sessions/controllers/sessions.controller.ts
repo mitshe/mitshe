@@ -144,6 +144,62 @@ export class SessionsController {
       });
     }
 
+    // Build integration configs with decrypted credentials
+    const integrationConfigs: Array<{
+      type: string;
+      config: Record<string, string>;
+    }> = [];
+
+    // Resolve integration IDs: from DTO, or inherit from environment
+    let sessionIntegrationIds = dto.integrationIds;
+    if (
+      (!sessionIntegrationIds || sessionIntegrationIds.length === 0) &&
+      dto.environmentId
+    ) {
+      const envIntegrations =
+        await this.prisma.environmentIntegration.findMany({
+          where: { environmentId: dto.environmentId },
+          select: { integrationId: true },
+        });
+      sessionIntegrationIds = envIntegrations.map((ei) => ei.integrationId);
+
+      // Save inherited integrations to session
+      if (sessionIntegrationIds.length > 0) {
+        await this.prisma.sessionIntegration.createMany({
+          data: sessionIntegrationIds.map((integrationId) => ({
+            sessionId: session.id,
+            integrationId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    if (sessionIntegrationIds && sessionIntegrationIds.length > 0) {
+      const integrations = await this.prisma.integration.findMany({
+        where: {
+          id: { in: sessionIntegrationIds },
+          organizationId,
+          status: 'CONNECTED',
+        },
+      });
+
+      for (const integration of integrations) {
+        try {
+          const config = this.encryption.decryptJson<Record<string, string>>(
+            Buffer.from(integration.config),
+            Buffer.from(integration.configIv),
+          );
+          integrationConfigs.push({
+            type: integration.type,
+            config,
+          });
+        } catch {
+          // Skip integrations that fail to decrypt
+        }
+      }
+    }
+
     // Load environment if set
     let envConfig: SessionContainerConfig['environment'] | undefined;
     if (dto.environmentId) {
@@ -175,6 +231,7 @@ export class SessionsController {
           provider: session.aiCredential?.provider,
           enableDocker: session.enableDocker,
           environment: envConfig,
+          integrations: integrationConfigs.length > 0 ? integrationConfigs : undefined,
         });
 
         await this.sessionsService.updateStatus(

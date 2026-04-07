@@ -67,6 +67,12 @@ export class CreateEnvironmentDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Environment variables' })
   variables?: EnvironmentVariableDto[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Integration IDs to attach' })
+  integrationIds?: string[];
 }
 
 export class UpdateEnvironmentDto {
@@ -101,4 +107,9 @@ export class UpdateEnvironmentDto {
   @Type(() => EnvironmentVariableDto)
   @IsOptional()
   variables?: EnvironmentVariableDto[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  integrationIds?: string[];
 }

@@ -92,6 +92,35 @@ async function setup() {
     }
   }
 
+  // Set up integrations (write config file + env vars)
+  if (config.integrations && config.integrations.length > 0) {
+    const homeDir = process.env.HOME || '/home/executor';
+    const mitsheDir = path.join(homeDir, '.mitshe');
+    fs.mkdirSync(mitsheDir, { recursive: true });
+
+    // Write integrations.json for tools/agents to read
+    const integrationsFile = path.join(mitsheDir, 'integrations.json');
+    fs.writeFileSync(
+      integrationsFile,
+      JSON.stringify(config.integrations, null, 2),
+      { mode: 0o600 },
+    );
+
+    // Set environment variables per integration type
+    for (const integration of config.integrations) {
+      const prefix = integration.type.toUpperCase();
+      for (const [key, value] of Object.entries(integration.config)) {
+        if (value) {
+          // Convert camelCase to UPPER_SNAKE_CASE: apiToken -> API_TOKEN
+          const envKey = key.replace(/([A-Z])/g, '_$1').toUpperCase();
+          process.env[`${prefix}_${envKey}`] = String(value);
+        }
+      }
+    }
+
+    log(`Configured ${config.integrations.length} integration(s): ${config.integrations.map(i => i.type).join(', ')}`);
+  }
+
   log('Session workspace setup complete');
 }
 

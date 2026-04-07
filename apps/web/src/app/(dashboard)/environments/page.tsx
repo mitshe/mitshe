@@ -45,12 +45,14 @@ import {
   Cpu,
   MemoryStick,
   Variable,
+  Plug,
 } from "lucide-react";
 import {
   useEnvironments,
   useCreateEnvironment,
   useUpdateEnvironment,
   useDeleteEnvironment,
+  useIntegrations,
 } from "@/lib/api/hooks";
 import { toast } from "sonner";
 import type { Environment } from "@/lib/api/types";
@@ -69,13 +71,24 @@ const emptyForm = {
   setupScript: "",
   enableDocker: false,
   variables: [] as VarEntry[],
+  integrationIds: [] as string[],
 };
 
 export default function EnvironmentsPage() {
   const { data: environments = [], isLoading } = useEnvironments();
+  const { data: connectedIntegrations = [] } = useIntegrations();
   const createEnv = useCreateEnvironment();
   const updateEnv = useUpdateEnvironment();
   const deleteEnv = useDeleteEnvironment();
+
+  const activeIntegrations = connectedIntegrations.filter(
+    (i) => i.status === "CONNECTED",
+  );
+
+  // Find GitHub integration ID for default selection
+  const defaultGithubId = activeIntegrations.find(
+    (i) => i.type === "GITHUB",
+  )?.id;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -83,7 +96,10 @@ export default function EnvironmentsPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      integrationIds: defaultGithubId ? [defaultGithubId] : [],
+    });
     setDialogOpen(true);
   };
 
@@ -102,6 +118,8 @@ export default function EnvironmentsPage() {
           value: v.value,
           isSecret: v.isSecret,
         })) || [],
+      integrationIds:
+        env.integrations?.map((i) => i.integrationId) || [],
     });
     setDialogOpen(true);
   };
@@ -123,6 +141,8 @@ export default function EnvironmentsPage() {
         form.variables.length > 0
           ? form.variables.filter((v) => v.key.trim())
           : undefined,
+      integrationIds:
+        form.integrationIds.length > 0 ? form.integrationIds : undefined,
     };
 
     try {
@@ -177,6 +197,15 @@ export default function EnvironmentsPage() {
     }));
   };
 
+  const toggleIntegration = (integrationId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      integrationIds: prev.integrationIds.includes(integrationId)
+        ? prev.integrationIds.filter((id) => id !== integrationId)
+        : [...prev.integrationIds, integrationId],
+    }));
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -193,7 +222,7 @@ export default function EnvironmentsPage() {
               New Environment
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Edit Environment" : "New Environment"}
@@ -343,6 +372,44 @@ export default function EnvironmentsPage() {
                   </div>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <Label>Integrations</Label>
+                <p className="text-xs text-muted-foreground">
+                  Select integrations whose credentials will be available in
+                  sessions using this environment
+                </p>
+                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {activeIntegrations.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2 text-center">
+                      No connected integrations.{" "}
+                      <a
+                        href="/settings/integrations"
+                        className="underline"
+                      >
+                        Configure some first
+                      </a>
+                    </p>
+                  ) : (
+                    activeIntegrations.map((integration) => (
+                      <label
+                        key={integration.id}
+                        className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={form.integrationIds.includes(
+                            integration.id,
+                          )}
+                          onCheckedChange={() =>
+                            toggleIntegration(integration.id)
+                          }
+                        />
+                        <span className="text-sm">{integration.type}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
             </DialogBody>
             <DialogFooter>
               <Button
@@ -436,6 +503,15 @@ export default function EnvironmentsPage() {
                         >
                           <Variable className="w-2.5 h-2.5" />
                           {env.variables.length} vars
+                        </Badge>
+                      )}
+                      {env.integrations && env.integrations.length > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] gap-0.5"
+                        >
+                          <Plug className="w-2.5 h-2.5" />
+                          {env.integrations.length} integrations
                         </Badge>
                       )}
                     </div>

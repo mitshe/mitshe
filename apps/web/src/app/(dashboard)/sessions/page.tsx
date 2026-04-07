@@ -68,6 +68,7 @@ import {
   useRepositories,
   useAICredentials,
   useEnvironments,
+  useIntegrations,
 } from "@/lib/api/hooks";
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
@@ -132,6 +133,14 @@ export default function SessionsPage() {
   const { data: repositories = [] } = useRepositories();
   const { data: aiCredentials = [] } = useAICredentials();
   const { data: environmentsList = [] } = useEnvironments();
+  const { data: connectedIntegrations = [] } = useIntegrations();
+
+  const activeIntegrations = connectedIntegrations.filter(
+    (i) => i.status === "CONNECTED",
+  );
+  const defaultGithubId = activeIntegrations.find(
+    (i) => i.type === "GITHUB",
+  )?.id;
   const createSession = useCreateSession();
   const deleteSession = useDeleteSession();
   const pauseSession = usePauseSession();
@@ -154,12 +163,25 @@ export default function SessionsPage() {
     name: "",
     projectId: "",
     repositoryIds: [] as string[],
+    integrationIds: [] as string[],
     aiCredentialId: "",
     startArguments: "",
     environmentId: "",
     enableDocker: false,
     instructions: "",
   });
+
+  // Set default GitHub integration once data loads
+  useEffect(() => {
+    if (defaultGithubId && form.integrationIds.length === 0 && !form.environmentId) {
+      setForm((prev) => ({
+        ...prev,
+        integrationIds: prev.integrationIds.length === 0 && !prev.environmentId
+          ? [defaultGithubId]
+          : prev.integrationIds,
+      }));
+    }
+  }, [defaultGithubId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAgentSelect = (agentId: string) => {
     const agent = presetsList.find((a) => a.id === agentId);
@@ -201,6 +223,7 @@ export default function SessionsPage() {
         name: form.name,
         projectId: form.projectId || undefined,
         repositoryIds: form.repositoryIds,
+        integrationIds: form.integrationIds.length > 0 ? form.integrationIds : undefined,
         aiCredentialId: form.aiCredentialId || undefined,
         agentDefinitionId: form.agentDefinitionId || undefined,
         startArguments: form.startArguments || undefined,
@@ -215,6 +238,7 @@ export default function SessionsPage() {
         name: "",
         projectId: "",
         repositoryIds: [],
+        integrationIds: defaultGithubId ? [defaultGithubId] : [],
         aiCredentialId: "",
         startArguments: "",
         environmentId: "",
@@ -288,7 +312,7 @@ export default function SessionsPage() {
               New Session
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>New Session</DialogTitle>
               <DialogDescription>
@@ -385,6 +409,52 @@ export default function SessionsPage() {
               </div>
 
               <div className="space-y-2">
+                <Label>Integrations</Label>
+                <p className="text-xs text-muted-foreground">
+                  Credentials for selected integrations will be available inside
+                  the session container
+                </p>
+                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {activeIntegrations.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2 text-center">
+                      No connected integrations.{" "}
+                      <a
+                        href="/settings/integrations"
+                        className="underline"
+                      >
+                        Configure some first
+                      </a>
+                    </p>
+                  ) : (
+                    activeIntegrations.map((integration) => (
+                      <label
+                        key={integration.id}
+                        className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={form.integrationIds.includes(
+                            integration.id,
+                          )}
+                          onCheckedChange={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              integrationIds:
+                                prev.integrationIds.includes(integration.id)
+                                  ? prev.integrationIds.filter(
+                                      (id) => id !== integration.id,
+                                    )
+                                  : [...prev.integrationIds, integration.id],
+                            }))
+                          }
+                        />
+                        <span className="text-sm">{integration.type}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label>AI Provider (optional)</Label>
                 <Select
                   value={form.aiCredentialId}
@@ -428,6 +498,9 @@ export default function SessionsPage() {
                       ...form,
                       environmentId: v,
                       enableDocker: env?.enableDocker ?? form.enableDocker,
+                      integrationIds:
+                        env?.integrations?.map((i) => i.integrationId) ??
+                        form.integrationIds,
                     })
                   }
                   }

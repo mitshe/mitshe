@@ -265,8 +265,10 @@ model Integration {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  repositories Repository[]
+  organization              Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  repositories              Repository[]
+  environmentIntegrations   EnvironmentIntegration[]
+  sessionIntegrations       SessionIntegration[]
 
   @@unique([organizationId, type])
   @@map("integrations")
@@ -598,6 +600,7 @@ model Environment {
   // Relations
   organization     Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   variables        EnvironmentVariable[]
+  integrations     EnvironmentIntegration[]
   agentDefinitions AgentDefinition[]
   sessions         AgentSession[]
 
@@ -616,6 +619,17 @@ model EnvironmentVariable {
 
   @@unique([environmentId, key])
   @@map("environment_variables")
+}
+
+model EnvironmentIntegration {
+  environmentId String @map("environment_id")
+  integrationId String @map("integration_id")
+
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([environmentId, integrationId])
+  @@map("environment_integrations")
 }
 
 // ============================================================================
@@ -700,6 +714,7 @@ model AgentSession {
   environment     Environment?      @relation(fields: [environmentId], references: [id], onDelete: SetNull)
   messages        SessionMessage[]
   repositories    SessionRepository[]
+  integrations    SessionIntegration[]
 
   @@index([organizationId])
   @@index([status])
@@ -732,4 +747,15 @@ model SessionRepository {
 
   @@id([sessionId, repositoryId])
   @@map("session_repositories")
+}
+
+model SessionIntegration {
+  sessionId     String @map("session_id")
+  integrationId String @map("integration_id")
+
+  session     AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  integration Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, integrationId])
+  @@map("session_integrations")
 }

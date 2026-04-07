@@ -42,6 +42,12 @@ export class CreateSessionDto {
   @ApiPropertyOptional({ description: 'Start arguments for the agent CLI' })
   startArguments?: string;
 
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Integration IDs to attach' })
+  integrationIds?: string[];
+
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Environment ID' })

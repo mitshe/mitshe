@@ -1,5 +1,15 @@
 // Environment types
 
+export interface EnvironmentIntegrationInfo {
+  environmentId: string;
+  integrationId: string;
+  integration?: {
+    id: string;
+    type: string;
+    status: string;
+  };
+}
+
 export interface Environment {
   id: string;
   organizationId: string;
@@ -13,6 +23,7 @@ export interface Environment {
   createdAt: string;
   updatedAt: string;
   variables?: EnvironmentVariable[];
+  integrations?: EnvironmentIntegrationInfo[];
 }
 
 export interface EnvironmentVariable {
@@ -31,6 +42,7 @@ export interface CreateEnvironmentDto {
   setupScript?: string;
   enableDocker?: boolean;
   variables?: Array<{ key: string; value: string; isSecret?: boolean }>;
+  integrationIds?: string[];
 }
 
 export interface UpdateEnvironmentDto {
@@ -41,4 +53,5 @@ export interface UpdateEnvironmentDto {
   setupScript?: string;
   enableDocker?: boolean;
   variables?: Array<{ key: string; value: string; isSecret?: boolean }>;
+  integrationIds?: string[];
 }

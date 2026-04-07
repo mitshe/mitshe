@@ -28,9 +28,21 @@ export class SessionsService {
         repositories: {
           create: dto.repositoryIds.map((repositoryId) => ({ repositoryId })),
         },
+        integrations: dto.integrationIds?.length
+          ? {
+              create: dto.integrationIds.map((integrationId) => ({
+                integrationId,
+              })),
+            }
+          : undefined,
       },
       include: {
         repositories: { include: { repository: true } },
+        integrations: {
+          include: {
+            integration: { select: { id: true, type: true, status: true } },
+          },
+        },
         project: { select: { id: true, name: true, key: true } },
         aiCredential: { select: { id: true, provider: true } },
         agentDefinition: { select: { id: true, name: true } },
@@ -52,6 +64,11 @@ export class SessionsService {
       },
       include: {
         repositories: { include: { repository: true } },
+        integrations: {
+          include: {
+            integration: { select: { id: true, type: true, status: true } },
+          },
+        },
         project: { select: { id: true, name: true, key: true } },
         aiCredential: { select: { id: true, provider: true } },
         agentDefinition: { select: { id: true, name: true } },
@@ -66,6 +83,11 @@ export class SessionsService {
       where: { id, organizationId },
       include: {
         repositories: { include: { repository: true } },
+        integrations: {
+          include: {
+            integration: { select: { id: true, type: true, status: true } },
+          },
+        },
         messages: { orderBy: { createdAt: 'asc' } },
         project: { select: { id: true, name: true, key: true } },
         aiCredential: { select: { id: true, provider: true } },
@@ -109,9 +131,24 @@ export class SessionsService {
             repositoryId: r.repositoryId,
           })),
         },
+        integrations:
+          (source as any).integrations?.length > 0
+            ? {
+                create: (source as any).integrations.map(
+                  (i: { integrationId: string }) => ({
+                    integrationId: i.integrationId,
+                  }),
+                ),
+              }
+            : undefined,
       },
       include: {
         repositories: { include: { repository: true } },
+        integrations: {
+          include: {
+            integration: { select: { id: true, type: true, status: true } },
+          },
+        },
         project: { select: { id: true, name: true, key: true } },
         aiCredential: { select: { id: true, provider: true } },
         agentDefinition: { select: { id: true, name: true } },
