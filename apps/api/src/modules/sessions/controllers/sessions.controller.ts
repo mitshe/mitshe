@@ -327,47 +327,44 @@ export class SessionsController {
       );
     }
 
-    // 1. Snapshot current container (if one exists and is still around)
-    let snapshotImage: string | null = null;
-    if (existing.containerId) {
-      const state = await this.containerService.getContainerState(
-        existing.containerId,
-      );
-      if (state !== 'gone') {
-        try {
-          snapshotImage = await this.containerService.commitContainer(
-            existing.containerId,
-            `${id}-${Date.now()}`,
-          );
-        } catch (err) {
-          // If we cannot snapshot we abort — losing workspace silently is worse
-          throw new BadRequestException(
-            `Failed to snapshot current container: ${(err as Error).message}`,
-          );
-        }
-      }
-    }
-
-    // 2. Close open terminals; stop and remove the old container (keep DinD volume)
-    this.terminalManager.closeByPrefix(`${id}:`);
-    if (existing.containerId) {
-      await this.containerService.stopContainer(existing.containerId);
-      // NOTE: sessionId intentionally omitted so the DinD volume is preserved
-      await this.containerService.removeContainer(existing.containerId);
-    }
-
-    // 3. Apply new config to DB (transactional); sets status=CREATING
+    // Apply new config to DB (transactional); sets status=CREATING immediately
+    // so the client gets a fast response and observes progress via websocket.
     const { session } = await this.sessionsService.applyRecreateConfig(
       organizationId,
       id,
       dto,
     );
 
-    // 4. Spawn new container in background (mirrors create() pattern)
+    const previousContainerId = existing.containerId;
+
+    // Everything heavy (docker commit, container swap) runs in the background
+    // — mirrors create() / clone() pattern to keep the HTTP response fast.
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     setImmediate(async () => {
+      let snapshotImage: string | null = null;
       try {
-        // Build repo configs with authenticated clone URLs (same as create())
+        // 1. Snapshot the old container (if any) so /workspace survives
+        if (previousContainerId) {
+          const state = await this.containerService.getContainerState(
+            previousContainerId,
+          );
+          if (state !== 'gone') {
+            snapshotImage = await this.containerService.commitContainer(
+              previousContainerId,
+              `${id}-${Date.now()}`,
+            );
+          }
+        }
+
+        // 2. Close open terminals; stop and remove the old container (keep DinD volume)
+        this.terminalManager.closeByPrefix(`${id}:`);
+        if (previousContainerId) {
+          await this.containerService.stopContainer(previousContainerId);
+          // NOTE: sessionId intentionally omitted so the DinD volume survives
+          await this.containerService.removeContainer(previousContainerId);
+        }
+
+        // 3. Build repo configs with authenticated clone URLs (same as create())
         const repos: Array<{ name: string; cloneUrl: string; branch: string }> =
           [];
         for (const sr of session.repositories) {
