@@ -409,6 +409,7 @@ export const api = {
           jira: string;
           gitlab: string;
           github: string;
+          trello: string;
         };
       }>("/integrations/webhook-url", { token }),
 
@@ -419,6 +420,7 @@ export const api = {
           jira: string;
           gitlab: string;
           github: string;
+          trello: string;
         };
       }>("/integrations/webhook-url/regenerate", {
         method: "POST",
