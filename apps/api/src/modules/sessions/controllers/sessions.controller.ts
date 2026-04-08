@@ -174,7 +174,6 @@ export class SessionsController {
             sessionId: session.id,
             integrationId,
           })),
-          skipDuplicates: true,
         });
       }
     }
