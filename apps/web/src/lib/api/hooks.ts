@@ -26,6 +26,8 @@ import type {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
   CreateSessionDto,
+  UpdateSessionMetadataDto,
+  RecreateSessionDto,
 } from "./types";
 
 export const queryKeys = {
@@ -1103,6 +1105,50 @@ export function useCreateSession() {
     mutationFn: async (data: CreateSessionDto) => {
       const token = await getToken();
       const { session } = await api.sessions.create(data, token);
+      return session;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useUpdateSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateSessionMetadataDto;
+    }) => {
+      const token = await getToken();
+      const { session } = await api.sessions.update(id, data, token);
+      return session;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    },
+  });
+}
+
+export function useRecreateSession() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: RecreateSessionDto;
+    }) => {
+      const token = await getToken();
+      const { session } = await api.sessions.recreate(id, data, token);
       return session;
     },
     onSuccess: () => {

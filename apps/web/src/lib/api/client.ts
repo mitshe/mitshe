@@ -41,6 +41,8 @@ import type {
   UpdateEnvironmentDto,
   AgentSession,
   CreateSessionDto,
+  UpdateSessionMetadataDto,
+  RecreateSessionDto,
   WorkflowTemplateMetadata,
   WorkflowTemplate,
   CreateFromTemplateDto,
@@ -659,6 +661,20 @@ export const api = {
     create: (data: CreateSessionDto, token: string) =>
       request<{ session: AgentSession }>("/sessions", {
         method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    update: (id: string, data: UpdateSessionMetadataDto, token: string) =>
+      request<{ session: AgentSession }>(`/sessions/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    recreate: (id: string, data: RecreateSessionDto, token: string) =>
+      request<{ session: AgentSession }>(`/sessions/${id}`, {
+        method: "PUT",
         body: JSON.stringify(data),
         token,
       }),
