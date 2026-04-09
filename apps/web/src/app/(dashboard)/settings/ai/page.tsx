@@ -102,7 +102,7 @@ const providerConfig: Record<
   },
   CLAUDE_CODE_LOCAL: {
     name: "Claude Code (Local)",
-    description: "Local Claude Code instance for development",
+    description: "Claude Code CLI running inside session containers",
     icon: <AnthropicIcon />,
     color: "bg-[#D97757]",
   },

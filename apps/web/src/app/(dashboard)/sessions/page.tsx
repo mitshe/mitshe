@@ -182,6 +182,7 @@ export default function SessionsPage() {
   };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [repoSearch, setRepoSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingStatus, setEditingStatus] = useState<SessionStatus | null>(
     null,
@@ -452,6 +453,9 @@ export default function SessionsPage() {
     }
   };
 
+  const sessionProviders = aiCredentials.filter((c) =>
+    ["CLAUDE_CODE_LOCAL", "OPENCLAW"].includes(c.provider),
+  );
   const activeRepos = repositories.filter((r) => r.isActive);
 
   return (
@@ -506,12 +510,12 @@ export default function SessionsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>AI Provider</Label>
-                {aiCredentials.length === 0 ? (
+                <Label>AI Agent</Label>
+                {sessionProviders.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2 border rounded-md px-3">
-                    No AI providers configured.{" "}
+                    No CLI agents configured.{" "}
                     <a href="/settings/ai" className="underline font-medium text-foreground">
-                      Add one first
+                      Add Claude Code or OpenClaw
                     </a>
                   </p>
                 ) : (
@@ -526,7 +530,7 @@ export default function SessionsPage() {
                       <SelectValue placeholder="None - plain bash terminal" />
                     </SelectTrigger>
                     <SelectContent>
-                      {aiCredentials.map((c) => (
+                      {sessionProviders.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {providerLabels[c.provider] || c.provider}
                         </SelectItem>
@@ -534,6 +538,9 @@ export default function SessionsPage() {
                     </SelectContent>
                   </Select>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  Sessions run CLI agents (Claude Code or OpenClaw) in isolated containers
+                </p>
               </div>
 
               {presetsList.length > 0 && (
@@ -589,32 +596,50 @@ export default function SessionsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Repositories</Label>
-                    <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                    <Label>Repositories{form.repositoryIds.length > 0 && ` (${form.repositoryIds.length})`}</Label>
+                    <div className="border rounded-md overflow-hidden">
                       {activeRepos.length === 0 ? (
                         <p className="text-sm text-muted-foreground py-2 text-center">
                           No active repositories. Import some first.
                         </p>
                       ) : (
-                        activeRepos.map((repo) => (
-                          <label
-                            key={repo.id}
-                            className={`flex items-center gap-2 p-1.5 rounded ${
-                              configLocked
-                                ? "cursor-not-allowed opacity-60"
-                                : "hover:bg-muted/50 cursor-pointer"
-                            }`}
-                          >
-                            <Checkbox
-                              checked={form.repositoryIds.includes(repo.id)}
-                              onCheckedChange={() => toggleRepo(repo.id)}
-                              disabled={configLocked}
-                            />
-                            <span className="text-sm truncate">
-                              {repo.fullPath}
-                            </span>
-                          </label>
-                        ))
+                        <>
+                          {activeRepos.length > 5 && (
+                            <div className="px-2 pt-2">
+                              <Input
+                                placeholder="Search repositories..."
+                                value={repoSearch}
+                                onChange={(e) => setRepoSearch(e.target.value)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          )}
+                          <div className="max-h-40 overflow-y-auto p-2 space-y-1">
+                            {activeRepos
+                              .filter((r) =>
+                                !repoSearch || r.fullPath.toLowerCase().includes(repoSearch.toLowerCase())
+                              )
+                              .map((repo) => (
+                                <label
+                                  key={repo.id}
+                                  className={`flex items-center gap-2 p-1.5 rounded ${
+                                    configLocked
+                                      ? "cursor-not-allowed opacity-60"
+                                      : "hover:bg-muted/50 cursor-pointer"
+                                  }`}
+                                >
+                                  <Checkbox
+                                    checked={form.repositoryIds.includes(repo.id)}
+                                    onCheckedChange={() => toggleRepo(repo.id)}
+                                    disabled={configLocked}
+                                  />
+                                  <span className="text-sm truncate">
+                                    {repo.fullPath}
+                                  </span>
+                                </label>
+                              ))}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -745,7 +770,7 @@ export default function SessionsPage() {
                         configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
                       }`}
                     >
-                      Enable Docker
+                      Enable Docker-in-Docker
                     </Label>
                   </div>
 

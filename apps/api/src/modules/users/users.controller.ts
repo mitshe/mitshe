@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { IsEmail, IsString, IsOptional, MinLength } from 'class-validator';
@@ -146,7 +147,7 @@ export class UsersController {
     const refreshToken = req.cookies?.refreshToken || dto.refreshToken;
 
     if (!refreshToken) {
-      throw new Error('Refresh token is required');
+      throw new UnauthorizedException('Refresh token is required');
     }
 
     const tokens = await this.usersService.refreshTokens(refreshToken);

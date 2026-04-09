@@ -47,8 +47,12 @@ function isDynamicSegment(segment: string): boolean {
 export function BreadcrumbsWrapper() {
   const pathname = usePathname();
 
-  // Don't show breadcrumbs on dashboard home
+  // Don't show breadcrumbs on pages with their own header
   if (pathname === "/dashboard") {
+    return null;
+  }
+  // Workflow editor and session detail have their own navigation
+  if (/^\/workflows\/[^/]+\/edit/.test(pathname) || /^\/sessions\/[^/]+$/.test(pathname)) {
     return null;
   }
 

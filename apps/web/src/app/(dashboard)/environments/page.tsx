@@ -322,7 +322,7 @@ export default function EnvironmentsPage() {
                       }
                     />
                     <Label htmlFor="enableDocker" className="font-normal cursor-pointer text-sm">
-                      Enable Docker (mount host Docker socket)
+                      Enable Docker-in-Docker
                     </Label>
                   </div>
 

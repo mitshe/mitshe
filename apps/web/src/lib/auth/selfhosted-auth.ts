@@ -194,7 +194,7 @@ class SelfhostedAuthService {
       });
 
       if (!response.ok) {
-        this.clearTokens();
+        this.clearTokens(true);
         return null;
       }
 
@@ -202,7 +202,7 @@ class SelfhostedAuthService {
       this.setTokens(result.accessToken, result.expiresIn);
       return result.accessToken;
     } catch {
-      this.clearTokens();
+      this.clearTokens(true);
       return null;
     }
   }
@@ -294,7 +294,7 @@ class SelfhostedAuthService {
     }
   }
 
-  private clearTokens(): void {
+  private clearTokens(redirect = false): void {
     this.accessToken = null;
     this.tokenExpiry = null;
 
@@ -302,6 +302,10 @@ class SelfhostedAuthService {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
       localStorage.removeItem(TOKEN_EXPIRY_KEY);
       localStorage.removeItem(CURRENT_ORG_KEY);
+
+      if (redirect && !window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
     }
   }
 }
