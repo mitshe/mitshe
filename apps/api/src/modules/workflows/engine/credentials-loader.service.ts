@@ -70,6 +70,7 @@ export class CredentialsLoaderService {
       [AIProvider.GEMINI]: 'gemini',
       [AIProvider.GROQ]: 'groq',
       [AIProvider.CLAUDE_CODE_LOCAL]: 'claude',
+      [AIProvider.OPENCLAW]: 'openai',
     };
 
     for (const cred of aiCredentials) {

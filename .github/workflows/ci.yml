@@ -2,42 +2,42 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master]
+    tags: ['v*']
   pull_request:
-    branches: [master, develop]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., latest, v1.0.0)'
+        required: false
+        default: 'latest'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   lint-typecheck:
-    name: Lint & Typecheck
+    name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build types package
-        run: pnpm --filter @mitshe/types run build
-
-      - name: Generate Prisma client
-        run: pnpm --filter @mitshe/api run db:generate
-
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Typecheck
-        run: pnpm run typecheck
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mitshe/types run build
+      - run: pnpm --filter @mitshe/api run db:generate
+      - run: pnpm run lint
+      - run: pnpm run typecheck
 
   test:
     name: Test
@@ -49,81 +49,93 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: mitshe_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
         image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build types package
-        run: pnpm --filter @mitshe/types run build
-
-      - name: Generate Prisma client
-        run: pnpm --filter @mitshe/api run db:generate
-
-      - name: Run migrations
-        run: pnpm --filter @mitshe/api run db:migrate:deploy
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mitshe/types run build
+      - run: pnpm --filter @mitshe/api run db:generate
+      - run: pnpm --filter @mitshe/api run db:migrate:deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mitshe_test
-
-      - name: Run tests
-        run: pnpm test
+      - run: pnpm test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mitshe_test
           REDIS_URL: redis://localhost:6379
           ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-  build:
-    name: Build
+  build-and-push:
+    name: Build & Push Images
     runs-on: ubuntu-latest
-    needs: [lint-typecheck]
+    needs: [lint-typecheck, test]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - uses: actions/setup-node@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          node-version: 20
-          cache: pnpm
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          elif [[ "${{ github.event.inputs.version }}" != "" ]]; then
+            VERSION=${{ github.event.inputs.version }}
+          else
+            VERSION=latest
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build types package
-        run: pnpm --filter @mitshe/types run build
+      - name: Build and push mitshe
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/light/Dockerfile
+          push: true
+          provenance: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Generate Prisma client
-        run: pnpm --filter @mitshe/api run db:generate
+      - name: Build and push executor
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api/docker/executor
+          file: apps/api/docker/executor/Dockerfile
+          push: true
+          provenance: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-executor:${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Build all packages
-        run: pnpm run build
-        env:
-          AUTH_MODE: selfhosted
-          NEXT_PUBLIC_AUTH_MODE: selfhosted
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
-          NEXT_PUBLIC_API_URL: http://localhost:3001
+      - name: Summary
+        run: |
+          echo "## Docker Images Published" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-executor | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY

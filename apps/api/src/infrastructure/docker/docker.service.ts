@@ -319,7 +319,7 @@ export class DockerService implements OnModuleInit {
         PidsLimit: 512, // Process limit
 
         // Security
-        NetworkMode: 'bridge', // Allow network access
+        NetworkMode: process.env.DOCKER_NETWORK || 'bridge',
         ReadonlyRootfs: false, // Need write access for work
         SecurityOpt: ['no-new-privileges'],
         CapDrop: ['ALL'],

@@ -1,8 +1,8 @@
 # Mitshe Workflow Executor
 # Base image for isolated workflow execution environments
-# Contains: Node.js 20, Git, Claude Code, Python, common dev tools
+# Contains: Node.js 22, Git, Claude Code, OpenClaw, Python, common dev tools
 
-FROM node:20-bookworm
+FROM node:22-bookworm
 
 LABEL maintainer="mitshe"
 LABEL description="Isolated execution environment for mitshe workflows"
@@ -64,8 +64,8 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
-# Install Claude Code CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install AI agent CLIs globally
+RUN npm install -g @anthropic-ai/claude-code openclaw@latest
 
 # Install common global npm packages (yarn is already in node image)
 RUN npm install -g \
@@ -97,8 +97,18 @@ RUN ARCH=$(dpkg --print-architecture) && \
     rm /tmp/glab.deb \
     || echo "glab installation failed, skipping..."
 
-# Create non-root user for execution
-RUN useradd -m -s /bin/bash -G sudo executor \
+# Install Docker CE for DinD support
+RUN curl -fsSL https://get.docker.com | sh
+
+# Install Docker Compose plugin
+RUN mkdir -p /usr/local/lib/docker/cli-plugins && \
+    ARCH=$(uname -m) && \
+    curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH}" \
+      -o /usr/local/lib/docker/cli-plugins/docker-compose && \
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Create non-root user for execution (with docker group)
+RUN useradd -m -s /bin/bash -G sudo,docker executor \
     && echo "executor ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Create workspace directory
@@ -112,6 +122,9 @@ RUN mkdir -p /runner && chown executor:executor /runner
 
 # Copy workflow runner source
 COPY --chown=executor:executor workflow-runner /runner
+
+# Copy session server
+COPY --chown=executor:executor session-server /session
 
 # Install runner dependencies and build
 WORKDIR /runner
@@ -131,7 +144,7 @@ RUN git config --global init.defaultBranch main \
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node --version && git --version && claude --version || exit 1
+    CMD node --version && git --version && claude --version && openclaw --version || exit 1
 
 # Default entrypoint for workflow execution
 # Job JSON is passed via stdin or --job argument

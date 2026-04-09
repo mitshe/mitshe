@@ -88,6 +88,7 @@ export class AdapterFactoryService {
             IntegrationType.JIRA,
             IntegrationType.YOUTRACK,
             IntegrationType.LINEAR,
+            IntegrationType.TRELLO,
           ],
         },
         status: IntegrationStatus.CONNECTED,

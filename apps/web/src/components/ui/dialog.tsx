@@ -151,7 +151,11 @@ function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
 
   if (isDesktop) {
     return (
-      <div data-slot="dialog-body" className={cn("", className)} {...props} />
+      <div
+        data-slot="dialog-body"
+        className={cn("-mr-2 pr-2", className)}
+        {...props}
+      />
     );
   }
 

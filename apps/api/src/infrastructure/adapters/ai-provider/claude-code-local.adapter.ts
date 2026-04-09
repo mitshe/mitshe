@@ -52,22 +52,9 @@ export class ClaudeCodeLocalAdapter implements AIProviderPort {
   }
 
   async testConnection(): Promise<{ success: boolean; error?: string }> {
-    try {
-      // Check if claude command is available
-      const result = await this.executeCommand('claude', ['--version']);
-      if (result.exitCode === 0) {
-        this.logger.log(`Claude Code CLI available: ${result.stdout.trim()}`);
-        return { success: true };
-      }
-      return { success: false, error: 'Claude CLI not responding' };
-    } catch (error) {
-      this.logger.error(`Claude Code CLI not available: ${error.message}`);
-      return {
-        success: false,
-        error:
-          'Claude Code CLI not installed. Install with: npm install -g @anthropic-ai/claude-code',
-      };
-    }
+    // CLI providers run inside executor containers, not on the API server.
+    // The executor image has Claude Code pre-installed.
+    return { success: true };
   }
 
   listModels(): Promise<string[]> {

@@ -1,12 +1,11 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ClerkAuthGuard } from '../../shared/guards/clerk-auth.guard';
-import { OrganizationGuard } from '../../shared/guards/organization.guard';
+import { AuthGuard } from '@/shared/auth';
 import { OrganizationId } from '../../shared/decorators/organization.decorator';
 import { AuditService } from '../../shared/audit';
 import { AuditAction } from '@prisma/client';
 
 @Controller('audit')
-@UseGuards(ClerkAuthGuard, OrganizationGuard)
+@UseGuards(AuthGuard)
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 

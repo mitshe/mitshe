@@ -401,3 +401,27 @@
 .dark .driver-overlay {
   background: oklch(0 0 0 / 70%) !important;
 }
+
+/* Themed scrollbar inside dialog bodies */
+[data-slot="dialog-body"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+[data-slot="dialog-body"]::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-slot="dialog-body"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-slot="dialog-body"]::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 9999px;
+}
+
+[data-slot="dialog-body"]::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+}

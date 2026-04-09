@@ -88,7 +88,7 @@ export interface IssueTrackerPort {
   /**
    * Provider type identifier
    */
-  getProviderType(): 'jira' | 'youtrack' | 'linear' | 'github_issues';
+  getProviderType(): 'jira' | 'youtrack' | 'linear' | 'trello' | 'github_issues';
 
   /**
    * Check if connection is valid

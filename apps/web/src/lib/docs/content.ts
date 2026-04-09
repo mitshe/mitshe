@@ -731,7 +731,7 @@ Sync issues, automate transitions, and trigger workflows from Jira events.
 
 1. In Jira: **Settings → System → WebHooks**
 2. Click **Create a WebHook**
-3. URL: \`https://localhost:3001/webhooks/jira/YOUR_ORG_ID\`
+3. URL: \`https://api.ai-tasks.app/webhooks/jira/YOUR_ORG_ID\`
 4. Select issue events (created, updated, etc.)
 5. Save
 :::
@@ -1179,7 +1179,7 @@ Sync issues and automate project management with JetBrains YouTrack.
 
 1. In YouTrack: **Administration → Integrations → Webhooks**
 2. Click **New webhook**
-3. URL: \`https://localhost:3001/webhooks/youtrack/YOUR_ORG_ID\`
+3. URL: \`https://api.ai-tasks.app/webhooks/youtrack/YOUR_ORG_ID\`
 4. Select events (issue created, updated, etc.)
 5. Save
 :::
@@ -1478,230 +1478,450 @@ assignee: john
 :::
 `,
 
-  "deployment/docker": `# Docker Deployment
+  "deployment/light": `# Light Mode
 
-Run mitshe with a single Docker command. Everything included — frontend, API, SQLite, Redis.
+Run mitshe as a single Docker container. Perfect for personal use, demos, and trying out the platform.
+
+## What is Light Mode?
+
+Light Mode bundles everything into **one Docker container**:
+- Next.js frontend
+- NestJS backend
+- SQLite database
+- Redis (embedded)
+
+No external dependencies. Just Docker.
 
 ## Quick Start
 
 \`\`\`bash
-docker run -d --name mitshe \\
-  -p 3000:3000 -p 3001:3001 \\
-  -v mitshe-data:/build/data \\
-  -v /var/run/docker.sock:/var/run/docker.sock \\
-  ghcr.io/mitshe/mitshe:latest
+docker run -d -p 3000:3000 -p 3001:3001 \\
+  -v mitshe-data:/app/data \\
+  ghcr.io/mitshe/light:latest
 \`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) and create your admin account.
+Open [http://localhost:3000](http://localhost:3000).
 
-:::info
-**Docker socket** is mounted so mitshe can run workflow tasks in isolated containers on the host.
-:::
-
-## What's Included
-
-The container bundles:
-- **Next.js** frontend (port 3000)
-- **NestJS** API (port 3001)
-- **SQLite** database
-- **Redis** for queues and caching
-- **Workflow executor** image (auto-pulled on first workflow run)
+That's it. You're running mitshe.
 
 ## Data Persistence
 
-All data is stored in the \`mitshe-data\` volume:
+All data is stored in a single volume:
 
 | Path | Contents |
 |------|----------|
-| \`/build/data/mitshe.db\` | SQLite database (users, workflows, tasks) |
+| \`/app/data/mitshe.db\` | SQLite database |
+| \`/app/data/redis/\` | Redis persistence |
 
 :::warning
-**Backup your volume.** The \`mitshe-data\` volume contains all your data.
+**Backup your volume.** The \`mitshe-data\` volume contains all your workflows, executions, and settings.
 :::
-
-## First Setup
-
-1. Open \`http://localhost:3000\`
-2. Create your admin account (first user = admin)
-3. Go to **Settings → Integrations** and add your GitHub/Jira token
-4. Go to **Settings → AI Providers** and add your Claude/OpenAI key
-5. Create a workflow from a template or from scratch
-
-## Update
-
-Your data persists across updates:
-
-\`\`\`bash
-docker stop mitshe && docker rm mitshe
-docker pull ghcr.io/mitshe/mitshe:latest
-docker run -d --name mitshe \\
-  -p 3000:3000 -p 3001:3001 \\
-  -v mitshe-data:/build/data \\
-  -v /var/run/docker.sock:/var/run/docker.sock \\
-  ghcr.io/mitshe/mitshe:latest
-\`\`\`
 
 ## Configuration
 
+Environment variables:
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| \`AUTH_MODE\` | \`selfhosted\` | \`selfhosted\` (email/password) or \`clerk\` |
-| \`ENCRYPTION_KEY\` | auto-generated | AES-256 key for credential encryption |
-| \`EXECUTOR_IMAGE\` | \`ghcr.io/mitshe/mitshe-executor:latest\` | Workflow executor Docker image |
+| \`PORT\` | \`3000\` | Web UI port |
+| \`API_PORT\` | \`3001\` | API port |
+| \`ENCRYPTION_KEY\` | auto-generated | For credential encryption |
 
-### Custom encryption key
+### With custom encryption key
 
 \`\`\`bash
-docker run -d --name mitshe \\
-  -p 3000:3000 -p 3001:3001 \\
-  -v mitshe-data:/build/data \\
-  -v /var/run/docker.sock:/var/run/docker.sock \\
-  -e ENCRYPTION_KEY=$(openssl rand -hex 32) \\
-  ghcr.io/mitshe/mitshe:latest
+docker run -d -p 3000:3000 -p 3001:3001 \\
+  -v mitshe-data:/app/data \\
+  -e ENCRYPTION_KEY="your-32-byte-hex-key" \\
+  ghcr.io/mitshe/light:latest
 \`\`\`
+
+Generate a secure key:
+\`\`\`bash
+openssl rand -hex 32
+\`\`\`
+
+## Docker Compose
+
+For easier management, use Docker Compose:
+
+\`\`\`yaml
+# docker-compose.yml
+services:
+  mitshe:
+    image: ghcr.io/mitshe/light:latest
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - mitshe-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  mitshe-data:
+\`\`\`
+
+\`\`\`bash
+docker compose up -d
+\`\`\`
+
+## Upgrading
+
+\`\`\`bash
+docker compose pull
+docker compose up -d
+\`\`\`
+
+Your data is preserved in the volume.
+
+## Limitations
+
+Light Mode is great for personal use but has constraints:
+
+| Feature | Light Mode | Production |
+|---------|------------|------------|
+| **Database** | SQLite | PostgreSQL |
+| **Scaling** | Single instance | Horizontal |
+| **Backups** | Manual | Automated |
+| **Team** | 1 user | Multi-user |
+
+:::info
+**Scaling up?** See [Selfhosted](/docs/deployment/selfhosted) for team deployments with PostgreSQL.
+:::
 
 ## Troubleshooting
 
 ### Container won't start
 
+Check logs:
 \`\`\`bash
 docker logs mitshe
 \`\`\`
 
-### Workflows fail with "executor image not found"
+### Permission errors
 
-The executor image is pulled automatically on first run. If it fails, pull manually:
-
+Ensure the data volume is writable:
 \`\`\`bash
-docker pull ghcr.io/mitshe/mitshe-executor:latest
+docker exec mitshe ls -la /app/data
 \`\`\`
 
 ### Port conflicts
 
+Change ports if 3000/3001 are in use:
 \`\`\`bash
 docker run -p 8080:3000 -p 8081:3001 ...
 \`\`\`
 `,
 
-  "deployment/development": `# Development Setup
+  "deployment/selfhosted": `# Selfhosted Deployment
 
-Set up mitshe for local development with hot-reload.
+Deploy mitshe for your team with user accounts, organizations, and PostgreSQL.
 
-## Prerequisites
+## Overview
 
-- **Node.js 20+**
-- **pnpm 9+** — \`corepack enable && corepack prepare pnpm@9 --activate\`
-- **Docker** — for databases and workflow execution
-- **just** — task runner: \`brew install just\` (macOS)
+Selfhosted mode provides:
+- **User authentication** (email/password, no external provider needed)
+- **Organizations** for team management
+- **PostgreSQL** for production-grade data storage
+- **Horizontal scaling** across multiple instances
 
-## Setup
+## Architecture
+
+\`\`\`
+                    ┌─────────────┐
+                    │   Browser   │
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │   Nginx     │ (optional reverse proxy)
+                    └──────┬──────┘
+           ┌───────────────┼───────────────┐
+           │               │               │
+    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
+    │  Web (3000) │ │  API (3001) │ │  Worker     │
+    └──────┬──────┘ └──────┬──────┘ └──────┬──────┘
+           │               │               │
+           └───────────────┼───────────────┘
+                           │
+           ┌───────────────┼───────────────┐
+           │               │               │
+    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
+    │ PostgreSQL  │ │    Redis    │ │ (Optional)  │
+    └─────────────┘ └─────────────┘ │   S3/Minio  │
+                                    └─────────────┘
+\`\`\`
+
+## Quick Start
+
+### 1. Clone the repository
 
 \`\`\`bash
 git clone https://github.com/mitshe/mitshe.git
 cd mitshe
-just setup
 \`\`\`
 
-## Run
+### 2. Configure environment
 
 \`\`\`bash
-# Start databases + dev servers with hot-reload
+cp .env.example .env
+\`\`\`
+
+Edit \`.env\`:
+\`\`\`bash
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mitshe
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Security (generate with: openssl rand -hex 32)
+ENCRYPTION_KEY=your-32-byte-hex-key
+JWT_SECRET=your-jwt-secret
+
+# Auth mode
+AUTH_MODE=selfhosted
+NEXT_PUBLIC_AUTH_MODE=selfhosted
+\`\`\`
+
+### 3. Start infrastructure
+
+\`\`\`bash
+just infra
+\`\`\`
+
+This starts PostgreSQL and Redis in Docker.
+
+### 4. Run migrations
+
+\`\`\`bash
+just db-migrate
+\`\`\`
+
+### 5. Start the application
+
+\`\`\`bash
 just dev
 \`\`\`
 
-- Frontend: [http://localhost:3000](http://localhost:3000)
-- API: [http://localhost:3001](http://localhost:3001)
-- API Docs (Swagger): [http://localhost:3001/api](http://localhost:3001/api)
+Open [http://localhost:3000](http://localhost:3000) and create your first account.
 
-First visit: create your admin account.
+## Docker Compose (Production)
 
-## Build Workflow Executor
+For production, use the full Docker Compose stack:
 
-To run workflows locally, build the executor image once:
+\`\`\`yaml
+# docker-compose.prod.yml
+services:
+  web:
+    image: ghcr.io/mitshe/web:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:3001
+      - AUTH_MODE=selfhosted
+      - NEXT_PUBLIC_AUTH_MODE=selfhosted
+    depends_on:
+      - api
+
+  api:
+    image: ghcr.io/mitshe/api:latest
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/mitshe
+      - REDIS_URL=redis://redis:6379
+      - ENCRYPTION_KEY=\${ENCRYPTION_KEY}
+      - JWT_SECRET=\${JWT_SECRET}
+      - AUTH_MODE=selfhosted
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mitshe
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+  redis_data:
+\`\`\`
 
 \`\`\`bash
-just executor-build
+docker compose -f docker-compose.prod.yml up -d
 \`\`\`
 
-## Key Commands
+## User Management
 
-| Command | Description |
-|---------|-------------|
-| \`just dev\` | Start dev servers (selfhosted auth) |
-| \`just build\` | Build all packages |
-| \`just typecheck\` | TypeScript check |
-| \`just lint\` | ESLint |
-| \`just test\` | Run tests |
-| \`just check\` | Lint + typecheck + test |
-| \`just db-migrate\` | Run database migrations |
-| \`just db-studio\` | Open Prisma Studio |
-| \`just executor-build\` | Build workflow executor image |
+### First user
 
-## Project Structure
+The first user to register becomes the **organization owner**.
 
-\`\`\`
-mitshe/
-├── apps/
-│   ├── web/          # Next.js 16 frontend
-│   ├── api/          # NestJS 11 backend
-│   └── landing/      # Landing page
-├── packages/
-│   └── types/        # Shared TypeScript types
-├── docker/
-│   ├── light/        # All-in-one container
-│   ├── dev/          # Dev infrastructure
-│   ├── nginx/        # Nginx config
-│   └── prod/         # Production compose
-├── justfile          # Task runner
-└── turbo.json        # Turborepo config
-\`\`\`
+### Inviting users
+
+1. Go to **Settings → Team**
+2. Click **Invite Member**
+3. Enter email and select role
+
+### Roles
+
+| Role | Permissions |
+|------|-------------|
+| **Owner** | Full access, manage billing, delete org |
+| **Admin** | Manage members, all workflows |
+| **Member** | Create and edit own workflows |
+| **Viewer** | View-only access |
 
 ## Environment Variables
 
-Copy \`.env.example\` to \`.env\`. Key variables:
+| Variable | Required | Description |
+|----------|----------|-------------|
+| \`DATABASE_URL\` | Yes | PostgreSQL connection string |
+| \`REDIS_URL\` | Yes | Redis connection string |
+| \`ENCRYPTION_KEY\` | Yes | 32-byte hex key for credential encryption |
+| \`JWT_SECRET\` | Yes | Secret for JWT token signing |
+| \`AUTH_MODE\` | Yes | Must be \`selfhosted\` |
+| \`NEXT_PUBLIC_AUTH_MODE\` | Yes | Must be \`selfhosted\` |
+| \`NEXT_PUBLIC_API_URL\` | No | API URL (default: http://localhost:3001) |
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| \`AUTH_MODE\` | \`selfhosted\` | \`selfhosted\` or \`clerk\` |
-| \`DATABASE_URL\` | PostgreSQL localhost | Database connection |
-| \`REDIS_URL\` | \`redis://localhost:6379\` | Redis connection |
-| \`ENCRYPTION_KEY\` | (empty) | AES-256 key, auto-generated in Docker |
+## SSL/HTTPS
 
-## Auth Modes
+For production, always use HTTPS. Use a reverse proxy like Nginx or Caddy:
 
-| Mode | Description |
-|------|-------------|
-| **Selfhosted** | Email/password JWT auth (default) |
-| **Clerk** | Clerk auth with organizations, SSO |
+### Caddy (recommended)
+
+\`\`\`
+mitshe.yourdomain.com {
+    reverse_proxy localhost:3000
+}
+
+api.mitshe.yourdomain.com {
+    reverse_proxy localhost:3001
+}
+\`\`\`
+
+### Nginx
+
+\`\`\`nginx
+server {
+    listen 443 ssl;
+    server_name mitshe.yourdomain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+    }
+}
+\`\`\`
+
+## Backups
+
+### PostgreSQL
+
+\`\`\`bash
+# Backup
+pg_dump -h localhost -U postgres mitshe > backup.sql
+
+# Restore
+psql -h localhost -U postgres mitshe < backup.sql
+\`\`\`
+
+### Full backup script
+
+\`\`\`bash
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+pg_dump -h localhost -U postgres mitshe > backup_$DATE.sql
+gzip backup_$DATE.sql
+# Upload to S3, etc.
+\`\`\`
+
+## Scaling
+
+### Horizontal scaling
+
+Run multiple API instances behind a load balancer:
+
+\`\`\`yaml
+services:
+  api:
+    image: ghcr.io/mitshe/api:latest
+    deploy:
+      replicas: 3
+    # ... rest of config
+\`\`\`
+
+Redis handles session sharing and queue coordination automatically.
+
+## Monitoring
+
+### Health checks
+
+\`\`\`bash
+# API health
+curl http://localhost:3001/health
+
+# Web health
+curl http://localhost:3000/api/health
+\`\`\`
+
+### Logs
+
+\`\`\`bash
+docker compose logs -f api
+docker compose logs -f web
+\`\`\`
 
 ## Troubleshooting
 
-### Port 5432/6379 in use
+### Database connection failed
 
-Stop existing databases or change ports in \`docker/dev/docker-compose.yml\`.
-
-### Prisma client not generated
-
+Check PostgreSQL is running and accessible:
 \`\`\`bash
-just db-generate
+psql -h localhost -U postgres -d mitshe -c "SELECT 1"
 \`\`\`
 
-### Workflow execution fails
+### Redis connection failed
 
-Build the executor image: \`just executor-build\`
+\`\`\`bash
+redis-cli ping
+\`\`\`
+
+### Migrations failed
+
+Run manually:
+\`\`\`bash
+npx prisma migrate deploy
+\`\`\`
 `,
 
   api: `# REST API
 
-Access mitshe programmatically.
+Access mitshe programmatically. Interactive Swagger docs available at \`/api\` on your API server.
 
 ## Authentication
 
 \`\`\`bash
-curl https://localhost:3001/v1/tasks -H "Authorization: Bearer YOUR_API_KEY"
+curl http://localhost:3001/api/v1/tasks -H "Authorization: Bearer YOUR_API_KEY"
 \`\`\`
 
-Get your key at [Settings → API Keys](/settings/api-keys).
+Get your key at [Settings - API Keys](/settings/api-keys).
 
 :::warning
 Keep your API key secret. Never commit to version control.
@@ -1713,20 +1933,104 @@ Keep your API key secret. Never commit to version control.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| \`GET\` | \`/tasks\` | List tasks |
-| \`POST\` | \`/tasks\` | Create task |
-| \`GET\` | \`/tasks/:id\` | Get task |
-| \`POST\` | \`/tasks/:id/process\` | Start processing |
+| \`GET\` | \`/api/v1/tasks\` | List tasks |
+| \`POST\` | \`/api/v1/tasks\` | Create task |
+| \`GET\` | \`/api/v1/tasks/:id\` | Get task |
+| \`PUT\` | \`/api/v1/tasks/:id\` | Update task |
+| \`DELETE\` | \`/api/v1/tasks/:id\` | Delete task |
+| \`POST\` | \`/api/v1/tasks/:id/process\` | Start AI processing |
 
 ### Workflows
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| \`GET\` | \`/workflows\` | List workflows |
-| \`GET\` | \`/workflows/:id\` | Get workflow |
-| \`POST\` | \`/workflows/:id/run\` | Execute workflow |
+| \`GET\` | \`/api/v1/workflows\` | List workflows |
+| \`POST\` | \`/api/v1/workflows\` | Create workflow |
+| \`GET\` | \`/api/v1/workflows/:id\` | Get workflow |
+| \`PUT\` | \`/api/v1/workflows/:id\` | Update workflow |
+| \`DELETE\` | \`/api/v1/workflows/:id\` | Delete workflow |
+| \`POST\` | \`/api/v1/workflows/:id/run\` | Execute workflow |
 
-## Rate limits
+### Sessions
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/sessions\` | List sessions (filter: ?status=RUNNING&projectId=...) |
+| \`POST\` | \`/api/v1/sessions\` | Create and start session |
+| \`GET\` | \`/api/v1/sessions/:id\` | Get session with messages |
+| \`DELETE\` | \`/api/v1/sessions/:id\` | Delete session and stop container |
+| \`POST\` | \`/api/v1/sessions/:id/pause\` | Pause session |
+| \`POST\` | \`/api/v1/sessions/:id/resume\` | Resume paused/stopped session |
+| \`POST\` | \`/api/v1/sessions/:id/stop\` | Stop session (container stays for resume) |
+| \`POST\` | \`/api/v1/sessions/:id/exec\` | Execute command in container (non-interactive) |
+| \`POST\` | \`/api/v1/sessions/:id/terminals\` | Start a terminal (bash or agent) |
+| \`DELETE\` | \`/api/v1/sessions/:id/terminals/:terminalId\` | Close a terminal |
+| \`GET\` | \`/api/v1/sessions/:id/files\` | List files in workspace |
+| \`GET\` | \`/api/v1/sessions/:id/file?path=...\` | Read file content |
+| \`POST\` | \`/api/v1/sessions/:id/file\` | Write file content |
+| \`DELETE\` | \`/api/v1/sessions/:id/file?path=...\` | Delete file |
+| \`GET\` | \`/api/v1/sessions/:id/git-status\` | Get git status |
+
+### Presets
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/presets\` | List presets |
+| \`POST\` | \`/api/v1/presets\` | Create preset |
+| \`GET\` | \`/api/v1/presets/:id\` | Get preset |
+| \`PUT\` | \`/api/v1/presets/:id\` | Update preset |
+| \`DELETE\` | \`/api/v1/presets/:id\` | Delete preset |
+
+### Environments
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/environments\` | List environments |
+| \`POST\` | \`/api/v1/environments\` | Create environment |
+| \`GET\` | \`/api/v1/environments/:id\` | Get environment |
+| \`PUT\` | \`/api/v1/environments/:id\` | Update environment |
+| \`DELETE\` | \`/api/v1/environments/:id\` | Delete environment |
+
+### Projects
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/projects\` | List projects |
+| \`POST\` | \`/api/v1/projects\` | Create project |
+| \`GET\` | \`/api/v1/projects/:id\` | Get project |
+| \`PUT\` | \`/api/v1/projects/:id\` | Update project |
+| \`DELETE\` | \`/api/v1/projects/:id\` | Delete project |
+
+### Integrations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/integrations\` | List integrations |
+| \`POST\` | \`/api/v1/integrations\` | Create integration |
+| \`POST\` | \`/api/v1/integrations/:id/test\` | Test connection |
+| \`DELETE\` | \`/api/v1/integrations/:id\` | Delete integration |
+
+### AI Credentials
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/ai-credentials\` | List AI credentials |
+| \`POST\` | \`/api/v1/ai-credentials\` | Create credential |
+| \`POST\` | \`/api/v1/ai-credentials/:id/test\` | Test connection |
+| \`DELETE\` | \`/api/v1/ai-credentials/:id\` | Delete credential |
+
+### Repositories
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| \`GET\` | \`/api/v1/repositories\` | List repositories |
+| \`GET\` | \`/api/v1/repositories/remote\` | List remote repos from providers |
+| \`POST\` | \`/api/v1/repositories/sync/existing\` | Sync existing repos |
+| \`POST\` | \`/api/v1/repositories/sync/selective\` | Import selected repos |
+| \`DELETE\` | \`/api/v1/repositories/:id\` | Delete repository |
+| \`DELETE\` | \`/api/v1/repositories/bulk\` | Bulk delete |
+
+## Rate Limits
 
 | Type | Limit |
 |------|-------|
@@ -1734,17 +2038,331 @@ Keep your API key secret. Never commit to version control.
 | Workflow runs | 10/min |
 | AI processing | 20/min |
 
-## Example
+## Examples
+
+### Create a session
 
 \`\`\`bash
-curl -X POST https://localhost:3001/v1/workflows/abc123/run \\
+curl -X POST http://localhost:3001/api/v1/sessions \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Fix login bug",
+    "repositoryIds": ["repo_123"],
+    "aiCredentialId": "cred_456",
+    "instructions": "Fix the login bug described in JIRA-789"
+  }'
+\`\`\`
+
+### Execute command in session
+
+\`\`\`bash
+curl -X POST http://localhost:3001/api/v1/sessions/sess_123/exec \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"command": "git diff --stat"}'
+\`\`\`
+
+### Run a workflow
+
+\`\`\`bash
+curl -X POST http://localhost:3001/api/v1/workflows/wf_123/run \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"input": {"issueKey": "PROJ-456"}}'
 \`\`\`
+`,
 
-\`\`\`json
-{ "executionId": "exec_789", "status": "running" }
+  // ─── Workspace ──────────────────────────────────────────────────
+  "workspace": `# Workspace
+
+The Workspace module provides interactive AI agent sessions with isolated Docker environments. Work directly with AI agents like Claude Code or OpenClaw in a browser-based terminal, edit files with a Monaco-powered code editor, and manage your codebase - all from mitshe.
+
+## Key Features
+
+<cards>
+<card title="Interactive Sessions" icon="terminal" href="/docs/workspace/sessions">
+Launch isolated Docker containers with your repositories and work with AI agents in real-time through a browser terminal.
+</card>
+<card title="Presets" icon="sliders" href="/docs/workspace/presets">
+Define reusable agent configurations with pre-selected repositories, instructions, and CLI arguments.
+</card>
+<card title="Environments" icon="box" href="/docs/workspace/environments">
+Configure container resources, environment variables, and setup scripts for consistent development environments.
+</card>
+</cards>
+
+## How It Works
+
+1. **Create a Session** - select repositories, optionally choose a preset and environment
+2. **Agent Terminal** - a Docker container starts with your repos cloned, and the AI agent launches automatically
+3. **Code Editor** - click any file to open it in the built-in Monaco editor with syntax highlighting
+4. **File Browser** - navigate your workspace files with git status indicators
+5. **Multiple Terminals** - open additional bash terminals alongside the agent
+
+## Supported AI Agents
+
+| Agent | CLI Command | Instructions File | Auth |
+|-------|-------------|-------------------|------|
+| Claude Code | \`claude\` | \`CLAUDE.md\` | OAuth (configure in terminal) |
+| OpenClaw | \`openclaw tui\` | \`SOUL.md\` | \`openclaw onboard\` (configure in terminal) |
+
+Both agents are CLI-based providers that manage their own authentication. Configure them once in a terminal session - credentials persist across all future sessions via shared Docker volumes.
+`,
+
+  "workspace/sessions": `# Sessions
+
+Sessions are interactive workspaces where you work with AI agents in isolated Docker containers.
+
+## Creating a Session
+
+1. Go to **Workspace > Sessions**
+2. Click **New Session**
+3. Configure:
+   - **Preset** (optional) - select a predefined agent configuration
+   - **Session Name** - descriptive name for the session
+   - **Project** (optional) - associate with a project
+   - **Repositories** - select repos to clone into the workspace
+   - **AI Provider** (optional) - Claude Code, OpenClaw, or none for plain bash
+   - **Start Arguments** (optional) - CLI flags for the agent
+   - **Environment** (optional) - container configuration
+   - **Instructions** (optional) - system prompt for the agent
+4. Click **Start Session**
+
+## Session Lifecycle
+
 \`\`\`
+Creating -> Running <-> Paused -> Completed
+\`\`\`
+
+- **Running** - container is active, agent is available
+- **Paused** - container stays alive, agent process continues, you can disconnect and reconnect
+- **Completed** - agent process stopped, container stays for resume with \`--continue\`
+- **Resume** - restart the agent with conversation history preserved
+
+## Terminal Features
+
+- **Agent Terminal** - launches the AI agent (Claude Code or OpenClaw) with bash fallback after exit
+- **Additional Terminals** - open new bash terminals via the + button
+- **Keyboard Input** - full terminal emulation with arrow keys, Ctrl+C, function keys
+- **Output Buffer** - reconnecting to a session restores terminal history
+
+## Code Editor
+
+Click any file in the file browser to open it in the Monaco editor:
+
+- **Syntax Highlighting** - 100+ languages supported
+- **Auto-save** - changes saved to container after 2s of inactivity
+- **Ctrl+S** - manual save
+- **Ctrl+F** - find in file
+- **Ctrl+H** - find and replace
+- **Real-time Updates** - files refresh when agent makes changes
+
+## File Browser
+
+- **Git Status** - modified (M), added (A), deleted (D), untracked (U) indicators
+- **Context Menu** (right-click) - New File, New Folder, Copy Path, Rename, Delete
+- **Auto-refresh** - file tree updates periodically
+`,
+
+  "workspace/presets": `# Presets
+
+Presets are reusable agent configurations that pre-fill session creation fields. Define once, use many times.
+
+## Creating a Preset
+
+1. Go to **Workspace > Presets**
+2. Click **New Preset**
+3. Configure:
+   - **Name** - e.g., "Code Reviewer", "Bug Fixer"
+   - **Description** - what this preset does
+   - **AI Provider** - Claude Code, OpenClaw, etc.
+   - **Start Arguments** - CLI flags (e.g., \`--dangerously-skip-permissions --model opus\`)
+   - **Default Project** - pre-selected project
+   - **Default Repositories** - pre-selected repos
+   - **Max Session Duration** - auto-stop after N hours
+   - **Instructions** - system prompt for the agent
+
+## Using a Preset
+
+When creating a new session, select a preset from the dropdown. All fields are pre-filled but remain editable - you can override any setting before starting.
+
+## Example Presets
+
+**Code Reviewer**
+- Provider: Claude Code
+- Arguments: \`--model opus\`
+- Instructions: "Review code for bugs, security issues, and best practices. Suggest improvements."
+
+**Quick Fix Agent**
+- Provider: Claude Code
+- Arguments: \`--dangerously-skip-permissions\`
+- Instructions: "Fix the described issue. Commit changes with a clear message."
+`,
+
+  "workspace/environments": `# Environments
+
+Environments define container configurations - resource limits, environment variables, and setup scripts.
+
+## Creating an Environment
+
+1. Go to **Workspace > Environments**
+2. Click **New Environment**
+3. Configure:
+   - **Name** - e.g., "Node + Python", "High Memory"
+   - **Description** - what this environment includes
+   - **Memory (MB)** - RAM limit (default: 4096)
+   - **CPU Cores** - CPU limit (default: 2)
+   - **Setup Script** - commands to run on container start
+   - **Environment Variables** - key-value pairs, with optional secret flag
+
+## Setup Script
+
+The setup script runs on container start before the session begins. Use it to install additional tools:
+
+\`\`\`bash
+pip install pytest black
+npm install -g tsx
+apt-get update && apt-get install -y ripgrep
+\`\`\`
+
+## Environment Variables
+
+Variables are passed to the container as standard environment variables. Mark sensitive values as "Secret" to mask them in the UI.
+
+## Usage
+
+Select an environment when creating a session or preset. Resource limits and env vars are applied to the Docker container automatically.
+`,
+
+  // ─── Workflow Session Nodes ─────────────────────────────────────
+  "workflows/session-nodes": `# Session Nodes
+
+Session nodes allow workflows to create and interact with Workspace sessions programmatically. This bridges automation (Workflows) with interactive agent work (Workspace).
+
+## Use Cases
+
+- **JIRA ticket -> Agent session** - automatically create a session when a ticket is assigned, run the agent, and post results back
+- **Scheduled code review** - daily workflow creates a session, agent reviews code, sends diff to Slack
+- **GitLab MR -> Analysis** - webhook triggers session, agent analyzes changes, comments on MR
+
+## Available Nodes
+
+### Actions
+
+<nodelist>
+<node type="action" name="Create Session" desc="Create and start a new agent session with repositories. Stores sessionId in workflow context." />
+<node type="action" name="Run Command" desc="Execute a shell command in a session container. Returns stdout and exit code." />
+<node type="action" name="Run Agent Task" desc="Start AI agent (Claude/OpenClaw) with a prompt in print mode. Waits for completion." />
+<node type="action" name="Stop Session" desc="Stop and optionally delete a session." />
+<node type="action" name="Read File" desc="Read file content from a session container." />
+<node type="action" name="Write File" desc="Write content to a file in a session container." />
+</nodelist>
+
+### Data
+
+<nodelist>
+<node type="data" name="Get Git Diff" desc="Get git diff from session workspace with additions/deletions count." />
+<node type="data" name="List Files" desc="List all files in session workspace." />
+</nodelist>
+
+## Example Workflow
+
+\`\`\`
+Manual Trigger
+  -> Create Session (repos: my-app, instructions: "Fix bugs")
+  -> Run Agent Task (prompt: "Find and fix the login bug described in JIRA-123")
+  -> Get Git Diff
+  -> Stop Session
+  -> Slack Message (send diff summary)
+\`\`\`
+
+## Context Variables
+
+The **Create Session** node automatically stores \`sessionId\` in the workflow context. Subsequent session nodes use it via \`{{ctx.sessionId}}\`.
+
+You can also pass a specific \`sessionId\` in the node config to target a different session.
+`,
+
+  // ─── AI Agent Integrations ──────────────────────────────────────
+  "integrations/claude-code": `# Claude Code
+
+Claude Code is Anthropic's official CLI for AI-assisted development. In mitshe, it runs inside isolated Docker containers as part of Workspace sessions.
+
+## Setup
+
+1. Go to **Settings > AI Providers**
+2. Click **Add Provider** and select **Claude Code (Local)**
+3. No API key needed - Claude Code manages its own authentication
+
+## First Session
+
+When you create your first session with Claude Code:
+1. The agent terminal opens with \`claude\` command
+2. Claude Code will prompt you to log in via OAuth
+3. After logging in, your credentials are stored in a shared Docker volume
+4. All future sessions reuse the credentials automatically
+
+## Configuration
+
+### Start Arguments
+
+Pass CLI flags via the Start Arguments field in session creation or presets:
+
+- \`--dangerously-skip-permissions\` - skip permission prompts (sandboxed environment)
+- \`--model opus\` or \`--model sonnet\` - select model
+- \`--permission-mode plan\` - start in plan mode
+- \`--verbose\` - verbose output
+
+### Instructions
+
+Instructions are written as \`CLAUDE.md\` in the workspace root. Claude Code reads this file automatically as project context.
+
+## In Workflows
+
+Use the **Run Agent Task** workflow node with \`provider: claude\` to run Claude Code in print mode (\`claude -p "prompt"\`). The agent executes the task and returns the output.
+`,
+
+  "integrations/openclaw": `# OpenClaw
+
+OpenClaw is an open-source AI agent platform supporting 50+ AI providers. In mitshe, it runs inside isolated Docker containers as part of Workspace sessions.
+
+## Setup
+
+1. Go to **Settings > AI Providers**
+2. Click **Add Provider** and select **OpenClaw**
+3. No API key needed - OpenClaw manages its own provider configuration
+
+## First Session
+
+When you create your first session with OpenClaw:
+1. The agent terminal opens with \`openclaw tui\` command
+2. Run \`openclaw onboard\` to configure your preferred AI provider and API keys
+3. Configuration is stored in a shared Docker volume (\`~/.openclaw/\`)
+4. All future sessions reuse the configuration automatically
+
+## Supported Providers
+
+OpenClaw supports 50+ AI providers including:
+- Anthropic (Claude)
+- OpenAI (GPT-4, etc.)
+- Google (Gemini)
+- Groq, Mistral, DeepSeek
+- Ollama (local models)
+- And many more
+
+## Configuration
+
+### Start Arguments
+
+Pass flags via Start Arguments in session creation or presets. Refer to the [OpenClaw CLI Reference](https://docs.openclaw.ai/start/wizard-cli-reference) for available flags.
+
+### Instructions
+
+Instructions are written as \`SOUL.md\` in the workspace root. OpenClaw reads this file as the agent personality/instructions.
+
+## In Workflows
+
+Use the **Run Agent Task** workflow node with \`provider: openclaw\` to run OpenClaw in task mode. The agent executes the task and returns the output.
 `,
 };

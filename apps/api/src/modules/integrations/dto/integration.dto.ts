@@ -85,6 +85,11 @@ export interface LinearConfig {
   apiKey: string;
 }
 
+export interface TrelloConfig {
+  apiKey: string;
+  apiToken: string;
+}
+
 // Wrapper response DTOs for API responses
 export class IntegrationWrapperResponseDto {
   @ApiProperty({ type: IntegrationResponseDto })
@@ -108,6 +113,7 @@ export class WebhookUrlResponseDto {
     jira: string;
     gitlab: string;
     github: string;
+    trello: string;
   };
 }
 

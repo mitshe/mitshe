@@ -88,6 +88,8 @@ model Organization {
   gitlabWebhookSecretIv Bytes? @map("gitlab_webhook_secret_iv")
   githubWebhookSecret   Bytes? @map("github_webhook_secret")
   githubWebhookSecretIv Bytes? @map("github_webhook_secret_iv")
+  trelloWebhookSecret   Bytes? @map("trello_webhook_secret")
+  trelloWebhookSecretIv Bytes? @map("trello_webhook_secret_iv")
 
   // Relations
   owner         User?    @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: SetNull)
@@ -98,7 +100,10 @@ model Organization {
   repositories  Repository[]
   aiCredentials AICredential[]
   workflows     Workflow[]
-  apiKeys       ApiKey[]
+  apiKeys          ApiKey[]
+  agentDefinitions AgentDefinition[]
+  environments     Environment[]
+  agentSessions    AgentSession[]
 
   @@index([ownerId])
   @@map("organizations")
@@ -143,7 +148,7 @@ model Project {
   gitProviderId   String? @map("git_provider_id")
 
   // Issue tracker mapping
-  issueTrackerType    String? @map("issue_tracker_type") // 'jira' | 'youtrack' | 'linear'
+  issueTrackerType    String? @map("issue_tracker_type") // 'jira' | 'youtrack' | 'linear' | 'trello'
   issueTrackerProject String? @map("issue_tracker_project")
   issueTrackerConfig  Json?   @map("issue_tracker_config")
 
@@ -157,8 +162,10 @@ model Project {
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   repository   Repository?  @relation("ProjectRepository", fields: [repositoryId], references: [id], onDelete: SetNull)
-  tasks        Task[]
-  workflows    Workflow[]
+  tasks            Task[]
+  workflows        Workflow[]
+  agentDefinitions AgentDefinition[]
+  agentSessions    AgentSession[]
 
   @@unique([organizationId, key])
   @@index([repositoryId])
@@ -225,6 +232,7 @@ enum IntegrationType {
   JIRA
   YOUTRACK
   LINEAR
+  TRELLO
   GITLAB
   GITHUB
   SLACK
@@ -257,8 +265,10 @@ model Integration {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  repositories Repository[]
+  organization              Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  repositories              Repository[]
+  environmentIntegrations   EnvironmentIntegration[]
+  sessionIntegrations       SessionIntegration[]
 
   @@unique([organizationId, type])
   @@map("integrations")
@@ -302,9 +312,11 @@ model Repository {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  integration  Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  projects     Project[]    @relation("ProjectRepository")
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  integration        Integration         @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  projects                    Project[]                    @relation("ProjectRepository")
+  sessionRepositories         SessionRepository[]
+  agentDefinitionRepositories AgentDefinitionRepository[]
 
   @@unique([organizationId, provider, externalId])
   @@index([organizationId])
@@ -323,6 +335,7 @@ enum AIProvider {
   GEMINI
   GROQ
   CLAUDE_CODE_LOCAL
+  OPENCLAW
 }
 
 model AICredential {
@@ -343,7 +356,9 @@ model AICredential {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentSessions    AgentSession[]
+  agentDefinitions AgentDefinition[]
 
   @@unique([organizationId, provider])
   @@map("ai_credentials")
@@ -475,7 +490,7 @@ model ApiKey {
 
 model WebhookLog {
   id        String   @id @default(cuid())
-  source    String // 'jira' | 'gitlab' | 'clerk'
+  source    String // 'jira' | 'gitlab' | 'github' | 'trello' | 'clerk'
   eventType String   @map("event_type")
   payload   Json
   processed Boolean  @default(false)
@@ -562,4 +577,185 @@ model AuditLog {
   @@index([action, createdAt])
   @@index([resourceType, resourceId])
   @@map("audit_logs")
+}
+
+// ============================================================================
+// ENVIRONMENTS (Container Configurations)
+// ============================================================================
+
+model Environment {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  name           String
+  description    String?
+  memoryMb       Int?     @map("memory_mb")
+  cpuCores       Int?     @map("cpu_cores")
+  setupScript    String?  @map("setup_script")
+  enableDocker   Boolean  @default(false) @map("enable_docker")
+  createdBy      String   @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization     Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  variables        EnvironmentVariable[]
+  integrations     EnvironmentIntegration[]
+  agentDefinitions AgentDefinition[]
+  sessions         AgentSession[]
+
+  @@index([organizationId])
+  @@map("environments")
+}
+
+model EnvironmentVariable {
+  id            String  @id @default(cuid())
+  environmentId String  @map("environment_id")
+  key           String
+  value         String
+  isSecret      Boolean @default(false) @map("is_secret")
+
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@unique([environmentId, key])
+  @@map("environment_variables")
+}
+
+model EnvironmentIntegration {
+  environmentId String @map("environment_id")
+  integrationId String @map("integration_id")
+
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([environmentId, integrationId])
+  @@map("environment_integrations")
+}
+
+// ============================================================================
+// AGENT DEFINITIONS (Reusable Agent Presets)
+// ============================================================================
+
+model AgentDefinition {
+  id                   String   @id @default(cuid())
+  organizationId       String   @map("organization_id")
+  name                 String
+  description          String?
+  aiCredentialId       String?  @map("ai_credential_id")
+  startArguments       String?  @map("start_arguments")
+  instructions         String   @default("")
+  maxSessionDurationMs Int?     @map("max_session_duration_ms")
+  defaultProjectId     String?  @map("default_project_id")
+  environmentId        String?  @map("environment_id")
+  createdBy            String   @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization        Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aiCredential        AICredential? @relation(fields: [aiCredentialId], references: [id], onDelete: SetNull)
+  defaultProject      Project?      @relation(fields: [defaultProjectId], references: [id], onDelete: SetNull)
+  environment         Environment?  @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  defaultRepositories AgentDefinitionRepository[]
+  sessions            AgentSession[]
+
+  @@index([organizationId])
+  @@map("agent_definitions")
+}
+
+model AgentDefinitionRepository {
+  agentDefinitionId String @map("agent_definition_id")
+  repositoryId      String @map("repository_id")
+
+  agentDefinition AgentDefinition @relation(fields: [agentDefinitionId], references: [id], onDelete: Cascade)
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@id([agentDefinitionId, repositoryId])
+  @@map("agent_definition_repositories")
+}
+
+// ============================================================================
+// AGENT SESSIONS (Interactive AI Sessions)
+// ============================================================================
+
+enum SessionStatus {
+  CREATING
+  RUNNING
+  PAUSED
+  COMPLETED
+  FAILED
+}
+
+model AgentSession {
+  id                String        @id @default(cuid())
+  organizationId    String        @map("organization_id")
+  projectId         String?       @map("project_id")
+  agentDefinitionId String?       @map("agent_definition_id")
+  name              String
+  instructions      String        @default("")
+  startArguments    String?       @map("start_arguments")
+  environmentId     String?       @map("environment_id")
+  enableDocker      Boolean       @default(false) @map("enable_docker")
+  status            SessionStatus @default(CREATING)
+  aiCredentialId    String?       @map("ai_credential_id")
+  containerId       String?       @map("container_id")
+  createdBy         String        @map("created_by")
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
+
+  // Relations
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project         Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  aiCredential    AICredential?     @relation(fields: [aiCredentialId], references: [id], onDelete: SetNull)
+  agentDefinition AgentDefinition?  @relation(fields: [agentDefinitionId], references: [id], onDelete: SetNull)
+  environment     Environment?      @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  messages        SessionMessage[]
+  repositories    SessionRepository[]
+  integrations    SessionIntegration[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("agent_sessions")
+}
+
+model SessionMessage {
+  id        String   @id @default(cuid())
+  sessionId String   @map("session_id")
+  role      String   // user | assistant | system | tool
+  content   String
+  metadata  Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  session AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("session_messages")
+}
+
+model SessionRepository {
+  sessionId    String @map("session_id")
+  repositoryId String @map("repository_id")
+
+  // Relations
+  session    AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  repository Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, repositoryId])
+  @@map("session_repositories")
+}
+
+model SessionIntegration {
+  sessionId     String @map("session_id")
+  integrationId String @map("integration_id")
+
+  session     AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  integration Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, integrationId])
+  @@map("session_integrations")
 }

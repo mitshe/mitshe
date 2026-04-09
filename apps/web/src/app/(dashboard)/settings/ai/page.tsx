@@ -54,6 +54,7 @@ import {
   GoogleIcon,
   GroqIcon,
 } from "@/components/icons/brand-icons";
+import { OpenClawIcon } from "@/components/icons/openclaw-icon";
 import {
   useAICredentials,
   useCreateAICredential,
@@ -105,6 +106,12 @@ const providerConfig: Record<
     icon: <AnthropicIcon />,
     color: "bg-[#D97757]",
   },
+  OPENCLAW: {
+    name: "OpenClaw",
+    description: "Open-source AI agent platform with 50+ providers",
+    icon: <OpenClawIcon />,
+    color: "bg-[#10B981]",
+  },
 };
 
 export default function AICredentialsPage() {
@@ -124,7 +131,9 @@ export default function AICredentialsPage() {
     isDefault: false,
   });
 
-  const isLocalProvider = addForm.provider === "CLAUDE_CODE_LOCAL";
+  const isLocalProvider =
+    addForm.provider === "CLAUDE_CODE_LOCAL" ||
+    addForm.provider === "OPENCLAW";
 
   const handleTestConnection = async (id: string) => {
     try {
@@ -263,8 +272,9 @@ export default function AICredentialsPage() {
                 <Alert>
                   <Zap className="w-4 h-4" />
                   <AlertDescription>
-                    No API key required. Uses your local Claude Code instance
-                    running on localhost.
+                    No API key required. This provider manages its own
+                    authentication - configure it in a Workspace session.
+                    Supported only in Workspace sessions, not in Workflows.
                   </AlertDescription>
                 </Alert>
               ) : (

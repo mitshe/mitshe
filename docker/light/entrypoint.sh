@@ -5,6 +5,16 @@ echo "Starting mitshe..."
 
 mkdir -p /build/data
 
+# Fix Docker socket permissions (GID may differ between host and container)
+if [ -S /var/run/docker.sock ]; then
+    SOCK_GID=$(stat -c '%g' /var/run/docker.sock)
+    if ! getent group "$SOCK_GID" > /dev/null 2>&1; then
+        addgroup -g "$SOCK_GID" dockerhost 2>/dev/null || true
+    fi
+    DOCKER_GROUP=$(getent group "$SOCK_GID" | cut -d: -f1)
+    adduser mitshe "$DOCKER_GROUP" 2>/dev/null || true
+fi
+
 cd /build/apps/api
 if echo "$DATABASE_URL" | grep -q "^postgresql"; then
     echo "Running PostgreSQL migrations..."
@@ -16,6 +26,9 @@ else
     fi
 fi
 echo "Database ready"
+
+# Fix data directory ownership (entrypoint runs as root, app runs as mitshe)
+chown -R mitshe:mitshe /build/data
 
 if [ -z "$ENCRYPTION_KEY" ]; then
     export ENCRYPTION_KEY=$(openssl rand -hex 32)

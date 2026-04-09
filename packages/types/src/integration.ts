@@ -4,6 +4,7 @@ export type IntegrationType =
   | "JIRA"
   | "YOUTRACK"
   | "LINEAR"
+  | "TRELLO"
   | "GITLAB"
   | "GITHUB"
   | "SLACK"
@@ -76,4 +77,9 @@ export interface TelegramConfig {
 
 export interface LinearConfig {
   apiKey: string;
+}
+
+export interface TrelloConfig {
+  apiKey: string;
+  apiToken: string;
 }

@@ -123,3 +123,19 @@ export interface JiraImportPreview {
   created: string;
   updated: string;
 }
+
+export interface TrelloImportPreview {
+  source: 'TRELLO';
+  cardId: string;
+  title: string;
+  description: string | null;
+  status: string;
+  assignee: string | null;
+  labels: string[];
+  board: {
+    id: string;
+    name: string;
+  };
+  url: string;
+  updated: string;
+}

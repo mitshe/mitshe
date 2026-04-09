@@ -9,11 +9,12 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Injectable } from '@nestjs/common';
+import { Logger, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { verifyToken } from '@clerk/backend';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../persistence/prisma/prisma.service';
+import { TerminalManagerService } from '../../modules/sessions/services/terminal-manager.service';
 
 // Event type definitions
 export interface TaskUpdatePayload {
@@ -97,14 +98,13 @@ export class EventsGateway
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly terminalManager?: TerminalManagerService,
   ) {
     this.clerkSecretKey =
       this.configService.get<string>('CLERK_SECRET_KEY') || '';
     const authMode =
       this.configService.get<string>('AUTH_MODE') || 'selfhosted';
-    this.jwtSecret =
-      this.configService.get<string>('JWT_SECRET') ||
-      (authMode === 'selfhosted' ? 'dev-secret-change-in-production' : '');
+    this.jwtSecret = this.configService.get<string>('JWT_SECRET') || '';
     this.authMode = authMode;
 
     if (authMode === 'clerk' && !this.clerkSecretKey) {
@@ -157,6 +157,8 @@ export class EventsGateway
       };
     }
 
+    let verifiedOrgId: string | undefined;
+
     try {
       if (this.authMode === 'clerk' && this.clerkSecretKey) {
         // Clerk mode: verify with Clerk SDK
@@ -164,13 +166,16 @@ export class EventsGateway
           secretKey: this.clerkSecretKey,
         });
         clientData.userId = payload.sub;
+        // Clerk JWT may contain org_id claim
+        verifiedOrgId = (payload as any).org_id;
       } else {
-        // Selfhosted mode: verify JWT
+        // Selfhosted mode: verify JWT - orgId is in the token
         const payload = jwt.verify(data.token, this.jwtSecret) as {
           sub: string;
           orgId: string;
         };
         clientData.userId = payload.sub;
+        verifiedOrgId = payload.orgId;
       }
       clientData.authenticated = true;
     } catch (error) {
@@ -181,10 +186,46 @@ export class EventsGateway
       };
     }
 
+    // Use org from JWT if available, otherwise verify membership
+    const requestedOrgId = data.organizationId;
+    if (verifiedOrgId && verifiedOrgId !== requestedOrgId) {
+      this.logger.warn(
+        `Client ${client.id} requested org ${requestedOrgId} but JWT contains ${verifiedOrgId}`,
+      );
+      return {
+        event: 'error',
+        data: { message: 'Organization mismatch' },
+      };
+    }
+
+    // Verify user is member of the organization
+    if (!verifiedOrgId) {
+      const membership = await this.prisma.organizationMember.findFirst({
+        where: {
+          userId: clientData.userId,
+          organizationId: requestedOrgId,
+        },
+        select: { id: true },
+      });
+      if (!membership) {
+        // Also check if user is org owner
+        const org = await this.prisma.organization.findFirst({
+          where: { id: requestedOrgId, ownerId: clientData.userId },
+          select: { id: true },
+        });
+        if (!org) {
+          return {
+            event: 'error',
+            data: { message: 'Not a member of this organization' },
+          };
+        }
+      }
+    }
+
     // Join organization room
-    clientData.organizationId = data.organizationId;
-    void client.join(`org:${data.organizationId}`);
-    clientData.rooms.add(`org:${data.organizationId}`);
+    clientData.organizationId = requestedOrgId;
+    void client.join(`org:${requestedOrgId}`);
+    clientData.rooms.add(`org:${requestedOrgId}`);
 
     this.logger.log(
       `[WS AUTH] Client ${client.id} authenticated and joined room: org:${data.organizationId}`,
@@ -603,6 +644,100 @@ export class EventsGateway
       `Client ${client.id} unsubscribed from execution:${executionId}`,
     );
     return { event: 'unsubscribed', data: { executionId } };
+  }
+
+  // ─── Session Terminal Subscriptions ──────────────────────────────
+
+  @SubscribeMessage('subscribe:session')
+  async handleSubscribeSession(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() sessionId: string,
+  ) {
+    if (!this.isClientAuthenticated(client)) {
+      return { event: 'error', data: { message: 'Authentication required' } };
+    }
+
+    const clientData = this.connectedClients.get(client.id);
+    if (!clientData?.organizationId) {
+      return { event: 'error', data: { message: 'Organization not set' } };
+    }
+
+    const session = await this.prisma.agentSession.findFirst({
+      where: { id: sessionId, organizationId: clientData.organizationId },
+      select: { id: true },
+    });
+
+    if (!session) {
+      return {
+        event: 'error',
+        data: { message: 'Session not found or not authorized' },
+      };
+    }
+
+    void client.join(`session:${sessionId}`);
+    clientData.rooms.add(`session:${sessionId}`);
+    this.logger.log(`Client ${client.id} subscribed to session:${sessionId}`);
+    return { event: 'subscribed', data: { sessionId } };
+  }
+
+  @SubscribeMessage('unsubscribe:session')
+  handleUnsubscribeSession(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() sessionId: string,
+  ) {
+    void client.leave(`session:${sessionId}`);
+    this.logger.log(
+      `Client ${client.id} unsubscribed from session:${sessionId}`,
+    );
+    return { event: 'unsubscribed', data: { sessionId } };
+  }
+
+  @SubscribeMessage('session:input')
+  handleSessionInput(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { terminalId: string; input: string },
+  ) {
+    if (!this.isClientAuthenticated(client)) {
+      return { event: 'error', data: { message: 'Authentication required' } };
+    }
+
+    // Verify client is subscribed to the session room (org ownership checked at subscribe time)
+    const sessionId = data.terminalId.split(':')[0];
+    const clientData = this.connectedClients.get(client.id);
+    if (!clientData?.rooms.has(`session:${sessionId}`)) {
+      return {
+        event: 'error',
+        data: { message: 'Not subscribed to this session' },
+      };
+    }
+
+    this.terminalManager?.sendInput(data.terminalId, data.input);
+  }
+
+  /**
+   * Emit terminal output (routed by terminalId)
+   */
+  emitSessionOutput(terminalId: string, output: string) {
+    // terminalId format: "sessionId:term-xxx"
+    const sessionId = terminalId.split(':')[0];
+    this.server.to(`session:${sessionId}`).emit('session:output', {
+      terminalId,
+      data: output,
+    });
+  }
+
+  /**
+   * Emit session status change
+   */
+  emitSessionStatus(
+    organizationId: string,
+    sessionId: string,
+    status: string,
+    error?: string,
+  ) {
+    this.server
+      .to(`org:${organizationId}`)
+      .emit('session:status', { sessionId, status, error });
   }
 
   /**

@@ -59,6 +59,14 @@ export type NodeType =
   | "data:get_youtrack_issue"
   | "data:get_obsidian_note"
   | "data:search_obsidian_notes"
+  | "action:session_create"
+  | "action:session_exec"
+  | "action:session_agent"
+  | "action:session_stop"
+  | "action:session_read_file"
+  | "action:session_write_file"
+  | "data:session_git_diff"
+  | "data:session_files"
   | "utility:http_request"
   | "utility:script";
 
@@ -72,6 +80,7 @@ export type NodeCategory =
   | "git"
   | "tasks"
   | "notifications"
+  | "sessions"
   | "control"
   | "transform"
   | "utility";
@@ -693,6 +702,92 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
     color: "#64748b",
     defaultConfig: { expression: "" },
   },
+
+  // ─── Sessions ────────────────────────────────────────────────
+  {
+    type: "action:session_create",
+    label: "Create Session",
+    description: "Create and start a new agent session with repositories",
+    category: "sessions",
+    icon: "Plus",
+    color: "#06b6d4",
+    defaultConfig: {
+      name: "",
+      repositoryIds: [],
+      presetId: "",
+      environmentId: "",
+      instructions: "",
+    },
+  },
+  {
+    type: "action:session_exec",
+    label: "Run Command",
+    description: "Execute a shell command in a session container",
+    category: "sessions",
+    icon: "Terminal",
+    color: "#06b6d4",
+    defaultConfig: { sessionId: "{{ctx.sessionId}}", command: "", timeout: 60000 },
+  },
+  {
+    type: "action:session_agent",
+    label: "Run Agent Task",
+    description: "Start AI agent with a prompt and wait for result",
+    category: "sessions",
+    icon: "Bot",
+    color: "#06b6d4",
+    defaultConfig: {
+      sessionId: "{{ctx.sessionId}}",
+      prompt: "",
+      provider: "claude",
+      startArguments: "",
+      timeout: 300000,
+    },
+  },
+  {
+    type: "action:session_stop",
+    label: "Stop Session",
+    description: "Stop and optionally delete a session",
+    category: "sessions",
+    icon: "Square",
+    color: "#06b6d4",
+    defaultConfig: { sessionId: "{{ctx.sessionId}}", delete: false },
+  },
+  {
+    type: "action:session_read_file",
+    label: "Read File",
+    description: "Read file content from a session container",
+    category: "sessions",
+    icon: "FileText",
+    color: "#06b6d4",
+    defaultConfig: { sessionId: "{{ctx.sessionId}}", path: "" },
+  },
+  {
+    type: "action:session_write_file",
+    label: "Write File",
+    description: "Write content to a file in a session container",
+    category: "sessions",
+    icon: "FileEdit",
+    color: "#06b6d4",
+    defaultConfig: { sessionId: "{{ctx.sessionId}}", path: "", content: "" },
+  },
+  {
+    type: "data:session_git_diff",
+    label: "Get Git Diff",
+    description: "Get git diff from session workspace",
+    category: "sessions",
+    icon: "GitBranch",
+    color: "#06b6d4",
+    defaultConfig: { sessionId: "{{ctx.sessionId}}", staged: false },
+  },
+  {
+    type: "data:session_files",
+    label: "List Files",
+    description: "List files in session workspace",
+    category: "sessions",
+    icon: "FolderTree",
+    color: "#06b6d4",
+    defaultConfig: { sessionId: "{{ctx.sessionId}}", path: "" },
+  },
 ];
 
 export const CATEGORY_LABELS: Record<NodeCategory, string> = {
@@ -705,6 +800,7 @@ export const CATEGORY_LABELS: Record<NodeCategory, string> = {
   git: "Git",
   tasks: "Tasks",
   notifications: "Notifications",
+  sessions: "Sessions",
   control: "Control Flow",
   transform: "Transform",
   utility: "Utility",

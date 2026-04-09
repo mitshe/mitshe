@@ -22,11 +22,18 @@ interface SocketContextValue {
   unsubscribeFromWorkflow: (workflowId: string) => void;
   subscribeToExecution: (executionId: string) => void;
   unsubscribeFromExecution: (executionId: string) => void;
+  subscribeToSession: (sessionId: string) => void;
+  unsubscribeFromSession: (sessionId: string) => void;
 }
 
 const SocketContext = createContext<SocketContextValue | null>(null);
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+// In production: empty string = connect to same host (relative URL)
+// In dev: connect to API server directly
+const SOCKET_URL =
+  typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? "" // Production: relative URL, same host via reverse proxy
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 let socketInstance: Socket | null = null;
 
@@ -180,6 +187,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     [socket],
   );
 
+  const subscribeToSession = useCallback(
+    (sessionId: string) => {
+      socket?.emit("subscribe:session", sessionId);
+    },
+    [socket],
+  );
+
+  const unsubscribeFromSession = useCallback(
+    (sessionId: string) => {
+      socket?.emit("unsubscribe:session", sessionId);
+    },
+    [socket],
+  );
+
   return (
     <SocketContext.Provider
       value={{
@@ -192,6 +213,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         unsubscribeFromWorkflow,
         subscribeToExecution,
         unsubscribeFromExecution,
+        subscribeToSession,
+        unsubscribeFromSession,
       }}
     >
       {children}
@@ -405,3 +428,4 @@ export function useNotifications() {
 
   return { notifications, clearNotifications, removeNotification };
 }
+
