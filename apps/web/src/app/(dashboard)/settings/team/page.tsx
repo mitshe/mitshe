@@ -565,7 +565,7 @@ function SelfhostedTeamPage() {
 
 // Clerk mode version - full team management (kept for Clerk mode)
 function ClerkModeTeamPage() {
-  const { organization, membership, memberships, invitations, isLoaded } =
+  const { organization, memberships, invitations, isLoaded } =
     useOrganization({
       memberships: { infinite: true },
       invitations: { infinite: true },
@@ -580,6 +580,7 @@ function ClerkModeTeamPage() {
     if (!organization || !("inviteMember" in organization)) return;
     setIsInviting(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (organization as any).inviteMember({ emailAddress: inviteEmail, role: inviteRole });
       toast.success(`Invitation sent to ${inviteEmail}`);
       setIsInviteOpen(false);
@@ -619,7 +620,7 @@ function ClerkModeTeamPage() {
             </DialogHeader>
             <DialogBody className="space-y-4 py-4">
               <Input placeholder="Email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-              <Select value={inviteRole} onValueChange={(v: any) => setInviteRole(v)}>
+              <Select value={inviteRole} onValueChange={(v: "org:admin" | "org:member") => setInviteRole(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="org:admin">Admin</SelectItem>
@@ -649,6 +650,7 @@ function ClerkModeTeamPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {membersList.map((member: any) => (
                 <TableRow key={member.id}>
                   <TableCell>{member.publicUserData?.identifier || "Unknown"}</TableCell>
