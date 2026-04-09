@@ -275,14 +275,19 @@ export class AICredentialsService {
   // =========================================================================
 
   private toResponse(credential: any, originalKey?: string) {
-    const maskedKey = originalKey
-      ? this.maskApiKey(originalKey)
-      : this.maskApiKey(
-          this.encryption.decrypt(
-            Buffer.from(credential.encryptedKey),
-            Buffer.from(credential.keyIv),
-          ),
-        );
+    let maskedKey: string;
+    try {
+      maskedKey = originalKey
+        ? this.maskApiKey(originalKey)
+        : this.maskApiKey(
+            this.encryption.decrypt(
+              Buffer.from(credential.encryptedKey),
+              Buffer.from(credential.keyIv),
+            ),
+          );
+    } catch {
+      maskedKey = '****...****';
+    }
 
     return {
       id: credential.id,

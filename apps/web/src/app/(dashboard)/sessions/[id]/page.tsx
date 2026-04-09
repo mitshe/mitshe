@@ -318,15 +318,7 @@ export default function SessionDetailPage() {
       const tab = tabs.find((t) => t.id === tabId);
       if (!tab) return;
 
-      // Terminal tabs - confirm if they have a running process
       if (tab.type === "terminal" && tab.terminalId) {
-        if (
-          !confirm(
-            "This will kill any running process in this terminal. Continue?",
-          )
-        ) {
-          return;
-        }
         closeTerminalMutation.mutate({
           sessionId,
           terminalId: tab.terminalId,
@@ -615,7 +607,7 @@ export default function SessionDetailPage() {
   const isActive = isRunning || isPaused;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+    <div className="flex flex-col absolute inset-0 overflow-hidden">
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b bg-background shrink-0">
         <div className="flex items-center gap-3">
@@ -870,6 +862,7 @@ export default function SessionDetailPage() {
                       terminalId={tab.terminalId!}
                       isRunning={isRunning}
                       cmd={tab.cmd}
+                      isVisible={activeTabId === tab.id}
                     />
                   ) : isCompleted ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground">

@@ -49,7 +49,13 @@ import {
   Pencil,
   Trash2,
   Terminal,
+  ChevronDown,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   usePresets,
   useCreatePreset,
@@ -184,7 +190,7 @@ export default function PresetsPage() {
         <div>
           <h1 className="text-2xl font-bold">Presets</h1>
           <p className="text-muted-foreground">
-            Define reusable presets for your sessions
+            Save session configurations you use often. Pick a preset when creating a session to skip manual setup.
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -211,6 +217,7 @@ export default function PresetsPage() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g., Code Reviewer"
+                  autoFocus
                 />
               </div>
 
@@ -247,98 +254,106 @@ export default function PresetsPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="startArguments">Start Arguments</Label>
-                <Input
-                  id="startArguments"
-                  value={form.startArguments}
-                  onChange={(e) =>
-                    setForm({ ...form, startArguments: e.target.value })
-                  }
-                  placeholder="e.g., --dangerously-skip-permissions --model opus"
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground">
-                  CLI arguments passed to the agent CLI on start
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Default Project</Label>
-                <Select
-                  value={form.defaultProjectId}
-                  onValueChange={(v) =>
-                    setForm({ ...form, defaultProjectId: v })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Default Repositories</Label>
-                <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {activeRepos.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2 text-center">
-                      No active repositories
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1 group w-full">
+                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                  Advanced options
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="startArguments">Start Arguments</Label>
+                    <Input
+                      id="startArguments"
+                      value={form.startArguments}
+                      onChange={(e) =>
+                        setForm({ ...form, startArguments: e.target.value })
+                      }
+                      placeholder="e.g., --dangerously-skip-permissions --model opus"
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      CLI arguments passed to the agent CLI on start
                     </p>
-                  ) : (
-                    activeRepos.map((repo) => (
-                      <label
-                        key={repo.id}
-                        className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={form.defaultRepositoryIds.includes(repo.id)}
-                          onCheckedChange={() => toggleRepo(repo.id)}
-                        />
-                        <span className="text-sm truncate">
-                          {repo.fullPath}
-                        </span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="maxDuration">
-                  Max Session Duration (hours)
-                </Label>
-                <Input
-                  id="maxDuration"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={form.maxSessionDurationMs}
-                  onChange={(e) =>
-                    setForm({ ...form, maxSessionDurationMs: e.target.value })
-                  }
-                  placeholder="No limit"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label>Default Project</Label>
+                    <Select
+                      value={form.defaultProjectId}
+                      onValueChange={(v) =>
+                        setForm({ ...form, defaultProjectId: v })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="None" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="instructions">Instructions</Label>
-                <Textarea
-                  id="instructions"
-                  value={form.instructions}
-                  onChange={(e) =>
-                    setForm({ ...form, instructions: e.target.value })
-                  }
-                  placeholder="System instructions for the preset..."
-                  rows={4}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label>Default Repositories</Label>
+                    <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {activeRepos.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2 text-center">
+                          No active repositories
+                        </p>
+                      ) : (
+                        activeRepos.map((repo) => (
+                          <label
+                            key={repo.id}
+                            className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={form.defaultRepositoryIds.includes(repo.id)}
+                              onCheckedChange={() => toggleRepo(repo.id)}
+                            />
+                            <span className="text-sm truncate">
+                              {repo.fullPath}
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="maxDuration">
+                      Max Session Duration (hours)
+                    </Label>
+                    <Input
+                      id="maxDuration"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={form.maxSessionDurationMs}
+                      onChange={(e) =>
+                        setForm({ ...form, maxSessionDurationMs: e.target.value })
+                      }
+                      placeholder="No limit"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="instructions">Instructions</Label>
+                    <Textarea
+                      id="instructions"
+                      value={form.instructions}
+                      onChange={(e) =>
+                        setForm({ ...form, instructions: e.target.value })
+                      }
+                      placeholder="System instructions for the preset..."
+                      rows={4}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </DialogBody>
             <DialogFooter>
               <Button
@@ -382,8 +397,8 @@ export default function PresetsPage() {
             <div className="flex flex-col items-center justify-center py-12">
               <BotMessageSquare className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Presets</h3>
-              <p className="text-muted-foreground text-center mb-4">
-                Create your first preset
+              <p className="text-muted-foreground text-center mb-4 max-w-sm">
+                Presets let you save AI provider, arguments, and instructions so you can start sessions with one click.
               </p>
               <Button onClick={openCreate}>
                 <Plus className="w-4 h-4 mr-2" />

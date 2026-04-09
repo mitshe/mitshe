@@ -46,7 +46,13 @@ import {
   MemoryStick,
   Variable,
   Plug,
+  ChevronDown,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   useEnvironments,
   useCreateEnvironment,
@@ -212,7 +218,7 @@ export default function EnvironmentsPage() {
         <div>
           <h1 className="text-2xl font-bold">Environments</h1>
           <p className="text-muted-foreground">
-            Define container configurations with env vars and resource limits
+            Pre-configure containers with packages, env vars, and resource limits. Assign an environment when creating a session.
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -222,7 +228,7 @@ export default function EnvironmentsPage() {
               New Environment
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Edit Environment" : "New Environment"}
@@ -239,6 +245,7 @@ export default function EnvironmentsPage() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g., Node + Python"
+                  autoFocus
                 />
               </div>
 
@@ -252,35 +259,6 @@ export default function EnvironmentsPage() {
                   }
                   placeholder="What this environment includes..."
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="memoryMb">Memory (MB)</Label>
-                  <Input
-                    id="memoryMb"
-                    type="number"
-                    min="256"
-                    value={form.memoryMb}
-                    onChange={(e) =>
-                      setForm({ ...form, memoryMb: e.target.value })
-                    }
-                    placeholder="4096 (default)"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cpuCores">CPU Cores</Label>
-                  <Input
-                    id="cpuCores"
-                    type="number"
-                    min="1"
-                    value={form.cpuCores}
-                    onChange={(e) =>
-                      setForm({ ...form, cpuCores: e.target.value })
-                    }
-                    placeholder="2 (default)"
-                  />
-                </div>
               </div>
 
               <div className="space-y-2">
@@ -300,116 +278,153 @@ export default function EnvironmentsPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="enableDocker"
-                  checked={form.enableDocker}
-                  onCheckedChange={(checked) =>
-                    setForm({ ...form, enableDocker: checked === true })
-                  }
-                />
-                <Label htmlFor="enableDocker" className="font-normal cursor-pointer text-sm">
-                  Enable Docker (mount host Docker socket)
-                </Label>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Environment Variables</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addVariable}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add
-                  </Button>
-                </div>
-                {form.variables.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-2">
-                    No variables defined
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {form.variables.map((v, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <Input
-                          value={v.key}
-                          onChange={(e) =>
-                            updateVariable(i, "key", e.target.value)
-                          }
-                          placeholder="KEY"
-                          className="font-mono text-sm w-32"
-                        />
-                        <Input
-                          value={v.value}
-                          onChange={(e) =>
-                            updateVariable(i, "value", e.target.value)
-                          }
-                          placeholder="value"
-                          type={v.isSecret ? "password" : "text"}
-                          className="font-mono text-sm flex-1"
-                        />
-                        <Checkbox
-                          checked={v.isSecret}
-                          onCheckedChange={(checked) =>
-                            updateVariable(i, "isSecret", checked === true)
-                          }
-                          title="Secret"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          onClick={() => removeVariable(i)}
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1 group w-full">
+                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                  Advanced options
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="memoryMb">Memory (MB)</Label>
+                      <Input
+                        id="memoryMb"
+                        type="number"
+                        min="256"
+                        value={form.memoryMb}
+                        onChange={(e) =>
+                          setForm({ ...form, memoryMb: e.target.value })
+                        }
+                        placeholder="4096 (default)"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cpuCores">CPU Cores</Label>
+                      <Input
+                        id="cpuCores"
+                        type="number"
+                        min="1"
+                        value={form.cpuCores}
+                        onChange={(e) =>
+                          setForm({ ...form, cpuCores: e.target.value })
+                        }
+                        placeholder="2 (default)"
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
 
-              <div className="space-y-2">
-                <Label>Integrations</Label>
-                <p className="text-xs text-muted-foreground">
-                  Select integrations whose credentials will be available in
-                  sessions using this environment
-                </p>
-                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {activeIntegrations.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2 text-center">
-                      No connected integrations.{" "}
-                      <a
-                        href="/settings/integrations"
-                        className="underline"
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="enableDocker"
+                      checked={form.enableDocker}
+                      onCheckedChange={(checked) =>
+                        setForm({ ...form, enableDocker: checked === true })
+                      }
+                    />
+                    <Label htmlFor="enableDocker" className="font-normal cursor-pointer text-sm">
+                      Enable Docker (mount host Docker socket)
+                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Environment Variables</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addVariable}
                       >
-                        Configure some first
-                      </a>
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add
+                      </Button>
+                    </div>
+                    {form.variables.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        No variables defined
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {form.variables.map((v, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <Input
+                              value={v.key}
+                              onChange={(e) =>
+                                updateVariable(i, "key", e.target.value)
+                              }
+                              placeholder="KEY"
+                              className="font-mono text-sm w-32"
+                            />
+                            <Input
+                              value={v.value}
+                              onChange={(e) =>
+                                updateVariable(i, "value", e.target.value)
+                              }
+                              placeholder="value"
+                              type={v.isSecret ? "password" : "text"}
+                              className="font-mono text-sm flex-1"
+                            />
+                            <Checkbox
+                              checked={v.isSecret}
+                              onCheckedChange={(checked) =>
+                                updateVariable(i, "isSecret", checked === true)
+                              }
+                              title="Secret"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={() => removeVariable(i)}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Integrations</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Select integrations whose credentials will be available in
+                      sessions using this environment
                     </p>
-                  ) : (
-                    activeIntegrations.map((integration) => (
-                      <label
-                        key={integration.id}
-                        className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={form.integrationIds.includes(
-                            integration.id,
-                          )}
-                          onCheckedChange={() =>
-                            toggleIntegration(integration.id)
-                          }
-                        />
-                        <span className="text-sm">{integration.type}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
+                    <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {activeIntegrations.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2 text-center">
+                          No connected integrations.{" "}
+                          <a
+                            href="/settings/integrations"
+                            className="underline"
+                          >
+                            Configure some first
+                          </a>
+                        </p>
+                      ) : (
+                        activeIntegrations.map((integration) => (
+                          <label
+                            key={integration.id}
+                            className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={form.integrationIds.includes(
+                                integration.id,
+                              )}
+                              onCheckedChange={() =>
+                                toggleIntegration(integration.id)
+                              }
+                            />
+                            <span className="text-sm">{integration.type}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </DialogBody>
             <DialogFooter>
               <Button
@@ -452,8 +467,8 @@ export default function EnvironmentsPage() {
             <div className="flex flex-col items-center justify-center py-12">
               <Box className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Environments</h3>
-              <p className="text-muted-foreground text-center mb-4">
-                Create your first environment configuration
+              <p className="text-muted-foreground text-center mb-4 max-w-sm">
+                Environments define what tools and packages are installed in session containers. Create one to reuse across sessions.
               </p>
               <Button onClick={openCreate}>
                 <Plus className="w-4 h-4 mr-2" />

@@ -9,11 +9,13 @@ export function TerminalView({
   terminalId,
   isRunning,
   cmd,
+  isVisible = true,
 }: {
   sessionId: string;
   terminalId: string;
   isRunning: boolean;
   cmd?: string[];
+  isVisible?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<HTMLDivElement>(null);
@@ -130,6 +132,18 @@ export function TerminalView({
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, [terminalReady]);
+
+  // Refit when tab becomes visible
+  useEffect(() => {
+    if (!isVisible || !fitRef.current) return;
+    requestAnimationFrame(() => {
+      try {
+        fitRef.current?.fit();
+      } catch {
+        /* ignore */
+      }
+    });
+  }, [isVisible, terminalReady]);
 
   // Subscribe to terminal output
   useEffect(() => {

@@ -18,7 +18,7 @@ export default function DashboardLayout({
 
         <div className="flex flex-1 flex-col overflow-hidden">
           <TopNav />
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto relative">
             <BreadcrumbsWrapper />
             {children}
           </main>

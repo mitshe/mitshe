@@ -30,10 +30,14 @@ const SocketContext = createContext<SocketContextValue | null>(null);
 
 // In production: empty string = connect to same host (relative URL)
 // In dev: connect to API server directly
-const SOCKET_URL =
-  typeof window !== "undefined" && window.location.hostname !== "localhost"
-    ? "" // Production: relative URL, same host via reverse proxy
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const SOCKET_URL = (() => {
+  if (typeof window === "undefined") return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") {
+    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  }
+  return ""; // Production: relative URL, same host via reverse proxy
+})();
 
 let socketInstance: Socket | null = null;
 

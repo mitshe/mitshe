@@ -23,108 +23,130 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-const coreNavItems = [
+interface NavItem {
+  title: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tourId: string;
+  description?: string;
+}
+
+const coreNavItems: NavItem[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
     tourId: "nav-dashboard",
+    description: "Overview & stats",
   },
   {
     title: "Projects",
     href: "/projects",
     icon: FolderKanban,
     tourId: "nav-projects",
+    description: "Code repositories",
   },
   {
     title: "Tasks",
     href: "/tasks",
     icon: ListTodo,
     tourId: "nav-tasks",
+    description: "AI-processed work items",
   },
   {
     title: "Workflows",
     href: "/workflows",
     icon: Workflow,
     tourId: "nav-workflows",
+    description: "Automation pipelines",
   },
   {
     title: "Executions",
     href: "/executions",
     icon: History,
     tourId: "nav-executions",
+    description: "Workflow run history",
   },
 ];
 
-const workspaceNavItems = [
+const workspaceNavItems: NavItem[] = [
   {
     title: "Sessions",
     href: "/sessions",
     icon: MessageSquareCode,
     tourId: "nav-sessions",
+    description: "AI agent terminals",
   },
   {
     title: "Presets",
     href: "/presets",
     icon: SlidersHorizontal,
     tourId: "nav-presets",
+    description: "Saved session configs",
   },
   {
     title: "Environments",
     href: "/environments",
     icon: Box,
     tourId: "nav-environments",
+    description: "Container setup",
   },
 ];
 
-const connectNavItems = [
+const connectNavItems: NavItem[] = [
   {
     title: "Integrations",
     href: "/settings/integrations",
     icon: Plug,
     tourId: "nav-integrations",
+    description: "Jira, GitHub, Slack...",
   },
   {
     title: "AI Providers",
     href: "/settings/ai",
     icon: Bot,
     tourId: "nav-ai",
+    description: "API keys for AI models",
   },
   {
     title: "Repositories",
     href: "/settings/repositories",
     icon: GitBranch,
     tourId: "nav-repositories",
+    description: "Git repos to work on",
   },
 ];
 
-const settingsNavItems = [
+const settingsNavItems: NavItem[] = [
   {
     title: "Organization",
     href: "/settings",
     icon: Building2,
     tourId: "nav-organization",
+    description: "Name & billing",
   },
   {
     title: "Team",
     href: "/settings/team",
     icon: Users,
     tourId: "nav-team",
+    description: "Members & roles",
   },
   {
     title: "API Keys",
     href: "/settings/api-keys",
     icon: Key,
     tourId: "nav-api-keys",
+    description: "External API access",
   },
   {
     title: "Preferences",
     href: "/settings/preferences",
     icon: Settings,
     tourId: "nav-preferences",
+    description: "App settings",
   },
 ];
 
@@ -147,103 +169,56 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
     return pathname === href || pathname.startsWith(href + "/");
   };
 
+  const renderNavItems = (items: NavItem[]) =>
+    items.map((item) => (
+      <Button
+        key={item.href}
+        variant={isActive(item.href) ? "secondary" : "ghost"}
+        className={cn(
+          "w-full justify-start h-auto py-1.5",
+          isActive(item.href) && "bg-secondary",
+        )}
+        asChild
+        onClick={onNavigate}
+        data-tour={item.tourId}
+      >
+        <Link href={item.href}>
+          <item.icon className="mr-2 h-4 w-4 shrink-0" />
+          <span className="flex flex-col items-start leading-tight">
+            <span>{item.title}</span>
+            {item.description && (
+              <span className="text-[10px] text-muted-foreground font-normal">{item.description}</span>
+            )}
+          </span>
+        </Link>
+      </Button>
+    ));
+
   return (
     <>
-      {/* Core Navigation */}
       <div className="space-y-1">
-        {coreNavItems.map((item) => (
-          <Button
-            key={item.href}
-            variant={isActive(item.href) ? "secondary" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isActive(item.href) && "bg-secondary",
-            )}
-            asChild
-            onClick={onNavigate}
-            data-tour={item.tourId}
-          >
-            <Link href={item.href}>
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.title}
-            </Link>
-          </Button>
-        ))}
+        {renderNavItems(coreNavItems)}
       </div>
 
-      {/* Workspace Section */}
       <div className="mt-6 space-y-1">
         <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Workspace
         </p>
-        {workspaceNavItems.map((item) => (
-          <Button
-            key={item.href}
-            variant={isActive(item.href) ? "secondary" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isActive(item.href) && "bg-secondary",
-            )}
-            asChild
-            onClick={onNavigate}
-            data-tour={item.tourId}
-          >
-            <Link href={item.href}>
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.title}
-            </Link>
-          </Button>
-        ))}
+        {renderNavItems(workspaceNavItems)}
       </div>
 
-      {/* Connect Section */}
       <div className="mt-6 space-y-1">
         <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Connect
         </p>
-        {connectNavItems.map((item) => (
-          <Button
-            key={item.href}
-            variant={isActive(item.href) ? "secondary" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isActive(item.href) && "bg-secondary",
-            )}
-            asChild
-            onClick={onNavigate}
-            data-tour={item.tourId}
-          >
-            <Link href={item.href}>
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.title}
-            </Link>
-          </Button>
-        ))}
+        {renderNavItems(connectNavItems)}
       </div>
 
-      {/* Settings Section */}
       <div className="mt-6 space-y-1">
         <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Settings
         </p>
-        {settingsNavItems.map((item) => (
-          <Button
-            key={item.href}
-            variant={isActive(item.href) ? "secondary" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isActive(item.href) && "bg-secondary",
-            )}
-            asChild
-            onClick={onNavigate}
-            data-tour={item.tourId}
-          >
-            <Link href={item.href}>
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.title}
-            </Link>
-          </Button>
-        ))}
+        {renderNavItems(settingsNavItems)}
       </div>
 
       {/* Documentation Link */}
@@ -269,7 +244,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 export function Sidebar() {
   return (
     <div className="hidden md:flex h-full w-64 flex-col border-r bg-background">
-      <div className="flex h-14 items-center border-b px-4">
+      <div className="flex h-14 items-center border-b px-4 shrink-0">
         <Link
           href="/dashboard"
           className="flex items-center gap-2 font-semibold"
@@ -279,9 +254,9 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <ScrollArea className="flex-1 px-3 py-4">
+      <div className="flex-1 overflow-y-auto px-3 py-4">
         <SidebarContent />
-      </ScrollArea>
+      </div>
     </div>
   );
 }

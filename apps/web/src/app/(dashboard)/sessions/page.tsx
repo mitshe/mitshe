@@ -55,7 +55,13 @@ import {
   Trash2,
   Copy,
   Pencil,
+  ChevronDown,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { formatDistanceToNow } from "@/lib/utils";
 import {
   useSessions,
@@ -474,7 +480,7 @@ export default function SessionsPage() {
               New Session
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Edit Session" : "New Session"}
@@ -482,32 +488,67 @@ export default function SessionsPage() {
               <DialogDescription>
                 {editingId
                   ? configLocked
-                    ? "Stop the session first to reconfigure container settings. Metadata can always be edited."
-                    : "Changes to configuration will restart the container. Workspace files are preserved."
-                  : "Start an interactive session in an isolated environment"}
+                    ? "Stop the session first to reconfigure container settings."
+                    : "Configuration changes will restart the container."
+                  : "Give it a name, pick an AI provider, and go."}
               </DialogDescription>
             </DialogHeader>
             <DialogBody className="space-y-4 py-4 overflow-y-auto">
               <div className="space-y-2">
-                <Label>Preset (optional)</Label>
-                <Select
-                  value={form.agentDefinitionId}
-                  onValueChange={handleAgentSelect}
-                  disabled={configLocked}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="No preset - configure manually" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {presetsList.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        No presets defined.{" "}
-                        <a href="/presets" className="underline">
-                          Create one
-                        </a>
-                      </div>
-                    ) : (
-                      presetsList.map((a) => (
+                <Label htmlFor="name">Session Name *</Label>
+                <Input
+                  id="name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g., Refactor auth module"
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>AI Provider</Label>
+                {aiCredentials.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2 border rounded-md px-3">
+                    No AI providers configured.{" "}
+                    <a href="/settings/ai" className="underline font-medium text-foreground">
+                      Add one first
+                    </a>
+                  </p>
+                ) : (
+                  <Select
+                    value={form.aiCredentialId}
+                    onValueChange={(v) =>
+                      setForm({ ...form, aiCredentialId: v })
+                    }
+                    disabled={configLocked}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="None - plain bash terminal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {aiCredentials.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {providerLabels[c.provider] || c.provider}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {presetsList.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Preset</Label>
+                  <Select
+                    value={form.agentDefinitionId}
+                    onValueChange={handleAgentSelect}
+                    disabled={configLocked}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No preset - configure manually" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {presetsList.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.name}
                           {a.description && (
@@ -516,228 +557,212 @@ export default function SessionsPage() {
                             </span>
                           )}
                         </SelectItem>
-                      ))
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1 group w-full">
+                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                  Advanced options
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-3">
+                  <div className="space-y-2">
+                    <Label>Project</Label>
+                    <Select
+                      value={form.projectId}
+                      onValueChange={(v) => setForm({ ...form, projectId: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Repositories</Label>
+                    <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {activeRepos.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2 text-center">
+                          No active repositories. Import some first.
+                        </p>
+                      ) : (
+                        activeRepos.map((repo) => (
+                          <label
+                            key={repo.id}
+                            className={`flex items-center gap-2 p-1.5 rounded ${
+                              configLocked
+                                ? "cursor-not-allowed opacity-60"
+                                : "hover:bg-muted/50 cursor-pointer"
+                            }`}
+                          >
+                            <Checkbox
+                              checked={form.repositoryIds.includes(repo.id)}
+                              onCheckedChange={() => toggleRepo(repo.id)}
+                              disabled={configLocked}
+                            />
+                            <span className="text-sm truncate">
+                              {repo.fullPath}
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Integrations</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Credentials for selected integrations will be available inside
+                      the session container
+                    </p>
+                    <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {activeIntegrations.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2 text-center">
+                          No connected integrations.{" "}
+                          <a
+                            href="/settings/integrations"
+                            className="underline"
+                          >
+                            Configure some first
+                          </a>
+                        </p>
+                      ) : (
+                        activeIntegrations.map((integration) => (
+                          <label
+                            key={integration.id}
+                            className={`flex items-center gap-2 p-1.5 rounded ${
+                              configLocked
+                                ? "cursor-not-allowed opacity-60"
+                                : "hover:bg-muted/50 cursor-pointer"
+                            }`}
+                          >
+                            <Checkbox
+                              checked={form.integrationIds.includes(
+                                integration.id,
+                              )}
+                              onCheckedChange={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  integrationIds:
+                                    prev.integrationIds.includes(integration.id)
+                                      ? prev.integrationIds.filter(
+                                          (id) => id !== integration.id,
+                                        )
+                                      : [...prev.integrationIds, integration.id],
+                                }))
+                              }
+                              disabled={configLocked}
+                            />
+                            <span className="text-sm">{integration.type}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="startArgs">Start Arguments</Label>
+                    <Input
+                      id="startArgs"
+                      value={form.startArguments}
+                      onChange={(e) =>
+                        setForm({ ...form, startArguments: e.target.value })
+                      }
+                      placeholder="e.g., --dangerously-skip-permissions --model opus"
+                      className="font-mono text-sm"
+                      disabled={configLocked}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Environment</Label>
+                    {environmentsList.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-2 border rounded-md px-3">
+                        No environments defined.{" "}
+                        <a href="/environments" className="underline font-medium text-foreground">
+                          Create one
+                        </a>{" "}
+                        to set up custom packages, env vars, and resource limits.
+                      </p>
+                    ) : (
+                      <Select
+                        value={form.environmentId}
+                        onValueChange={(v) => {
+                          const env = environmentsList.find((e) => e.id === v);
+                          setForm({
+                            ...form,
+                            environmentId: v,
+                            enableDocker: env?.enableDocker ?? form.enableDocker,
+                            integrationIds:
+                              env?.integrations?.map((i) => i.integrationId) ??
+                              form.integrationIds,
+                          })
+                        }
+                        }
+                        disabled={configLocked}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Default environment" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {environmentsList.map((env) => (
+                            <SelectItem key={env.id} value={env.id}>
+                              {env.name}
+                              {env.description && (
+                                <span className="text-muted-foreground ml-2">
+                                  - {env.description}
+                                </span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="name">Session Name *</Label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g., Refactor auth module"
-                />
-              </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="enableDocker"
+                      checked={form.enableDocker}
+                      onCheckedChange={(checked) =>
+                        setForm({ ...form, enableDocker: checked === true })
+                      }
+                      disabled={configLocked}
+                    />
+                    <Label
+                      htmlFor="enableDocker"
+                      className={`font-normal text-sm ${
+                        configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                      }`}
+                    >
+                      Enable Docker
+                    </Label>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Project (optional)</Label>
-                <Select
-                  value={form.projectId}
-                  onValueChange={(v) => setForm({ ...form, projectId: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Repositories</Label>
-                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {activeRepos.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2 text-center">
-                      No active repositories. Import some first.
-                    </p>
-                  ) : (
-                    activeRepos.map((repo) => (
-                      <label
-                        key={repo.id}
-                        className={`flex items-center gap-2 p-1.5 rounded ${
-                          configLocked
-                            ? "cursor-not-allowed opacity-60"
-                            : "hover:bg-muted/50 cursor-pointer"
-                        }`}
-                      >
-                        <Checkbox
-                          checked={form.repositoryIds.includes(repo.id)}
-                          onCheckedChange={() => toggleRepo(repo.id)}
-                          disabled={configLocked}
-                        />
-                        <span className="text-sm truncate">
-                          {repo.fullPath}
-                        </span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Integrations</Label>
-                <p className="text-xs text-muted-foreground">
-                  Credentials for selected integrations will be available inside
-                  the session container
-                </p>
-                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {activeIntegrations.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2 text-center">
-                      No connected integrations.{" "}
-                      <a
-                        href="/settings/integrations"
-                        className="underline"
-                      >
-                        Configure some first
-                      </a>
-                    </p>
-                  ) : (
-                    activeIntegrations.map((integration) => (
-                      <label
-                        key={integration.id}
-                        className={`flex items-center gap-2 p-1.5 rounded ${
-                          configLocked
-                            ? "cursor-not-allowed opacity-60"
-                            : "hover:bg-muted/50 cursor-pointer"
-                        }`}
-                      >
-                        <Checkbox
-                          checked={form.integrationIds.includes(
-                            integration.id,
-                          )}
-                          onCheckedChange={() =>
-                            setForm((prev) => ({
-                              ...prev,
-                              integrationIds:
-                                prev.integrationIds.includes(integration.id)
-                                  ? prev.integrationIds.filter(
-                                      (id) => id !== integration.id,
-                                    )
-                                  : [...prev.integrationIds, integration.id],
-                            }))
-                          }
-                          disabled={configLocked}
-                        />
-                        <span className="text-sm">{integration.type}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>AI Provider (optional)</Label>
-                <Select
-                  value={form.aiCredentialId}
-                  onValueChange={(v) =>
-                    setForm({ ...form, aiCredentialId: v })
-                  }
-                  disabled={configLocked}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="None - plain bash terminal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {aiCredentials.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {providerLabels[c.provider] || c.provider}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="startArgs">Start Arguments (optional)</Label>
-                <Input
-                  id="startArgs"
-                  value={form.startArguments}
-                  onChange={(e) =>
-                    setForm({ ...form, startArguments: e.target.value })
-                  }
-                  placeholder="e.g., --dangerously-skip-permissions --model opus"
-                  className="font-mono text-sm"
-                  disabled={configLocked}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Environment (optional)</Label>
-                <Select
-                  value={form.environmentId}
-                  onValueChange={(v) => {
-                    const env = environmentsList.find((e) => e.id === v);
-                    setForm({
-                      ...form,
-                      environmentId: v,
-                      enableDocker: env?.enableDocker ?? form.enableDocker,
-                      integrationIds:
-                        env?.integrations?.map((i) => i.integrationId) ??
-                        form.integrationIds,
-                    })
-                  }
-                  }
-                  disabled={configLocked}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Default environment" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {environmentsList.map((env) => (
-                      <SelectItem key={env.id} value={env.id}>
-                        {env.name}
-                        {env.description && (
-                          <span className="text-muted-foreground ml-2">
-                            - {env.description}
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="enableDocker"
-                  checked={form.enableDocker}
-                  onCheckedChange={(checked) =>
-                    setForm({ ...form, enableDocker: checked === true })
-                  }
-                  disabled={configLocked}
-                />
-                <Label
-                  htmlFor="enableDocker"
-                  className={`font-normal text-sm ${
-                    configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-                  }`}
-                >
-                  Enable Docker
-                </Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="instructions">
-                  Instructions (optional)
-                </Label>
-                <Textarea
-                  id="instructions"
-                  value={form.instructions}
-                  onChange={(e) =>
-                    setForm({ ...form, instructions: e.target.value })
-                  }
-                  placeholder="System instructions for the agent..."
-                  rows={4}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="instructions">Instructions</Label>
+                    <Textarea
+                      id="instructions"
+                      value={form.instructions}
+                      onChange={(e) =>
+                        setForm({ ...form, instructions: e.target.value })
+                      }
+                      placeholder="System instructions for the agent..."
+                      rows={4}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </DialogBody>
             <DialogFooter>
               <Button
@@ -775,13 +800,22 @@ export default function SessionsPage() {
             <div className="flex flex-col items-center justify-center py-12">
               <MessageSquareCode className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Sessions</h3>
-              <p className="text-muted-foreground text-center mb-4">
-                Start your first interactive AI agent session
+              <p className="text-muted-foreground text-center mb-4 max-w-sm">
+                Sessions are isolated containers where AI agents work on your code.
+                Pick an AI provider and start one.
               </p>
               <Button onClick={openCreate}>
                 <Plus className="w-4 h-4 mr-2" />
                 New Session
               </Button>
+              <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+                <a href="/presets" className="underline hover:text-foreground transition-colors">
+                  Manage presets
+                </a>
+                <a href="/environments" className="underline hover:text-foreground transition-colors">
+                  Manage environments
+                </a>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">

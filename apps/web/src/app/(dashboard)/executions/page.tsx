@@ -3,13 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -103,58 +96,51 @@ export default function ExecutionsPage() {
       </div>
 
       {/* Workflows with executions */}
-      <div className="grid gap-4">
-        {filteredWorkflows.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <History className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <p className="font-medium mb-2">No workflows yet</p>
-              <p className="text-sm text-muted-foreground mb-4">
-                Create a workflow to see execution history here
-              </p>
-              <Link href="/workflows">
-                <Button>
-                  <Workflow className="w-4 h-4 mr-2" />
-                  Go to Workflows
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredWorkflows.map((workflow) => (
-            <Card key={workflow.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{workflow.name}</CardTitle>
-                    <CardDescription>
-                      {workflow._count?.executions ?? 0} executions
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Link href={`/workflows/${workflow.id}/executions`}>
-                      <Button variant="outline" size="sm">
-                        View History
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      {filteredWorkflows.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <History className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No workflows yet</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Create a workflow to see execution history here
+          </p>
+          <Link href="/workflows">
+            <Button>
+              <Workflow className="w-4 h-4 mr-2" />
+              Go to Workflows
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filteredWorkflows.map((workflow) => (
+            <div
+              key={workflow.id}
+              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{workflow.name}</span>
                   <Badge
                     variant={workflow.isActive ? "default" : "secondary"}
                   >
                     {workflow.isActive ? "Active" : "Inactive"}
                   </Badge>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                  <span>{workflow._count?.executions ?? 0} executions</span>
                   <span>Trigger: {workflow.triggerType}</span>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+              </div>
+              <Link href={`/workflows/${workflow.id}/executions`}>
+                <Button variant="outline" size="sm">
+                  View History
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
