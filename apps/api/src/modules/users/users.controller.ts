@@ -2,6 +2,9 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
+  Patch,
+  Param,
   Body,
   Req,
   Res,
@@ -9,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { IsEmail, IsString, IsOptional, MinLength } from 'class-validator';
@@ -72,6 +76,32 @@ class ChangePasswordDto {
 class SwitchOrgDto {
   @IsString()
   organizationId: string;
+}
+
+class CreateMemberDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsOptional()
+  firstName?: string;
+
+  @IsString()
+  @IsOptional()
+  lastName?: string;
+
+  @IsString()
+  @IsOptional()
+  role?: string;
+
+  @IsString()
+  @IsOptional()
+  password?: string;
+}
+
+class UpdateMemberRoleDto {
+  @IsString()
+  role: string;
 }
 
 @Controller('auth')
@@ -272,6 +302,81 @@ export class UsersController {
     });
 
     return { message: 'Logged out from all devices' };
+  }
+
+  // ============================================================================
+  // Team management (selfhosted)
+  // ============================================================================
+
+  @Get('team/members')
+  @UseGuards(AuthGuard)
+  async listMembers(@Req() req: AuthenticatedRequest) {
+    const members = await this.usersService.listMembers(req.auth.organizationId);
+    return members.map((m) => ({
+      id: m.id,
+      userId: m.user.id,
+      role: m.role,
+      joinedAt: m.joinedAt,
+      user: m.user,
+    }));
+  }
+
+  @Post('team/members')
+  @UseGuards(AuthGuard)
+  async createMember(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateMemberDto,
+  ) {
+    // Only OWNER and ADMIN can add members
+    const callerMembership = await this.usersService.listMembers(req.auth.organizationId);
+    const caller = callerMembership.find((m) => m.user.id === req.auth.userId);
+    if (!caller || !['OWNER', 'ADMIN'].includes(caller.role)) {
+      throw new ForbiddenException('Only admins can add team members');
+    }
+
+    const result = await this.usersService.createMember(req.auth.organizationId, {
+      email: dto.email,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      role: (dto.role as any) || 'MEMBER',
+      password: dto.password,
+    });
+
+    return result;
+  }
+
+  @Patch('team/members/:userId/role')
+  @UseGuards(AuthGuard)
+  async updateMemberRole(
+    @Req() req: AuthenticatedRequest,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateMemberRoleDto,
+  ) {
+    const callerMembership = await this.usersService.listMembers(req.auth.organizationId);
+    const caller = callerMembership.find((m) => m.user.id === req.auth.userId);
+    if (!caller || !['OWNER', 'ADMIN'].includes(caller.role)) {
+      throw new ForbiddenException('Only admins can change roles');
+    }
+
+    await this.usersService.updateMemberRole(req.auth.organizationId, userId, dto.role as any);
+    return { status: 'ok' };
+  }
+
+  @Delete('team/members/:userId')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async removeMember(
+    @Req() req: AuthenticatedRequest,
+    @Param('userId') userId: string,
+  ) {
+    const callerMembership = await this.usersService.listMembers(req.auth.organizationId);
+    const caller = callerMembership.find((m) => m.user.id === req.auth.userId);
+    if (!caller || !['OWNER', 'ADMIN'].includes(caller.role)) {
+      throw new ForbiddenException('Only admins can remove members');
+    }
+
+    await this.usersService.removeMember(req.auth.organizationId, userId);
+    return { status: 'ok' };
   }
 
   // ============================================================================

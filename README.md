@@ -16,7 +16,7 @@ mitshe automates development workflows using AI agents and provides interactive 
 | ![Dashboard](docs/dashboard.png) | ![Projects](docs/projects.png) |
 | ![Tasks](docs/tasks.png) | ![Workflows](docs/workflows.png) |
 | ![Executions](docs/executions.png) | ![Integrations](docs/integrations.png) |
-| ![Documentation](docs/documentation.png) | |
+| ![Sessions](docs/session.png) | ![Documentation](docs/documentation.png) |
 
 ## Run it
 

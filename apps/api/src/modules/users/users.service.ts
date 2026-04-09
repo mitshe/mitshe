@@ -38,6 +38,7 @@ export interface UserInfo {
   firstName: string | null;
   lastName: string | null;
   imageUrl: string | null;
+  mustResetPassword?: boolean;
   organizations: {
     id: string;
     name: string;
@@ -258,6 +259,7 @@ export class UsersService {
         firstName: user.firstName,
         lastName: user.lastName,
         imageUrl: user.imageUrl,
+        mustResetPassword: user.mustResetPassword || undefined,
         organizations: user.memberships.map((m) => ({
           id: m.organization.id,
           name: m.organization.name,
@@ -365,7 +367,7 @@ export class UsersService {
     const passwordHash = await bcrypt.hash(newPassword, this.bcryptRounds);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: { passwordHash, mustResetPassword: false },
     });
 
     // Revoke all refresh tokens (force re-login)
@@ -432,6 +434,151 @@ export class UsersService {
         role: m.role,
       })),
     };
+  }
+
+  // ============================================================================
+  // Team management (selfhosted)
+  // ============================================================================
+
+  async createMember(
+    organizationId: string,
+    dto: { email: string; firstName?: string; lastName?: string; role?: OrganizationRole; password?: string },
+  ): Promise<{ user: { id: string; email: string; firstName: string | null; lastName: string | null }; generatedPassword?: string }> {
+    if (!this.isValidEmail(dto.email)) {
+      throw new BadRequestException('Invalid email format');
+    }
+
+    const email = dto.email.toLowerCase();
+
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+
+    if (existingUser) {
+      // Check if already a member
+      const existingMembership = await this.prisma.organizationMember.findUnique({
+        where: { organizationId_userId: { organizationId, userId: existingUser.id } },
+      });
+      if (existingMembership) {
+        throw new ConflictException('User is already a member of this organization');
+      }
+
+      // Add existing user to org
+      await this.prisma.organizationMember.create({
+        data: {
+          organizationId,
+          userId: existingUser.id,
+          role: dto.role || 'MEMBER',
+        },
+      });
+
+      return {
+        user: {
+          id: existingUser.id,
+          email: existingUser.email,
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+        },
+      };
+    }
+
+    // Generate password if not provided
+    const password = dto.password || this.generatePassword();
+    const passwordHash = await bcrypt.hash(password, this.bcryptRounds);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          passwordHash,
+          firstName: dto.firstName || null,
+          lastName: dto.lastName || null,
+          mustResetPassword: !dto.password,
+        },
+      });
+
+      await tx.organizationMember.create({
+        data: {
+          organizationId,
+          userId: user.id,
+          role: dto.role || 'MEMBER',
+        },
+      });
+
+      return user;
+    });
+
+    return {
+      user: {
+        id: result.id,
+        email: result.email,
+        firstName: result.firstName,
+        lastName: result.lastName,
+      },
+      generatedPassword: !dto.password ? password : undefined,
+    };
+  }
+
+  async listMembers(organizationId: string) {
+    return this.prisma.organizationMember.findMany({
+      where: { organizationId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+            lastLoginAt: true,
+            isActive: true,
+          },
+        },
+      },
+      orderBy: { joinedAt: 'asc' },
+    });
+  }
+
+  async removeMember(organizationId: string, userId: string) {
+    const membership = await this.prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId, userId } },
+    });
+
+    if (!membership) {
+      throw new BadRequestException('User is not a member of this organization');
+    }
+
+    if (membership.role === 'OWNER') {
+      throw new BadRequestException('Cannot remove the organization owner');
+    }
+
+    await this.prisma.organizationMember.delete({
+      where: { organizationId_userId: { organizationId, userId } },
+    });
+  }
+
+  async updateMemberRole(organizationId: string, userId: string, role: OrganizationRole) {
+    const membership = await this.prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId, userId } },
+    });
+
+    if (!membership) {
+      throw new BadRequestException('User is not a member of this organization');
+    }
+
+    if (membership.role === 'OWNER') {
+      throw new BadRequestException('Cannot change the owner role');
+    }
+
+    await this.prisma.organizationMember.update({
+      where: { organizationId_userId: { organizationId, userId } },
+      data: { role },
+    });
+  }
+
+  private generatePassword(): string {
+    const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+    const bytes = crypto.randomBytes(14);
+    return Array.from(bytes).map(b => chars[b % chars.length]).join('');
   }
 
   // ============================================================================
