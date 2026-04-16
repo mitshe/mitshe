@@ -33,22 +33,21 @@ export class OnTaskFailedHandler implements IEventHandler<TaskFailedEvent> {
         return;
       }
 
-      // Run side effects in parallel
       await Promise.allSettled([
-        this.sendSlackNotification(event, task),
-        this.updateJiraIssue(event, task),
+        this.sendNotification(event, task),
+        this.updateIssueTracker(event, task),
       ]);
 
       this.logger.log(`TaskFailedEvent handled for task ${event.taskId}`);
     } catch (error) {
       this.logger.error(
-        `Error handling TaskFailedEvent for task ${event.taskId}: ${error.message}`,
-        error.stack,
+        `Error handling TaskFailedEvent for task ${event.taskId}: ${(error as Error).message}`,
+        (error as Error).stack,
       );
     }
   }
 
-  private async sendSlackNotification(
+  private async sendNotification(
     event: TaskFailedEvent,
     task: {
       title: string;
@@ -57,14 +56,14 @@ export class OnTaskFailedHandler implements IEventHandler<TaskFailedEvent> {
     },
   ): Promise<void> {
     try {
-      const slackProvider =
+      const notificationProvider =
         await this.adapterFactory.getDefaultNotificationProvider(
           event.organizationId,
         );
 
-      if (!slackProvider) {
+      if (!notificationProvider) {
         this.logger.debug(
-          `No Slack provider configured for org ${event.organizationId}`,
+          `No notification provider configured for org ${event.organizationId}`,
         );
         return;
       }
@@ -72,7 +71,7 @@ export class OnTaskFailedHandler implements IEventHandler<TaskFailedEvent> {
       const projectName = task.project?.name || 'Unknown Project';
       const issueRef = task.externalIssueId ? ` (${task.externalIssueId})` : '';
 
-      await slackProvider.send(
+      await notificationProvider.send(
         { type: 'channel', id: 'default' },
         {
           title: `Task Failed: ${task.title}${issueRef}`,
@@ -82,16 +81,16 @@ export class OnTaskFailedHandler implements IEventHandler<TaskFailedEvent> {
       );
 
       this.logger.log(
-        `Slack failure notification sent for task ${event.taskId}`,
+        `Failure notification sent for task ${event.taskId}`,
       );
     } catch (error) {
       this.logger.warn(
-        `Failed to send Slack notification for task ${event.taskId}: ${error.message}`,
+        `Failed to send notification for task ${event.taskId}: ${(error as Error).message}`,
       );
     }
   }
 
-  private async updateJiraIssue(
+  private async updateIssueTracker(
     event: TaskFailedEvent,
     task: { externalIssueId: string | null; externalSource: string | null },
   ): Promise<void> {
@@ -99,32 +98,28 @@ export class OnTaskFailedHandler implements IEventHandler<TaskFailedEvent> {
       return;
     }
 
-    if (task.externalSource !== 'JIRA') {
-      return;
-    }
-
     try {
-      const jiraAdapter = await this.adapterFactory.getDefaultIssueTracker(
+      const issueTracker = await this.adapterFactory.getDefaultIssueTracker(
         event.organizationId,
       );
 
-      if (!jiraAdapter || jiraAdapter.getProviderType() !== 'jira') {
+      if (!issueTracker) {
         this.logger.debug(
-          `No JIRA adapter configured for org ${event.organizationId}`,
+          `No issue tracker configured for org ${event.organizationId}`,
         );
         return;
       }
 
-      const comment = `Task processing failed in AI Tasks Platform.\n\nReason: ${event.reason}${event.error ? `\n\nError: ${event.error}` : ''}\n\nFailed at: ${event.occurredAt.toISOString()}\n\nManual intervention may be required.`;
+      const comment = `Task processing failed in mitshe.\n\nReason: ${event.reason}${event.error ? `\n\nError: ${event.error}` : ''}\n\nFailed at: ${event.occurredAt.toISOString()}\n\nManual intervention may be required.`;
 
-      await jiraAdapter.addComment(task.externalIssueId, comment);
+      await issueTracker.addComment(task.externalIssueId, comment);
 
       this.logger.log(
-        `JIRA failure comment added for issue ${task.externalIssueId}`,
+        `Issue tracker failure comment added for ${task.externalIssueId}`,
       );
     } catch (error) {
       this.logger.warn(
-        `Failed to update JIRA issue ${task.externalIssueId}: ${error.message}`,
+        `Failed to update issue ${task.externalIssueId}: ${(error as Error).message}`,
       );
     }
   }

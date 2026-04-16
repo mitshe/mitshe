@@ -39,22 +39,21 @@ export class OnTaskCompletedHandler implements IEventHandler<TaskCompletedEvent>
         return;
       }
 
-      // Run side effects in parallel
       await Promise.allSettled([
-        this.sendSlackNotification(event, task),
-        this.updateJiraIssue(event, task),
+        this.sendNotification(event, task),
+        this.updateIssueTracker(event, task),
       ]);
 
       this.logger.log(`TaskCompletedEvent handled for task ${event.taskId}`);
     } catch (error) {
       this.logger.error(
-        `Error handling TaskCompletedEvent for task ${event.taskId}: ${error.message}`,
-        error.stack,
+        `Error handling TaskCompletedEvent for task ${event.taskId}: ${(error as Error).message}`,
+        (error as Error).stack,
       );
     }
   }
 
-  private async sendSlackNotification(
+  private async sendNotification(
     event: TaskCompletedEvent,
     task: {
       title: string;
@@ -63,14 +62,14 @@ export class OnTaskCompletedHandler implements IEventHandler<TaskCompletedEvent>
     },
   ): Promise<void> {
     try {
-      const slackProvider =
+      const notificationProvider =
         await this.adapterFactory.getDefaultNotificationProvider(
           event.organizationId,
         );
 
-      if (!slackProvider) {
+      if (!notificationProvider) {
         this.logger.debug(
-          `No Slack provider configured for org ${event.organizationId}`,
+          `No notification provider configured for org ${event.organizationId}`,
         );
         return;
       }
@@ -81,8 +80,8 @@ export class OnTaskCompletedHandler implements IEventHandler<TaskCompletedEvent>
       const projectName = task.project?.name || 'Unknown Project';
       const issueRef = task.externalIssueId ? ` (${task.externalIssueId})` : '';
 
-      await slackProvider.send(
-        { type: 'channel', id: 'default' }, // Will use default channel from config
+      await notificationProvider.send(
+        { type: 'channel', id: 'default' },
         {
           title: `Task Completed: ${task.title}${issueRef}`,
           body: `The task in project "${projectName}" has been completed.\n\nResult type: ${resultType}`,
@@ -90,15 +89,15 @@ export class OnTaskCompletedHandler implements IEventHandler<TaskCompletedEvent>
         },
       );
 
-      this.logger.log(`Slack notification sent for task ${event.taskId}`);
+      this.logger.log(`Notification sent for task ${event.taskId}`);
     } catch (error) {
       this.logger.warn(
-        `Failed to send Slack notification for task ${event.taskId}: ${error.message}`,
+        `Failed to send notification for task ${event.taskId}: ${(error as Error).message}`,
       );
     }
   }
 
-  private async updateJiraIssue(
+  private async updateIssueTracker(
     event: TaskCompletedEvent,
     task: { externalIssueId: string | null; externalSource: string | null },
   ): Promise<void> {
@@ -106,35 +105,29 @@ export class OnTaskCompletedHandler implements IEventHandler<TaskCompletedEvent>
       return;
     }
 
-    // Only handle JIRA issues for now
-    if (task.externalSource !== 'JIRA') {
-      return;
-    }
-
     try {
-      const jiraAdapter = await this.adapterFactory.getDefaultIssueTracker(
+      const issueTracker = await this.adapterFactory.getDefaultIssueTracker(
         event.organizationId,
       );
 
-      if (!jiraAdapter || jiraAdapter.getProviderType() !== 'jira') {
+      if (!issueTracker) {
         this.logger.debug(
-          `No JIRA adapter configured for org ${event.organizationId}`,
+          `No issue tracker configured for org ${event.organizationId}`,
         );
         return;
       }
 
-      // Add comment to JIRA issue
       const resultType =
         (event.result as unknown as Record<string, unknown>)?.type ||
         'completed';
-      const comment = `Task processed by AI Tasks Platform.\n\nResult: ${resultType}\n\nProcessed at: ${event.occurredAt.toISOString()}`;
+      const comment = `Task processed by mitshe.\n\nResult: ${resultType}\n\nProcessed at: ${event.occurredAt.toISOString()}`;
 
-      await jiraAdapter.addComment(task.externalIssueId, comment);
+      await issueTracker.addComment(task.externalIssueId, comment);
 
-      this.logger.log(`JIRA comment added for issue ${task.externalIssueId}`);
+      this.logger.log(`Issue tracker comment added for ${task.externalIssueId}`);
     } catch (error) {
       this.logger.warn(
-        `Failed to update JIRA issue ${task.externalIssueId}: ${error.message}`,
+        `Failed to update issue ${task.externalIssueId}: ${(error as Error).message}`,
       );
     }
   }

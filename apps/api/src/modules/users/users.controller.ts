@@ -17,6 +17,7 @@ import {
 import { Request, Response } from 'express';
 import { IsEmail, IsString, IsOptional, MinLength, IsIn } from 'class-validator';
 import { OrganizationRole } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from './users.service';
 import { AuthGuard } from '@/shared/auth/auth.guard';
 import { AuthResult } from '@/shared/auth/strategies/auth-strategy.interface';
@@ -108,7 +109,14 @@ class UpdateMemberRoleDto {
 @Controller('auth')
 @AuthRateLimit()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  private readonly isProduction: boolean;
+
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
+  ) {
+    this.isProduction = this.configService.get('nodeEnv') === 'production';
+  }
 
   /**
    * Check if the app has been set up (first user created).
@@ -211,7 +219,7 @@ export class UsersController {
     // Clear cookie
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.isProduction,
       sameSite: 'lax',
       path: '/',
     });
@@ -248,7 +256,7 @@ export class UsersController {
     // Clear refresh token cookie (force re-login)
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.isProduction,
       sameSite: 'lax',
       path: '/',
     });
@@ -297,7 +305,7 @@ export class UsersController {
     // Clear cookie
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.isProduction,
       sameSite: 'lax',
       path: '/',
     });
@@ -390,7 +398,7 @@ export class UsersController {
 
     res.cookie('refreshToken', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.isProduction,
       sameSite: 'lax',
       path: '/',
       maxAge,
