@@ -1,11 +1,24 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
+import { EncryptionService } from '../../../shared/encryption/encryption.service';
 import { SessionStatus, Prisma } from '@prisma/client';
 import {
   CreateSessionDto,
   RecreateSessionDto,
   UpdateSessionMetadataDto,
 } from '../dto/session.dto';
+import { SessionContainerConfig } from './session-container.service';
+
+export interface RepoConfig {
+  name: string;
+  cloneUrl: string;
+  branch: string;
+}
+
+export interface IntegrationConfig {
+  type: string;
+  config: Record<string, string>;
+}
 
 @Injectable()
 export class SessionsService {
@@ -14,7 +27,10 @@ export class SessionsService {
   /** Tracks sessions with an active Claude invocation */
   private readonly activeExecs = new Set<string>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly encryption: EncryptionService,
+  ) {}
 
   async create(organizationId: string, userId: string, dto: CreateSessionDto) {
     const session = await this.prisma.agentSession.create({
@@ -262,6 +278,110 @@ export class SessionsService {
     }
 
     return cloned;
+  }
+
+  async buildRepoConfigs(
+    repositories: Array<{ repository: { cloneUrl: string; name: string; defaultBranch: string; provider: string; integrationId: string } }>,
+    organizationId: string,
+  ): Promise<RepoConfig[]> {
+    const integrationIds = [...new Set(repositories.map((sr) => sr.repository.integrationId))];
+    const integrations = integrationIds.length > 0
+      ? await this.prisma.integration.findMany({
+          where: { id: { in: integrationIds }, organizationId },
+        })
+      : [];
+
+    const tokenMap = new Map<string, string>();
+    for (const integration of integrations) {
+      if (integration.config && integration.configIv) {
+        try {
+          const config = this.encryption.decryptJson<Record<string, string>>(
+            Buffer.from(integration.config),
+            Buffer.from(integration.configIv),
+          );
+          const token = config.accessToken || config.apiToken || config.token;
+          if (token) tokenMap.set(integration.id, token);
+        } catch {
+          this.logger.warn(`Failed to decrypt integration ${integration.id}`);
+        }
+      }
+    }
+
+    return repositories.map((sr) => {
+      let cloneUrl = sr.repository.cloneUrl;
+      const token = tokenMap.get(sr.repository.integrationId);
+      if (token && cloneUrl.startsWith('https://')) {
+        const url = new URL(cloneUrl);
+        if (sr.repository.provider === 'GITLAB') {
+          url.username = 'oauth2';
+          url.password = token;
+        } else {
+          url.username = token;
+        }
+        cloneUrl = url.toString();
+      }
+      return { name: sr.repository.name, cloneUrl, branch: sr.repository.defaultBranch };
+    });
+  }
+
+  async resolveIntegrationConfigs(
+    sessionIntegrationIds: string[] | undefined,
+    organizationId: string,
+    environmentId?: string | null,
+    sessionId?: string,
+  ): Promise<IntegrationConfig[]> {
+    let integrationIds = sessionIntegrationIds || [];
+
+    if (integrationIds.length === 0 && environmentId) {
+      const envIntegrations = await this.prisma.environmentIntegration.findMany({
+        where: { environmentId },
+        select: { integrationId: true },
+      });
+      integrationIds = envIntegrations.map((ei) => ei.integrationId);
+
+      if (integrationIds.length > 0 && sessionId) {
+        await this.prisma.sessionIntegration.createMany({
+          data: integrationIds.map((integrationId) => ({ sessionId, integrationId })),
+        });
+      }
+    }
+
+    if (integrationIds.length === 0) return [];
+
+    const integrations = await this.prisma.integration.findMany({
+      where: { id: { in: integrationIds }, organizationId, status: 'CONNECTED' },
+    });
+
+    const configs: IntegrationConfig[] = [];
+    for (const integration of integrations) {
+      try {
+        const config = this.encryption.decryptJson<Record<string, string>>(
+          Buffer.from(integration.config),
+          Buffer.from(integration.configIv),
+        );
+        configs.push({ type: integration.type, config });
+      } catch {
+        this.logger.warn(`Failed to decrypt integration ${integration.id}`);
+      }
+    }
+    return configs;
+  }
+
+  async loadEnvironmentConfig(
+    environmentId: string,
+    organizationId: string,
+  ): Promise<SessionContainerConfig['environment'] | undefined> {
+    const env = await this.prisma.environment.findFirst({
+      where: { id: environmentId, organizationId },
+      include: { variables: true },
+    });
+    if (!env) return undefined;
+    return {
+      memoryMb: env.memoryMb,
+      cpuCores: env.cpuCores,
+      setupScript: env.setupScript,
+      variables: env.variables.map((v) => ({ key: v.key, value: v.value })),
+    };
   }
 
   async updateStatus(

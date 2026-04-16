@@ -5,6 +5,7 @@ import { QUEUES, WebhookProcessingJob } from '../queues';
 import { PrismaService } from '../../persistence/prisma/prisma.service';
 import { TasksService } from '../../../modules/tasks/services/tasks.service';
 import { WorkflowOrchestratorService } from '../../../modules/workflows/engine/workflow-orchestrator.service';
+import { adfToText } from '../../adapters/issue-tracker/jira-adf-converter';
 
 @Processor(QUEUES.WEBHOOK_PROCESSING)
 export class WebhookProcessingProcessor extends WorkerHost {
@@ -737,7 +738,7 @@ export class WebhookProcessingProcessor extends WorkerHost {
         descriptionText = description;
       } else if (description.content) {
         // ADF format - extract text content
-        descriptionText = this.extractTextFromADF(description);
+        descriptionText = adfToText(description);
       }
     }
 
@@ -767,33 +768,4 @@ export class WebhookProcessingProcessor extends WorkerHost {
   /**
    * Extract plain text from Atlassian Document Format (ADF)
    */
-  private extractTextFromADF(adf: Record<string, any>): string {
-    if (!adf || !adf.content) {
-      return '';
-    }
-
-    const extractFromNode = (node: any): string => {
-      if (!node) return '';
-
-      if (node.type === 'text') {
-        return node.text || '';
-      }
-
-      if (node.content && Array.isArray(node.content)) {
-        return node.content.map(extractFromNode).join('');
-      }
-
-      return '';
-    };
-
-    const lines: string[] = [];
-    for (const node of adf.content) {
-      const text = extractFromNode(node);
-      if (text) {
-        lines.push(text);
-      }
-    }
-
-    return lines.join('\n');
-  }
 }
