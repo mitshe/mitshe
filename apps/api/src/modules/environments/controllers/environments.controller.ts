@@ -9,7 +9,6 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,14 +16,13 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { Request } from 'express';
 import { EnvironmentsService } from '../services/environments.service';
 import {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
 } from '../dto/environment.dto';
 import { AuthGuard } from '@/shared/auth';
-import { OrganizationId } from '../../../shared/decorators/organization.decorator';
+import { OrganizationId, UserId } from '../../../shared/decorators/organization.decorator';
 import { ApiRateLimit } from '../../../shared/decorators/throttle.decorator';
 
 @ApiTags('Environments')
@@ -41,9 +39,8 @@ export class EnvironmentsController {
   async create(
     @OrganizationId() organizationId: string,
     @Body() dto: CreateEnvironmentDto,
-    @Req() req: Request,
+    @UserId() userId: string,
   ) {
-    const userId = (req as any).userId || 'system';
     const environment = await this.environmentsService.create(
       organizationId,
       userId,

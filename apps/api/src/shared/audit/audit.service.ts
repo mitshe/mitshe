@@ -68,13 +68,12 @@ export class AuditService {
    * Extract audit context from Express request
    */
   extractContext(req: Request): Partial<AuditContext> {
-    const user = (req as any).user;
-    const apiKey = (req as any).apiKey;
+    const auth = (req as any).auth;
 
     return {
-      userId: user?.id || user?.userId,
-      userEmail: user?.email || user?.emailAddresses?.[0]?.emailAddress,
-      apiKeyId: apiKey?.id,
+      userId: auth?.userId,
+      userEmail: auth?.email,
+      apiKeyId: auth?.authType === 'api-key' ? auth?.userId : undefined,
       ipAddress: this.getClientIp(req),
       userAgent: req.headers['user-agent'],
       requestId: req.headers['x-request-id'] as string,

@@ -12,7 +12,6 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
-  Req,
 } from '@nestjs/common';
 import * as path from 'path';
 import {
@@ -22,7 +21,6 @@ import {
   ApiResponse,
   ApiQuery,
 } from '@nestjs/swagger';
-import { Request } from 'express';
 import { SessionStatus } from '@prisma/client';
 import { SessionsService } from '../services/sessions.service';
 import {
@@ -45,7 +43,7 @@ import {
   SessionDetailResponseDto,
 } from '../dto/session.dto';
 import { AuthGuard } from '@/shared/auth';
-import { OrganizationId } from '../../../shared/decorators/organization.decorator';
+import { OrganizationId, UserId } from '../../../shared/decorators/organization.decorator';
 import { ApiRateLimit } from '../../../shared/decorators/throttle.decorator';
 
 @ApiTags('Sessions')
@@ -89,9 +87,8 @@ export class SessionsController {
   async create(
     @OrganizationId() organizationId: string,
     @Body() dto: CreateSessionDto,
-    @Req() req: Request,
+    @UserId() userId: string,
   ) {
-    const userId = (req as any).userId || 'system';
     const session = await this.sessionsService.create(
       organizationId,
       userId,
@@ -522,9 +519,8 @@ export class SessionsController {
   async clone(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
-    @Req() req: Request,
+    @UserId() userId: string,
   ) {
-    const userId = (req as any).userId || 'system';
     const sourceSession = await this.sessionsService.findOne(
       organizationId,
       id,

@@ -9,7 +9,6 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,14 +16,13 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { Request } from 'express';
 import { AgentsService } from '../services/agents.service';
 import {
   CreateAgentDefinitionDto,
   UpdateAgentDefinitionDto,
 } from '../dto/agent.dto';
 import { AuthGuard } from '@/shared/auth';
-import { OrganizationId } from '../../../shared/decorators/organization.decorator';
+import { OrganizationId, UserId } from '../../../shared/decorators/organization.decorator';
 import { ApiRateLimit } from '../../../shared/decorators/throttle.decorator';
 
 @ApiTags('Presets')
@@ -41,9 +39,8 @@ export class AgentsController {
   async create(
     @OrganizationId() organizationId: string,
     @Body() dto: CreateAgentDefinitionDto,
-    @Req() req: Request,
+    @UserId() userId: string,
   ) {
-    const userId = (req as any).userId || 'system';
     const agent = await this.agentsService.create(organizationId, userId, dto);
     return { agent };
   }

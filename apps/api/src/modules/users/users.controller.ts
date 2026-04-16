@@ -15,7 +15,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { IsEmail, IsString, IsOptional, MinLength } from 'class-validator';
+import { IsEmail, IsString, IsOptional, MinLength, IsIn } from 'class-validator';
+import { OrganizationRole } from '@prisma/client';
 import { UsersService } from './users.service';
 import { AuthGuard } from '@/shared/auth/auth.guard';
 import { AuthResult } from '@/shared/auth/strategies/auth-strategy.interface';
@@ -90,9 +91,9 @@ class CreateMemberDto {
   @IsOptional()
   lastName?: string;
 
-  @IsString()
+  @IsIn(['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'])
   @IsOptional()
-  role?: string;
+  role?: OrganizationRole;
 
   @IsString()
   @IsOptional()
@@ -100,8 +101,8 @@ class CreateMemberDto {
 }
 
 class UpdateMemberRoleDto {
-  @IsString()
-  role: string;
+  @IsIn(['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'])
+  role: OrganizationRole;
 }
 
 @Controller('auth')
@@ -338,7 +339,7 @@ export class UsersController {
       email: dto.email,
       firstName: dto.firstName,
       lastName: dto.lastName,
-      role: (dto.role as any) || 'MEMBER',
+      role: dto.role || 'MEMBER',
       password: dto.password,
     });
 
@@ -358,7 +359,7 @@ export class UsersController {
       throw new ForbiddenException('Only admins can change roles');
     }
 
-    await this.usersService.updateMemberRole(req.auth.organizationId, userId, dto.role as any);
+    await this.usersService.updateMemberRole(req.auth.organizationId, userId, dto.role);
     return { status: 'ok' };
   }
 
