@@ -242,49 +242,6 @@ export class ClaudeCodeLocalAdapter implements AIProviderPort {
   }
 
   /**
-   * Execute a command and return the result
-   */
-  private executeCommand(
-    command: string,
-    args: string[],
-  ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    return new Promise((resolve, reject) => {
-      const proc = spawn(command, args, {
-        cwd: this.workDir,
-        env: { ...process.env },
-      });
-
-      let stdout = '';
-      let stderr = '';
-
-      proc.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      proc.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        resolve({ stdout, stderr, exitCode: code || 0 });
-      });
-
-      proc.on('error', (error) => {
-        reject(error);
-      });
-
-      // Timeout after 5 minutes
-      setTimeout(
-        () => {
-          proc.kill();
-          reject(new Error('Command timed out'));
-        },
-        5 * 60 * 1000,
-      );
-    });
-  }
-
-  /**
    * Execute a piped command: cmd1 | cmd2
    */
   private executePipedCommand(

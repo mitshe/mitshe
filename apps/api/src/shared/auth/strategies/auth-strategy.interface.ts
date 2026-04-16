@@ -30,5 +30,3 @@ export interface AuthStrategy {
    */
   authenticate(context: ExecutionContext): Promise<AuthResult>;
 }
-
-export const AUTH_STRATEGIES = 'AUTH_STRATEGIES';

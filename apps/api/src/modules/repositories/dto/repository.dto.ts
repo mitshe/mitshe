@@ -8,14 +8,6 @@ import {
 import { GitProvider } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class SyncRepositoriesDto {
-  @IsEnum(GitProvider)
-  provider: GitProvider;
-
-  @IsString()
-  integrationId: string;
-}
-
 export class UpdateRepositoryDto {
   @IsOptional()
   @IsBoolean()
