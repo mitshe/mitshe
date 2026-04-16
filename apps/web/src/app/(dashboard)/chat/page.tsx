@@ -33,7 +33,9 @@ import {
   Plug,
   Check,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { ChatToolCall } from "@mitshe/types";
 
 export default function ChatPage() {
@@ -43,6 +45,7 @@ export default function ChatPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: conversations = [] } = useChatConversations();
   const { data: activeConversation, isLoading: loadingConversation } =
@@ -97,6 +100,7 @@ export default function ChatPage() {
     const content = inputValue;
     setInputValue("");
     setPendingUserMessage(content);
+    if (textareaRef.current) textareaRef.current.style.height = "48px";
 
     try {
       await sendMessage.mutateAsync({ conversationId: convId, data: { content } });
@@ -214,11 +218,18 @@ export default function ChatPage() {
         <div className="max-w-3xl mx-auto">
           <div className="rounded-2xl border border-border bg-muted/30 focus-within:border-primary/50 transition-colors overflow-hidden">
             <textarea
+              ref={textareaRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                // Auto-resize
+                const el = e.target;
+                el.style.height = "0";
+                el.style.height = Math.min(el.scrollHeight, 200) + "px";
+              }}
               onKeyDown={handleKeyDown}
               placeholder="Reply..."
-              className="w-full min-h-[48px] max-h-[200px] resize-none text-sm bg-transparent px-4 pt-3.5 pb-1 outline-none placeholder:text-muted-foreground"
+              className="w-full min-h-[48px] max-h-[200px] resize-none text-sm bg-transparent px-4 pt-3.5 pb-1 outline-none placeholder:text-muted-foreground overflow-y-auto"
               rows={1}
               disabled={sendMessage.isPending}
             />
@@ -298,17 +309,17 @@ function ChatMessage({
 
 /* ─── Tool chip ─── */
 
-const TOOL_META: Record<string, { icon: React.ReactNode; color: string }> = {
-  session: { icon: <Terminal className="h-3 w-3" />, color: "text-emerald-500" },
-  workflow: { icon: <Workflow className="h-3 w-3" />, color: "text-blue-500" },
-  task: { icon: <ListTodo className="h-3 w-3" />, color: "text-amber-500" },
-  repository: { icon: <GitBranch className="h-3 w-3" />, color: "text-purple-500" },
-  integration: { icon: <Plug className="h-3 w-3" />, color: "text-cyan-500" },
+const TOOL_META: Record<string, { icon: React.ReactNode; color: string; basePath: string }> = {
+  session: { icon: <Terminal className="h-3 w-3" />, color: "text-emerald-500", basePath: "/sessions" },
+  workflow: { icon: <Workflow className="h-3 w-3" />, color: "text-blue-500", basePath: "/workflows" },
+  task: { icon: <ListTodo className="h-3 w-3" />, color: "text-amber-500", basePath: "/tasks" },
+  repository: { icon: <GitBranch className="h-3 w-3" />, color: "text-purple-500", basePath: "/settings/repositories" },
+  integration: { icon: <Plug className="h-3 w-3" />, color: "text-cyan-500", basePath: "/settings/integrations" },
 };
 
 function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
   const prefix = toolCall.name.split("_")[0];
-  const meta = TOOL_META[prefix] || { icon: <Zap className="h-3 w-3" />, color: "text-muted-foreground" };
+  const meta = TOOL_META[prefix] || { icon: <Zap className="h-3 w-3" />, color: "text-muted-foreground", basePath: "" };
   const action = toolCall.name.replace(/^[^_]+_/, "").replace(/_/g, " ");
   const resultMsg = toolCall.result?.message
     ? String(toolCall.result.message)
@@ -316,8 +327,15 @@ function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
       ? String(toolCall.result.name)
       : null;
 
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/80 border border-border/50 px-2.5 py-1 text-xs">
+  // Build link to the created/affected resource
+  const resourceId = toolCall.result?.id as string | undefined;
+  const href = resourceId && meta.basePath ? `${meta.basePath}/${resourceId}` : null;
+
+  const chip = (
+    <span className={cn(
+      "inline-flex items-center gap-1.5 rounded-full bg-muted/80 border border-border/50 px-2.5 py-1 text-xs transition-colors",
+      href && "hover:bg-muted hover:border-border cursor-pointer",
+    )}>
       <span className={meta.color}>{meta.icon}</span>
       <span className="font-medium capitalize">{action}</span>
       {resultMsg && (
@@ -326,7 +344,17 @@ function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
           <span className="text-muted-foreground truncate max-w-[200px]">{resultMsg}</span>
         </>
       )}
-      <Check className="h-3 w-3 text-emerald-500" />
+      {href ? (
+        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+      ) : (
+        <Check className="h-3 w-3 text-emerald-500" />
+      )}
     </span>
   );
+
+  if (href) {
+    return <Link href={href}>{chip}</Link>;
+  }
+
+  return chip;
 }
