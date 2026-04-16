@@ -130,16 +130,24 @@ export class SessionsController {
   @ApiResponse({ status: 200, type: SessionListResponseDto })
   @ApiQuery({ name: 'status', required: false, enum: SessionStatus })
   @ApiQuery({ name: 'projectId', required: false })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   async findAll(
     @OrganizationId() organizationId: string,
     @Query('status') status?: SessionStatus,
     @Query('projectId') projectId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    const sessions = await this.sessionsService.findAll(organizationId, {
+    const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit || '20', 10) || 20));
+
+    return this.sessionsService.findAll(organizationId, {
       status,
       projectId,
+      page: pageNum,
+      limit: limitNum,
     });
-    return { sessions };
   }
 
   @Get(':id')

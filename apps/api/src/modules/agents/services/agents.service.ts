@@ -77,46 +77,47 @@ export class AgentsService {
   ) {
     await this.findOne(organizationId, id);
 
-    // Handle repository updates
-    if (dto.defaultRepositoryIds !== undefined) {
-      await this.prisma.agentDefinitionRepository.deleteMany({
-        where: { agentDefinitionId: id },
-      });
-
-      if (dto.defaultRepositoryIds.length > 0) {
-        await this.prisma.agentDefinitionRepository.createMany({
-          data: dto.defaultRepositoryIds.map((repositoryId) => ({
-            agentDefinitionId: id,
-            repositoryId,
-          })),
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.defaultRepositoryIds !== undefined) {
+        await tx.agentDefinitionRepository.deleteMany({
+          where: { agentDefinitionId: id },
         });
-      }
-    }
 
-    return this.prisma.agentDefinition.update({
-      where: { id },
-      data: {
-        ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.description !== undefined && {
-          description: dto.description || null,
-        }),
-        ...(dto.aiCredentialId !== undefined && {
-          aiCredentialId: dto.aiCredentialId || null,
-        }),
-        ...(dto.startArguments !== undefined && {
-          startArguments: dto.startArguments || null,
-        }),
-        ...(dto.instructions !== undefined && {
-          instructions: dto.instructions || '',
-        }),
-        ...(dto.maxSessionDurationMs !== undefined && {
-          maxSessionDurationMs: dto.maxSessionDurationMs || null,
-        }),
-        ...(dto.defaultProjectId !== undefined && {
-          defaultProjectId: dto.defaultProjectId || null,
-        }),
-      },
-      include: INCLUDE_RELATIONS,
+        if (dto.defaultRepositoryIds.length > 0) {
+          await tx.agentDefinitionRepository.createMany({
+            data: dto.defaultRepositoryIds.map((repositoryId) => ({
+              agentDefinitionId: id,
+              repositoryId,
+            })),
+          });
+        }
+      }
+
+      return tx.agentDefinition.update({
+        where: { id },
+        data: {
+          ...(dto.name !== undefined && { name: dto.name }),
+          ...(dto.description !== undefined && {
+            description: dto.description || null,
+          }),
+          ...(dto.aiCredentialId !== undefined && {
+            aiCredentialId: dto.aiCredentialId || null,
+          }),
+          ...(dto.startArguments !== undefined && {
+            startArguments: dto.startArguments || null,
+          }),
+          ...(dto.instructions !== undefined && {
+            instructions: dto.instructions || '',
+          }),
+          ...(dto.maxSessionDurationMs !== undefined && {
+            maxSessionDurationMs: dto.maxSessionDurationMs || null,
+          }),
+          ...(dto.defaultProjectId !== undefined && {
+            defaultProjectId: dto.defaultProjectId || null,
+          }),
+        },
+        include: INCLUDE_RELATIONS,
+      });
     });
   }
 

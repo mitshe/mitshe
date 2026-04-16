@@ -74,28 +74,43 @@ export class SessionsService {
 
   async findAll(
     organizationId: string,
-    filters?: { status?: SessionStatus; projectId?: string },
+    filters?: { status?: SessionStatus; projectId?: string; page?: number; limit?: number },
   ) {
-    return this.prisma.agentSession.findMany({
-      where: {
-        organizationId,
-        ...(filters?.status && { status: filters.status }),
-        ...(filters?.projectId && { projectId: filters.projectId }),
-      },
-      include: {
-        repositories: { include: { repository: true } },
-        integrations: {
-          include: {
-            integration: { select: { id: true, type: true, status: true } },
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 20;
+
+    const where = {
+      organizationId,
+      ...(filters?.status && { status: filters.status }),
+      ...(filters?.projectId && { projectId: filters.projectId }),
+    };
+
+    const [sessions, total] = await Promise.all([
+      this.prisma.agentSession.findMany({
+        where,
+        include: {
+          repositories: { include: { repository: true } },
+          integrations: {
+            include: {
+              integration: { select: { id: true, type: true, status: true } },
+            },
           },
+          project: { select: { id: true, name: true, key: true } },
+          aiCredential: { select: { id: true, provider: true } },
+          agentDefinition: { select: { id: true, name: true } },
+          _count: { select: { messages: true } },
         },
-        project: { select: { id: true, name: true, key: true } },
-        aiCredential: { select: { id: true, provider: true } },
-        agentDefinition: { select: { id: true, name: true } },
-        _count: { select: { messages: true } },
-      },
-      orderBy: { lastActiveAt: 'desc' },
-    });
+        orderBy: { lastActiveAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.agentSession.count({ where }),
+    ]);
+
+    return {
+      sessions,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOne(organizationId: string, id: string) {
