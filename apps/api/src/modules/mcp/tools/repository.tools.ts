@@ -55,8 +55,7 @@ export class RepositoryTools {
       },
       {
         name: 'repository_sync',
-        description:
-          'Sync repositories from all connected Git integrations.',
+        description: 'Sync repositories from all connected Git integrations.',
         inputSchema: { type: 'object', properties: {} },
         execute: async (orgId): Promise<McpToolResult> => {
           const result = await this.repositoriesService.syncAll(orgId);

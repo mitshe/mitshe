@@ -12,7 +12,12 @@ import { IntegrationsModule } from '../integrations/integrations.module';
 
 @Global()
 @Module({
-  imports: [WorkflowsModule, TasksModule, RepositoriesModule, IntegrationsModule],
+  imports: [
+    WorkflowsModule,
+    TasksModule,
+    RepositoriesModule,
+    IntegrationsModule,
+  ],
   providers: [
     McpService,
     SessionTools,

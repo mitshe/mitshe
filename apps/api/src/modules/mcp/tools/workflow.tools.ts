@@ -64,7 +64,10 @@ export class WorkflowTools {
           type: 'object',
           properties: {
             name: { type: 'string', description: 'Workflow name' },
-            description: { type: 'string', description: 'Workflow description' },
+            description: {
+              type: 'string',
+              description: 'Workflow description',
+            },
             projectId: { type: 'string', description: 'Project ID' },
             triggerType: {
               type: 'string',
@@ -147,9 +150,9 @@ export class WorkflowTools {
         name: 'workflow_list_templates',
         description: 'List available workflow templates.',
         inputSchema: { type: 'object', properties: {} },
-        execute: async (): Promise<McpToolResult> => {
+        execute: (): Promise<McpToolResult> => {
           const templates = this.workflowsService.getTemplates();
-          return { content: JSON.stringify(templates) };
+          return Promise.resolve({ content: JSON.stringify(templates) });
         },
       },
       {
@@ -210,10 +213,7 @@ export class WorkflowTools {
           required: ['workflowId'],
         },
         execute: async (orgId, _userId, input): Promise<McpToolResult> => {
-          await this.workflowsService.remove(
-            orgId,
-            input.workflowId as string,
-          );
+          await this.workflowsService.remove(orgId, input.workflowId as string);
           return {
             content: JSON.stringify({ message: 'Workflow deleted.' }),
           };

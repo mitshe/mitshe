@@ -9,8 +9,6 @@ import { AdapterFactoryService } from '../../../infrastructure/adapters/adapter-
 import { McpService } from '../../mcp/mcp.service';
 import {
   Message,
-  ToolDefinition,
-  AIResponseWithTools,
   ToolResultContent,
   ToolUseContent,
 } from '../../../ports/ai-provider.port';
@@ -77,11 +75,7 @@ export class ChatService {
     });
   }
 
-  async findConversation(
-    organizationId: string,
-    userId: string,
-    id: string,
-  ) {
+  async findConversation(organizationId: string, userId: string, id: string) {
     const conversation = await this.prisma.chatConversation.findFirst({
       where: { id, organizationId, userId },
       include: {
@@ -115,11 +109,7 @@ export class ChatService {
     });
   }
 
-  async deleteConversation(
-    organizationId: string,
-    userId: string,
-    id: string,
-  ) {
+  async deleteConversation(organizationId: string, userId: string, id: string) {
     const conversation = await this.findConversation(
       organizationId,
       userId,
@@ -147,8 +137,7 @@ export class ChatService {
     );
 
     // Resolve AI provider
-    const credentialId =
-      dto.aiCredentialId || conversation.aiCredentialId;
+    const credentialId = dto.aiCredentialId || conversation.aiCredentialId;
     let aiProvider;
     try {
       if (credentialId) {
@@ -235,7 +224,13 @@ export class ChatService {
         allToolCalls.push({
           name: toolCall.name,
           input: toolCall.input,
-          result: JSON.parse(result.content),
+          result: (() => {
+            try {
+              return JSON.parse(result.content);
+            } catch {
+              return { message: result.content };
+            }
+          })(),
         });
 
         toolUseBlocks.push({
@@ -283,10 +278,7 @@ export class ChatService {
         conversationId,
         role: 'assistant',
         content: finalContent,
-        toolUse:
-          allToolCalls.length > 0
-            ? (allToolCalls as any)
-            : undefined,
+        toolUse: allToolCalls.length > 0 ? (allToolCalls as any) : undefined,
       },
     });
 

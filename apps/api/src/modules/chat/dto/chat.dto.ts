@@ -14,7 +14,9 @@ export class CreateConversationDto {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Model override (e.g. claude-sonnet-4-20250514)' })
+  @ApiPropertyOptional({
+    description: 'Model override (e.g. claude-sonnet-4-20250514)',
+  })
   model?: string;
 }
 
@@ -26,7 +28,9 @@ export class SendMessageDto {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'AI credential ID override for this message' })
+  @ApiPropertyOptional({
+    description: 'AI credential ID override for this message',
+  })
   aiCredentialId?: string;
 
   @IsString()

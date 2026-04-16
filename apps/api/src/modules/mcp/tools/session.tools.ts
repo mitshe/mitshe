@@ -242,7 +242,10 @@ export class SessionTools {
           type: 'object',
           properties: {
             sessionId: { type: 'string', description: 'Session ID' },
-            command: { type: 'string', description: 'Shell command to execute' },
+            command: {
+              type: 'string',
+              description: 'Shell command to execute',
+            },
           },
           required: ['sessionId', 'command'],
         },
@@ -252,7 +255,10 @@ export class SessionTools {
             input.sessionId as string,
           );
           if (!session.containerId) {
-            return { content: 'Session has no running container.', isError: true };
+            return {
+              content: 'Session has no running container.',
+              isError: true,
+            };
           }
           const stdout = await this.containerService.execCommand(
             session.containerId,

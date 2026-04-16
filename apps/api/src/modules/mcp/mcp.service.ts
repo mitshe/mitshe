@@ -60,14 +60,11 @@ export class McpService {
     }
 
     try {
-      this.logger.debug(
-        `Executing tool ${toolName} for org ${organizationId}`,
-      );
+      this.logger.debug(`Executing tool ${toolName} for org ${organizationId}`);
       const result = await tool.execute(organizationId, userId, input);
       return result;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Tool ${toolName} failed: ${message}`);
       return { content: `Tool error: ${message}`, isError: true };
     }

@@ -14,8 +14,7 @@ export class IntegrationTools {
           'List all connected integrations (Jira, GitHub, GitLab, Slack, Discord, etc.).',
         inputSchema: { type: 'object', properties: {} },
         execute: async (orgId): Promise<McpToolResult> => {
-          const integrations =
-            await this.integrationsService.findAll(orgId);
+          const integrations = await this.integrationsService.findAll(orgId);
           return {
             content: JSON.stringify(
               integrations.map((i) => ({

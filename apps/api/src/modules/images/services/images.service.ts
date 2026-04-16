@@ -43,6 +43,7 @@ export class ImagesService {
     });
 
     // Commit container to persistent image (async heavy work)
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     setImmediate(async () => {
       try {
         // commitContainer returns image name like "mitshe-clone:{id}"
