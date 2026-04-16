@@ -51,8 +51,8 @@ export function BreadcrumbsWrapper() {
   if (pathname === "/dashboard") {
     return null;
   }
-  // Workflow editor and session detail have their own navigation
-  if (/^\/workflows\/[^/]+\/edit/.test(pathname) || /^\/sessions\/[^/]+$/.test(pathname)) {
+  // Workflow editor, session detail, and chat have their own navigation
+  if (/^\/workflows\/[^/]+\/edit/.test(pathname) || /^\/sessions\/[^/]+$/.test(pathname) || pathname.startsWith("/chat")) {
     return null;
   }
 

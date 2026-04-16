@@ -46,6 +46,14 @@ import type {
   WorkflowTemplateMetadata,
   WorkflowTemplate,
   CreateFromTemplateDto,
+  BaseImage,
+  CreateBaseImageDto,
+  UpdateBaseImageDto,
+  ChatConversation,
+  ChatMessage,
+  CreateConversationDto,
+  SendMessageDto,
+  SendMessageResponse,
 } from "./types";
 
 // API requests go through Next.js proxy (same-origin, no CORS issues)
@@ -766,5 +774,65 @@ export const api = {
           token,
         },
       ),
+  },
+
+  images: {
+    list: (token: string) =>
+      request<{ images: BaseImage[] }>("/images", { token }),
+
+    get: (id: string, token: string) =>
+      request<{ image: BaseImage }>(`/images/${id}`, { token }),
+
+    create: (data: CreateBaseImageDto, token: string) =>
+      request<{ image: BaseImage }>("/images", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    update: (id: string, data: UpdateBaseImageDto, token: string) =>
+      request<{ image: BaseImage }>(`/images/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    delete: (id: string, token: string) =>
+      request<void>(`/images/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+  },
+
+  chat: {
+    listConversations: (token: string) =>
+      request<{ conversations: ChatConversation[] }>("/chat/conversations", {
+        token,
+      }),
+
+    getConversation: (id: string, token: string) =>
+      request<{
+        conversation: ChatConversation & { messages: ChatMessage[] };
+      }>(`/chat/conversations/${id}`, { token }),
+
+    createConversation: (data: CreateConversationDto, token: string) =>
+      request<{ conversation: ChatConversation }>("/chat/conversations", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    deleteConversation: (id: string, token: string) =>
+      request<void>(`/chat/conversations/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+
+    sendMessage: (id: string, data: SendMessageDto, token: string) =>
+      request<SendMessageResponse>(`/chat/conversations/${id}/messages`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
   },
 };

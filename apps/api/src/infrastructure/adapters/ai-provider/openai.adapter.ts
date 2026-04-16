@@ -25,17 +25,20 @@ export class OpenAIAdapter implements AIProviderPort {
   private readonly apiKey: string;
   private readonly defaultModel: string;
   private readonly organization?: string;
+  private readonly extraHeaders: Record<string, string>;
 
   constructor(config: {
     apiKey: string;
     defaultModel?: string;
     baseUrl?: string; // For Azure OpenAI or compatible APIs
     organization?: string;
+    extraHeaders?: Record<string, string>;
   }) {
     this.apiKey = config.apiKey;
     this.defaultModel = config.defaultModel || 'gpt-4-turbo-preview';
     this.baseUrl = config.baseUrl || 'https://api.openai.com/v1';
     this.organization = config.organization;
+    this.extraHeaders = config.extraHeaders || {};
   }
 
   getProviderType(): 'openai' {
@@ -53,8 +56,9 @@ export class OpenAIAdapter implements AIProviderPort {
 
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      const models = await this.listModels();
-      return { success: models.length > 0 };
+      const response = await this.request('models', undefined, 'GET');
+      const hasModels = response.data?.length > 0;
+      return { success: hasModels };
     } catch (error) {
       this.logger.error(`OpenAI connection test failed: ${error.message}`);
       return { success: false, error: error.message };
@@ -64,9 +68,7 @@ export class OpenAIAdapter implements AIProviderPort {
   async listModels(): Promise<string[]> {
     const response = await this.request('models', undefined, 'GET');
 
-    return response.data
-      .filter((model: any) => model.id.startsWith('gpt'))
-      .map((model: any) => model.id);
+    return response.data?.map((model: any) => model.id) || [];
   }
 
   async complete(
@@ -260,6 +262,7 @@ export class OpenAIAdapter implements AIProviderPort {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${this.apiKey}`,
+      ...this.extraHeaders,
     };
 
     if (this.organization) {
@@ -373,9 +376,7 @@ export class OpenAIAdapter implements AIProviderPort {
 
           const toolUses = message.content.filter((c) => c.type === 'tool_use');
 
-          if (textContent) {
-            msg.content = textContent;
-          }
+          msg.content = textContent || null;
 
           if (toolUses.length > 0) {
             msg.tool_calls = toolUses.map((tu: any) => ({
@@ -390,6 +391,33 @@ export class OpenAIAdapter implements AIProviderPort {
         }
 
         formatted.push(msg);
+      } else if (message.role === 'user') {
+        if (typeof message.content === 'string') {
+          formatted.push({ role: 'user', content: message.content });
+        } else {
+          // Check if content contains tool_result blocks (from tool use loop)
+          const toolResults = message.content.filter(
+            (c) => c.type === 'tool_result',
+          );
+          const textParts = message.content.filter((c) => c.type === 'text');
+
+          if (toolResults.length > 0) {
+            // Convert tool_result content to OpenAI 'tool' role messages
+            for (const tr of toolResults) {
+              formatted.push({
+                role: 'tool',
+                tool_call_id: (tr as any).tool_use_id,
+                content: (tr as any).content || '',
+              });
+            }
+          }
+          if (textParts.length > 0) {
+            formatted.push({
+              role: 'user',
+              content: textParts.map((c: any) => c.text).join(''),
+            });
+          }
+        }
       } else {
         formatted.push({
           role: message.role,
@@ -459,6 +487,7 @@ export function createOpenAIAdapter(config: {
   defaultModel?: string;
   baseUrl?: string;
   organization?: string;
+  extraHeaders?: Record<string, string>;
 }): AIProviderPort {
   return new OpenAIAdapter(config);
 }

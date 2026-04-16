@@ -20,6 +20,8 @@ import {
   Settings,
   BookOpen,
   ExternalLink,
+  MessageCircle,
+  HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +36,13 @@ interface NavItem {
 }
 
 const coreNavItems: NavItem[] = [
+  {
+    title: "Chat",
+    href: "/chat",
+    icon: MessageCircle,
+    tourId: "nav-chat",
+    description: "AI assistant",
+  },
   {
     title: "Dashboard",
     href: "/dashboard",
@@ -92,6 +101,13 @@ const workspaceNavItems: NavItem[] = [
     icon: Box,
     tourId: "nav-environments",
     description: "Container setup",
+  },
+  {
+    title: "Images",
+    href: "/images",
+    icon: HardDrive,
+    tourId: "nav-images",
+    description: "Base container images",
   },
 ];
 
