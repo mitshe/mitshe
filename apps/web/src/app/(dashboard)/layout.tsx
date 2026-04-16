@@ -3,6 +3,7 @@ import { TopNav } from "@/components/layout/top-nav";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { BreadcrumbsWrapper } from "@/components/layout/breadcrumbs-wrapper";
 import { AuthGuard } from "@/components/auth";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -13,18 +14,7 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="flex h-screen">
-        <Sidebar />
-
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <TopNav />
-          <main className="flex-1 overflow-auto relative">
-            <BreadcrumbsWrapper />
-            {children}
-          </main>
-        </div>
-        <OnboardingTour />
-      </div>
+      <DashboardShell>{children}</DashboardShell>
     </AuthGuard>
   );
 }

@@ -28,6 +28,10 @@ import type {
   CreateSessionDto,
   UpdateSessionMetadataDto,
   RecreateSessionDto,
+  CreateBaseImageDto,
+  UpdateBaseImageDto,
+  CreateConversationDto,
+  SendMessageDto,
 } from "./types";
 
 export const queryKeys = {
@@ -103,6 +107,17 @@ export const queryKeys = {
       [...queryKeys.sessions.all, "detail", id] as const,
     files: (id: string) =>
       [...queryKeys.sessions.all, "files", id] as const,
+  },
+  images: {
+    all: ["images"] as const,
+    list: () => [...queryKeys.images.all, "list"] as const,
+    detail: (id: string) => [...queryKeys.images.all, "detail", id] as const,
+  },
+  chat: {
+    all: ["chat"] as const,
+    conversations: () => [...queryKeys.chat.all, "conversations"] as const,
+    conversation: (id: string) =>
+      [...queryKeys.chat.all, "conversation", id] as const,
   },
 };
 
@@ -1482,6 +1497,154 @@ export function useDeleteEnvironment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.environments.all });
+    },
+  });
+}
+
+// ============================================================================
+// BASE IMAGES
+// ============================================================================
+
+export function useImages() {
+  const getToken = useAuthToken();
+  return useQuery({
+    queryKey: queryKeys.images.list(),
+    queryFn: async () => {
+      const token = await getToken();
+      const { images } = await api.images.list(token);
+      return images;
+    },
+  });
+}
+
+export function useImage(id: string) {
+  const getToken = useAuthToken();
+  return useQuery({
+    queryKey: queryKeys.images.detail(id),
+    queryFn: async () => {
+      const token = await getToken();
+      const { image } = await api.images.get(id, token);
+      return image;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateImage() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateBaseImageDto) => {
+      const token = await getToken();
+      const { image } = await api.images.create(data, token);
+      return image;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.images.all });
+    },
+  });
+}
+
+export function useDeleteImage() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      await api.images.delete(id, token);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.images.all });
+    },
+  });
+}
+
+// ============================================================================
+// CHAT
+// ============================================================================
+
+export function useChatConversations() {
+  const getToken = useAuthToken();
+  return useQuery({
+    queryKey: queryKeys.chat.conversations(),
+    queryFn: async () => {
+      const token = await getToken();
+      const { conversations } = await api.chat.listConversations(token);
+      return conversations;
+    },
+  });
+}
+
+export function useChatConversation(id: string) {
+  const getToken = useAuthToken();
+  return useQuery({
+    queryKey: queryKeys.chat.conversation(id),
+    queryFn: async () => {
+      const token = await getToken();
+      const { conversation } = await api.chat.getConversation(id, token);
+      return conversation;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateChatConversation() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateConversationDto) => {
+      const token = await getToken();
+      const { conversation } = await api.chat.createConversation(data, token);
+      return conversation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.all });
+    },
+  });
+}
+
+export function useDeleteChatConversation() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      await api.chat.deleteConversation(id, token);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.all });
+    },
+  });
+}
+
+export function useSendChatMessage() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      data,
+    }: {
+      conversationId: string;
+      data: SendMessageDto;
+    }) => {
+      const token = await getToken();
+      return api.chat.sendMessage(conversationId, data, token);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.conversation(variables.conversationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.conversations(),
+      });
     },
   });
 }

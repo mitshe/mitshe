@@ -30,8 +30,12 @@ aiProviderRegistry.register('OPENAI', (config: AdapterConfig) =>
 aiProviderRegistry.register('OPENROUTER', (config: AdapterConfig) =>
   createOpenAIAdapter({
     apiKey: config.apiKey || '',
-    defaultModel: config.defaultModel || 'anthropic/claude-3.5-sonnet',
+    defaultModel: config.defaultModel || 'anthropic/claude-sonnet-4',
     baseUrl: 'https://openrouter.ai/api/v1',
+    extraHeaders: {
+      'HTTP-Referer': 'https://mitshe.com',
+      'X-Title': 'mitshe',
+    },
   }),
 );
 

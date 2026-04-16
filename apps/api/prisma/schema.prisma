@@ -102,9 +102,11 @@ model Organization {
   aiCredentials AICredential[]
   workflows     Workflow[]
   apiKeys          ApiKey[]
-  agentDefinitions AgentDefinition[]
-  environments     Environment[]
-  agentSessions    AgentSession[]
+  agentDefinitions  AgentDefinition[]
+  environments      Environment[]
+  agentSessions     AgentSession[]
+  baseImages        BaseImage[]
+  chatConversations ChatConversation[]
 
   @@index([ownerId])
   @@map("organizations")
@@ -358,8 +360,9 @@ model AICredential {
 
   // Relations
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agentSessions    AgentSession[]
-  agentDefinitions AgentDefinition[]
+  agentSessions     AgentSession[]
+  agentDefinitions  AgentDefinition[]
+  chatConversations ChatConversation[]
 
   @@unique([organizationId, provider])
   @@map("ai_credentials")
@@ -698,6 +701,7 @@ model AgentSession {
   startArguments    String?       @map("start_arguments")
   environmentId     String?       @map("environment_id")
   enableDocker      Boolean       @default(false) @map("enable_docker")
+  baseImageId       String?       @map("base_image_id")
   status            SessionStatus @default(CREATING)
   aiCredentialId    String?       @map("ai_credential_id")
   containerId       String?       @map("container_id")
@@ -713,6 +717,8 @@ model AgentSession {
   aiCredential    AICredential?     @relation(fields: [aiCredentialId], references: [id], onDelete: SetNull)
   agentDefinition AgentDefinition?  @relation(fields: [agentDefinitionId], references: [id], onDelete: SetNull)
   environment     Environment?      @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  baseImage       BaseImage?        @relation("SessionBaseImage", fields: [baseImageId], references: [id], onDelete: SetNull)
+  sourceForImages BaseImage[]       @relation("ImageSource")
   messages        SessionMessage[]
   repositories    SessionRepository[]
   integrations    SessionIntegration[]
@@ -759,4 +765,72 @@ model SessionIntegration {
 
   @@id([sessionId, integrationId])
   @@map("session_integrations")
+}
+
+// ============================================================================
+// BASE IMAGES (Persistent Container Snapshots)
+// ============================================================================
+
+model BaseImage {
+  id              String  @id @default(cuid())
+  organizationId  String  @map("organization_id")
+  name            String
+  description     String?
+  dockerImage     String  @map("docker_image")
+  sizeBytes       BigInt? @map("size_bytes")
+  sourceSessionId String? @map("source_session_id")
+  parentImageId   String? @map("parent_image_id")
+  enableDocker    Boolean @default(false) @map("enable_docker")
+  createdBy       String  @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceSession AgentSession? @relation("ImageSource", fields: [sourceSessionId], references: [id], onDelete: SetNull)
+  parentImage   BaseImage?    @relation("ImageHierarchy", fields: [parentImageId], references: [id], onDelete: SetNull)
+  childImages   BaseImage[]   @relation("ImageHierarchy")
+  sessions      AgentSession[] @relation("SessionBaseImage")
+
+  @@index([organizationId])
+  @@map("base_images")
+}
+
+// ============================================================================
+// CHAT (AI Assistant Conversations)
+// ============================================================================
+
+model ChatConversation {
+  id             String  @id @default(cuid())
+  organizationId String  @map("organization_id")
+  userId         String  @map("user_id")
+  title          String?
+  aiCredentialId String? @map("ai_credential_id")
+  model          String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aiCredential AICredential? @relation(fields: [aiCredentialId], references: [id], onDelete: SetNull)
+  messages     ChatMessage[]
+
+  @@index([organizationId, userId])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String @id @default(cuid())
+  conversationId String @map("conversation_id")
+  role           String // user | assistant | tool_result
+  content        String
+  toolUse        Json?  @map("tool_use")
+  toolResults    Json?  @map("tool_results")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("chat_messages")
 }

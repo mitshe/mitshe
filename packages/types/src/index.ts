@@ -14,3 +14,5 @@ export * from "./ai-credential";
 export * from "./agent-definition";
 export * from "./environment";
 export * from "./session";
+export * from "./base-image";
+export * from "./chat";
