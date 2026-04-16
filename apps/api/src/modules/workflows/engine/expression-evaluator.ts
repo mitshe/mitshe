@@ -140,7 +140,7 @@ export class ExpressionEvaluator {
       return this.parseCondition(interpolated, context);
     } catch (error) {
       this.logger.error(
-        `Error evaluating condition "${condition}": ${error.message}`,
+        `Error evaluating condition "${condition}": ${(error as Error).message}`,
       );
       return false;
     }
@@ -318,7 +318,12 @@ export class ExpressionEvaluator {
 
       case 'matches':
         try {
-          const regex = new RegExp(String(parsedArgs[1]));
+          const pattern = String(parsedArgs[1]);
+          if (pattern.length > 200) {
+            this.logger.warn('Regex pattern too long, rejecting');
+            return false;
+          }
+          const regex = new RegExp(pattern);
           return regex.test(String(parsedArgs[0]));
         } catch {
           return false;
@@ -426,9 +431,9 @@ export class ExpressionEvaluator {
       case '!==':
         return left !== right;
       case '==':
-        return left == right;
+        return left === right;
       case '!=':
-        return left != right;
+        return left !== right;
       case '>':
         return Number(left) > Number(right);
       case '<':

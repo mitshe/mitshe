@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '@/infrastructure/persistence/prisma/prisma.service';
 import { WorkflowDefinition, NodeExecutionResult } from './types';
@@ -36,6 +36,8 @@ export interface WorkflowWithDefinition {
  */
 @Injectable()
 export class WorkflowPersistenceService {
+  private readonly logger = new Logger(WorkflowPersistenceService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -179,7 +181,7 @@ export class WorkflowPersistenceService {
     // Log any failures but don't throw - other nodes were saved
     results.forEach((result, idx) => {
       if (result.status === 'rejected') {
-        console.error(
+        this.logger.error(
           `Failed to sync node ${nodeResults[idx].nodeId}: ${result.reason}`,
         );
       }
