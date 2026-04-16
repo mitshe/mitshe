@@ -31,13 +31,13 @@ export class SessionTools {
           },
         },
         execute: async (orgId, _userId, input): Promise<McpToolResult> => {
-          const sessions = await this.sessionsService.findAll(orgId, {
+          const result = await this.sessionsService.findAll(orgId, {
             status: input.status as any,
             projectId: input.projectId as string,
           });
           return {
             content: JSON.stringify(
-              sessions.map((s) => ({
+              result.sessions.map((s) => ({
                 id: s.id,
                 name: s.name,
                 status: s.status,
