@@ -61,7 +61,11 @@ export class ChatService {
     });
   }
 
-  async findAllConversations(organizationId: string, userId: string) {
+  async findAllConversations(
+    organizationId: string,
+    userId: string,
+    limit = 8,
+  ) {
     return this.prisma.chatConversation.findMany({
       where: { organizationId, userId },
       include: {
@@ -69,6 +73,7 @@ export class ChatService {
         aiCredential: { select: { id: true, provider: true } },
       },
       orderBy: { updatedAt: 'desc' },
+      take: limit,
     });
   }
 

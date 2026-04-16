@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   useChatConversations,
   useChatConversation,
   useCreateChatConversation,
-  useDeleteChatConversation,
   useSendChatMessage,
   useAICredentials,
 } from "@/lib/api/hooks";
@@ -20,44 +21,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  MessageSquarePlus,
   Send,
-  Trash2,
   Loader2,
-  Bot,
-  User,
-  Wrench,
-  ChevronDown,
-  ChevronRight,
   KeyRound,
   AlertCircle,
+  Zap,
+  Workflow,
+  Terminal,
+  ListTodo,
+  GitBranch,
+  Plug,
+  Check,
+  Sparkles,
 } from "lucide-react";
 import type { ChatToolCall } from "@mitshe/types";
 
 export default function ChatPage() {
-  const [activeConversationId, setActiveConversationId] = useState<
-    string | null
-  >(null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [selectedCredentialId, setSelectedCredentialId] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: conversations = [], isLoading: loadingConversations } =
-    useChatConversations();
+  const { data: conversations = [] } = useChatConversations();
   const { data: activeConversation, isLoading: loadingConversation } =
     useChatConversation(activeConversationId || "");
-  const { data: credentials = [], isLoading: loadingCredentials } =
-    useAICredentials();
+  const { data: credentials = [], isLoading: loadingCredentials } = useAICredentials();
   const createConversation = useCreateChatConversation();
-  const deleteConversation = useDeleteChatConversation();
   const sendMessage = useSendChatMessage();
 
   const hasCredentials = credentials.length > 0;
   const messages = activeConversation?.messages || [];
-  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
 
-  // Auto-select first credential
   useEffect(() => {
     if (credentials.length > 0 && !selectedCredentialId) {
       const defaultCred = credentials.find((c: any) => c.isDefault) || credentials[0];
@@ -66,21 +62,36 @@ export default function ChatPage() {
   }, [credentials, selectedCredentialId]);
 
   useEffect(() => {
+    if (!activeConversationId && conversations.length > 0) {
+      setActiveConversationId(conversations[0].id);
+    }
+  }, [conversations, activeConversationId]);
+
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      setActiveConversationId(e.detail.conversationId);
+      setErrorMessage(null);
+    };
+    window.addEventListener("chat:select" as any, handler);
+    return () => window.removeEventListener("chat:select" as any, handler);
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, sendMessage.isPending, pendingUserMessage]);
 
-  const handleNewConversation = async () => {
-    if (!selectedCredentialId) return;
-    setErrorMessage(null);
-    const conversation = await createConversation.mutateAsync({
-      aiCredentialId: selectedCredentialId,
-    });
-    setActiveConversationId(conversation.id);
-  };
-
   const handleSend = async () => {
-    if (!inputValue.trim() || !activeConversationId || sendMessage.isPending)
-      return;
+    if (!inputValue.trim() || sendMessage.isPending) return;
+
+    let convId = activeConversationId;
+    if (!convId) {
+      if (!selectedCredentialId) return;
+      const conversation = await createConversation.mutateAsync({
+        aiCredentialId: selectedCredentialId,
+      });
+      convId = conversation.id;
+      setActiveConversationId(convId);
+    }
 
     setErrorMessage(null);
     const content = inputValue;
@@ -88,16 +99,14 @@ export default function ChatPage() {
     setPendingUserMessage(content);
 
     try {
-      await sendMessage.mutateAsync({
-        conversationId: activeConversationId,
-        data: { content },
-      });
+      await sendMessage.mutateAsync({ conversationId: convId, data: { content } });
     } catch (err: any) {
       const backendMsg = err?.data?.message;
-      const msg = backendMsg || err?.message || "Something went wrong. Please try again.";
-      const cleanMsg = msg.includes("ENCRYPTION_KEY") || msg.includes("Unsupported state")
-        ? "Your AI provider key could not be loaded. Please go to Settings → AI Providers, remove the key and add it again."
-        : msg;
+      const msg = backendMsg || err?.message || "Something went wrong.";
+      const cleanMsg =
+        msg.includes("ENCRYPTION_KEY") || msg.includes("Unsupported state")
+          ? "AI provider key could not be loaded. Re-add it in Settings \u2192 AI Providers."
+          : msg;
       setErrorMessage(cleanMsg);
     } finally {
       setPendingUserMessage(null);
@@ -111,7 +120,6 @@ export default function ChatPage() {
     }
   };
 
-  // No AI provider configured — show setup screen
   if (!loadingCredentials && !hasCredentials) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -121,8 +129,7 @@ export default function ChatPage() {
           </div>
           <h2 className="text-xl font-semibold">Set up an AI provider</h2>
           <p className="text-sm text-muted-foreground">
-            To start chatting, you need to connect an AI provider. Add your API
-            key for Claude, OpenAI, OpenRouter, or another supported provider.
+            Add your API key for Claude, OpenAI, OpenRouter, or another provider to start chatting.
           </p>
           <Button asChild>
             <Link href="/settings/ai">Go to AI Providers</Link>
@@ -133,213 +140,123 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-72 border-r border-border flex flex-col bg-muted/30">
-        <div className="p-3 border-b border-border flex items-center gap-2">
-          <Select
-            value={selectedCredentialId}
-            onValueChange={setSelectedCredentialId}
-          >
-            <SelectTrigger className="flex-1 h-8 text-xs">
-              <SelectValue placeholder="Select AI provider" />
-            </SelectTrigger>
-            <SelectContent>
-              {credentials.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.provider}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 shrink-0"
-            onClick={handleNewConversation}
-            disabled={createConversation.isPending || !selectedCredentialId}
-            title="New conversation"
-          >
-            {createConversation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <MessageSquarePlus className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {loadingConversations ? (
-            <div className="flex items-center justify-center p-4">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+    <div className="flex flex-col h-full">
+      {(!activeConversationId || (messages.length === 0 && !loadingConversation)) && !pendingUserMessage ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-8 max-w-xl px-4">
+            <div>
+              <Sparkles className="h-8 w-8 mx-auto mb-4 text-primary" />
+              <h2 className="text-2xl font-semibold">What can I help with?</h2>
             </div>
-          ) : conversations.length === 0 ? (
-            <div className="p-4 text-sm text-muted-foreground text-center">
-              No conversations yet.
-            </div>
-          ) : (
-            conversations.map((c) => (
-              <div
-                key={c.id}
-                className={`group flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors ${
-                  activeConversationId === c.id ? "bg-muted" : ""
-                }`}
-                onClick={() => {
-                  setActiveConversationId(c.id);
-                  setErrorMessage(null);
-                }}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">
-                    {c.title || "New conversation"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(c.updatedAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteConversation.mutate(c.id);
-                    if (activeConversationId === c.id) {
-                      setActiveConversationId(null);
-                    }
-                  }}
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {[
+                "List my repositories",
+                "Create a workflow",
+                "Show running sessions",
+                "Create a new task",
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => setInputValue(prompt)}
+                  className="text-left px-4 py-3 rounded-xl border border-border hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
                 >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            ))
-          )}
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Main area */}
-      <div className="flex-1 flex flex-col">
-        {!activeConversationId ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-4 max-w-md">
-              <Bot className="h-12 w-12 mx-auto text-muted-foreground" />
-              <h2 className="text-lg font-medium">mitshe AI Assistant</h2>
-              <p className="text-sm text-muted-foreground">
-                Create workflows, manage sessions, track tasks — all through
-                natural language.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground">
-                <span className="border rounded-full px-3 py-1">
-                  &ldquo;List my repositories&rdquo;
-                </span>
-                <span className="border rounded-full px-3 py-1">
-                  &ldquo;Create a workflow for PR reviews&rdquo;
-                </span>
-                <span className="border rounded-full px-3 py-1">
-                  &ldquo;Start a new session&rdquo;
-                </span>
+      ) : (
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+            {loadingConversation ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
+            ) : (
+              messages.map((msg) => (
+                <ChatMessage
+                  key={msg.id}
+                  role={msg.role}
+                  content={msg.content}
+                  toolUse={msg.toolUse as ChatToolCall[] | null}
+                />
+              ))
+            )}
+
+            {pendingUserMessage && (
+              <ChatMessage role="user" content={pendingUserMessage} toolUse={null} />
+            )}
+
+            {sendMessage.isPending && (
+              <div className="flex gap-4">
+                <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5 animate-pulse" />
+                <span className="text-sm text-muted-foreground">Thinking...</span>
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="flex gap-4">
+                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <div className="rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+                  {errorMessage}
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+      )}
+
+      {/* Input area */}
+      <div className="p-4 pb-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="rounded-2xl border border-border bg-muted/30 focus-within:border-primary/50 transition-colors overflow-hidden">
+            <textarea
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Reply..."
+              className="w-full min-h-[48px] max-h-[200px] resize-none text-sm bg-transparent px-4 pt-3.5 pb-1 outline-none placeholder:text-muted-foreground"
+              rows={1}
+              disabled={sendMessage.isPending}
+            />
+            <div className="flex items-center justify-between px-3 pb-2.5">
+              <Select value={selectedCredentialId} onValueChange={setSelectedCredentialId}>
+                <SelectTrigger className="h-7 w-auto gap-1.5 border-0 bg-transparent text-xs text-muted-foreground hover:text-foreground px-1.5 shadow-none focus:ring-0">
+                  <SelectValue placeholder="Provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  {credentials.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.provider}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
-                onClick={handleNewConversation}
-                disabled={!selectedCredentialId}
+                size="icon"
+                variant="ghost"
+                onClick={handleSend}
+                disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
+                className="h-7 w-7 rounded-lg"
               >
-                <MessageSquarePlus className="h-4 w-4 mr-2" />
-                New Conversation
+                {sendMessage.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
-        ) : (
-          <>
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {loadingConversation ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : messages.length === 0 && !sendMessage.isPending ? (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-sm text-muted-foreground">
-                    Send a message to get started.
-                  </p>
-                </div>
-              ) : (
-                messages.map((msg) => (
-                  <ChatMessageBubble
-                    key={msg.id}
-                    role={msg.role}
-                    content={msg.content}
-                    toolUse={msg.toolUse as ChatToolCall[] | null}
-                  />
-                ))
-              )}
-
-              {pendingUserMessage && (
-                <ChatMessageBubble
-                  role="user"
-                  content={pendingUserMessage}
-                  toolUse={null}
-                />
-              )}
-
-              {sendMessage.isPending && (
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Bot className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Thinking...
-                  </div>
-                </div>
-              )}
-
-              {errorMessage && (
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  </div>
-                  <div className="rounded-lg bg-destructive/5 border border-destructive/20 px-3 py-2 text-sm text-destructive max-w-lg">
-                    {errorMessage}
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div className="border-t border-border p-4">
-              <div className="flex gap-2">
-                <Textarea
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type your message... (Cmd+Enter to send)"
-                  className="min-h-[60px] max-h-[200px] resize-none"
-                  rows={2}
-                  disabled={sendMessage.isPending}
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={!inputValue.trim() || sendMessage.isPending}
-                  className="shrink-0 self-end"
-                >
-                  {sendMessage.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );
 }
 
-function ChatMessageBubble({
+/* ─── Chat message ─── */
+
+function ChatMessage({
   role,
   content,
   toolUse,
@@ -348,38 +265,30 @@ function ChatMessageBubble({
   content: string;
   toolUse: ChatToolCall[] | null;
 }) {
-  const isUser = role === "user";
+  if (role === "user") {
+    return (
+      <div className="flex justify-end">
+        <div className="rounded-2xl bg-primary text-primary-foreground px-4 py-2.5 text-sm max-w-[75%] whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}
-    >
-      <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-          isUser ? "bg-foreground/10" : "bg-primary/10"
-        }`}
-      >
-        {isUser ? (
-          <User className="h-4 w-4" />
-        ) : (
-          <Bot className="h-4 w-4 text-primary" />
-        )}
-      </div>
-      <div className={`flex-1 space-y-2 min-w-0 ${isUser ? "text-right" : ""}`}>
-        {content && (
-          <div
-            className={`inline-block rounded-lg px-3 py-2 text-sm whitespace-pre-wrap max-w-[80%] ${
-              isUser ? "bg-primary text-primary-foreground" : "bg-muted"
-            }`}
-          >
-            {content}
+    <div className="flex gap-4">
+      <Sparkles className="h-5 w-5 text-primary shrink-0 mt-1" />
+      <div className="flex-1 min-w-0 space-y-3">
+        {toolUse && toolUse.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {toolUse.map((tool, i) => (
+              <ToolChip key={i} toolCall={tool} />
+            ))}
           </div>
         )}
-        {toolUse && toolUse.length > 0 && (
-          <div className="space-y-1">
-            {toolUse.map((tool, i) => (
-              <ToolCallCard key={i} toolCall={tool} />
-            ))}
+        {content && (
+          <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-pre:my-3 prose-code:before:content-none prose-code:after:content-none prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-normal prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
           </div>
         )}
       </div>
@@ -387,57 +296,37 @@ function ChatMessageBubble({
   );
 }
 
-function ToolCallCard({ toolCall }: { toolCall: ChatToolCall }) {
-  const [expanded, setExpanded] = useState(false);
+/* ─── Tool chip ─── */
 
-  const label = toolCall.name
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (l) => l.toUpperCase());
+const TOOL_META: Record<string, { icon: React.ReactNode; color: string }> = {
+  session: { icon: <Terminal className="h-3 w-3" />, color: "text-emerald-500" },
+  workflow: { icon: <Workflow className="h-3 w-3" />, color: "text-blue-500" },
+  task: { icon: <ListTodo className="h-3 w-3" />, color: "text-amber-500" },
+  repository: { icon: <GitBranch className="h-3 w-3" />, color: "text-purple-500" },
+  integration: { icon: <Plug className="h-3 w-3" />, color: "text-cyan-500" },
+};
 
-  const resultMessage =
-    toolCall.result?.message || toolCall.result?.id
-      ? String(toolCall.result.message || `ID: ${toolCall.result.id}`)
+function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
+  const prefix = toolCall.name.split("_")[0];
+  const meta = TOOL_META[prefix] || { icon: <Zap className="h-3 w-3" />, color: "text-muted-foreground" };
+  const action = toolCall.name.replace(/^[^_]+_/, "").replace(/_/g, " ");
+  const resultMsg = toolCall.result?.message
+    ? String(toolCall.result.message)
+    : toolCall.result?.name
+      ? String(toolCall.result.name)
       : null;
 
   return (
-    <div className="border border-border rounded-md overflow-hidden text-left max-w-[80%]">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted/50 transition-colors"
-      >
-        <Wrench className="h-3 w-3 text-muted-foreground shrink-0" />
-        <span className="font-medium truncate">{label}</span>
-        {resultMessage && (
-          <span className="text-muted-foreground truncate ml-1">
-            — {resultMessage}
-          </span>
-        )}
-        <span className="ml-auto shrink-0">
-          {expanded ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronRight className="h-3 w-3" />
-          )}
-        </span>
-      </button>
-      {expanded && (
-        <div className="px-3 py-2 border-t border-border bg-muted/30 text-xs font-mono">
-          <div className="space-y-2">
-            <div>
-              <span className="text-muted-foreground font-sans">Input:</span>
-              <pre className="mt-0.5 whitespace-pre-wrap break-all">
-                {JSON.stringify(toolCall.input, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <span className="text-muted-foreground font-sans">Result:</span>
-              <pre className="mt-0.5 whitespace-pre-wrap break-all">
-                {JSON.stringify(toolCall.result, null, 2)}
-              </pre>
-            </div>
-          </div>
-        </div>
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/80 border border-border/50 px-2.5 py-1 text-xs">
+      <span className={meta.color}>{meta.icon}</span>
+      <span className="font-medium capitalize">{action}</span>
+      {resultMsg && (
+        <>
+          <span className="text-muted-foreground/50">&middot;</span>
+          <span className="text-muted-foreground truncate max-w-[200px]">{resultMsg}</span>
+        </>
       )}
-    </div>
+      <Check className="h-3 w-3 text-emerald-500" />
+    </span>
   );
 }
