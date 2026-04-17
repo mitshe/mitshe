@@ -7,7 +7,10 @@ import {
   RecreateSessionDto,
   UpdateSessionMetadataDto,
 } from '../dto/session.dto';
-import { SessionContainerConfig } from './session-container.service';
+import {
+  SessionContainerConfig,
+  SessionContainerService,
+} from './session-container.service';
 
 export interface RepoConfig {
   name: string;
@@ -30,6 +33,7 @@ export class SessionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
+    private readonly containerService: SessionContainerService,
   ) {}
 
   async create(organizationId: string, userId: string, dto: CreateSessionDto) {
@@ -124,10 +128,51 @@ export class SessionsService {
       this.prisma.agentSession.count({ where }),
     ]);
 
+    // Sync container states for sessions that claim to be RUNNING
+    await this.syncContainerStates(sessions);
+
     return {
       sessions,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  /**
+   * Check RUNNING/CREATING sessions against actual Docker container state.
+   * If container is gone or stopped, update DB status to COMPLETED.
+   */
+  private async syncContainerStates(
+    sessions: Array<{
+      id: string;
+      status: SessionStatus;
+      containerId: string | null;
+    }>,
+  ) {
+    const runningSessions = sessions.filter(
+      (s) =>
+        (s.status === 'RUNNING' || s.status === 'CREATING') && s.containerId,
+    );
+
+    if (runningSessions.length === 0) return;
+
+    await Promise.all(
+      runningSessions.map(async (session) => {
+        const state = await this.containerService.getContainerState(
+          session.containerId!,
+        );
+        if (state !== 'running') {
+          this.logger.warn(
+            `Session ${session.id} container is ${state}, marking as COMPLETED`,
+          );
+          session.status = 'COMPLETED' as SessionStatus;
+          (session as Record<string, unknown>).containerId = null;
+          await this.prisma.agentSession.update({
+            where: { id: session.id },
+            data: { status: 'COMPLETED', containerId: null },
+          });
+        }
+      }),
+    );
   }
 
   async findOne(organizationId: string, id: string) {
