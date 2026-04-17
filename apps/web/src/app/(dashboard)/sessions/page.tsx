@@ -218,20 +218,21 @@ export default function SessionsPage() {
   }, [defaultGithubId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open dialog when navigating with ?snapshot=id
+  const [snapshotHandled, setSnapshotHandled] = useState(false);
   useEffect(() => {
-    if (urlSnapshotId && readySnapshots.length > 0) {
-      const snap = readySnapshots.find((s: { id: string }) => s.id === urlSnapshotId);
-      if (snap) {
-        setForm((prev) => ({
-          ...prev,
-          baseImageId: urlSnapshotId,
-          name: `Session from ${(snap as { name: string }).name}`,
-          enableDocker: (snap as { enableDocker?: boolean }).enableDocker ?? prev.enableDocker,
-        }));
-        setIsDialogOpen(true);
-      }
+    if (snapshotHandled || !urlSnapshotId || snapshotsList.length === 0) return;
+    const snap = snapshotsList.find((s: { id: string; status: string }) => s.id === urlSnapshotId && s.status === "READY");
+    if (snap) {
+      setForm((prev) => ({
+        ...prev,
+        baseImageId: urlSnapshotId,
+        name: `Session from ${(snap as { name: string }).name}`,
+        enableDocker: (snap as { enableDocker?: boolean }).enableDocker ?? prev.enableDocker,
+      }));
+      setIsDialogOpen(true);
+      setSnapshotHandled(true);
     }
-  }, [urlSnapshotId, readySnapshots]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [urlSnapshotId, snapshotsList, snapshotHandled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openCreate = () => {
     setEditingId(null);
