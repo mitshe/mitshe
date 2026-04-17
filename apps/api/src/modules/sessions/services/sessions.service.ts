@@ -47,6 +47,7 @@ export class SessionsService {
         startArguments: dto.startArguments || null,
         environmentId: dto.environmentId || null,
         enableDocker: dto.enableDocker ?? false,
+        enableBrowser: dto.enableBrowser ?? false,
         baseImageId: dto.baseImageId || null,
         instructions: dto.instructions || '',
         createdBy: userId,

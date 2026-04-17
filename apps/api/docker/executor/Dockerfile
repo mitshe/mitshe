@@ -97,6 +97,9 @@ RUN ARCH=$(dpkg --print-architecture) && \
     rm /tmp/glab.deb \
     || echo "glab installation failed, skipping..."
 
+# Install Playwright dependencies (Chromium system libs)
+RUN npx playwright install-deps chromium
+
 # Install Docker CE for DinD support
 RUN curl -fsSL https://get.docker.com | sh
 
@@ -141,6 +144,9 @@ RUN git config --global init.defaultBranch main \
     && git config --global pull.rebase false \
     && git config --global user.email "executor@mitshe.com" \
     && git config --global user.name "Mitshe Executor"
+
+# Install Playwright + Chromium browser (as executor user)
+RUN npx playwright install chromium
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

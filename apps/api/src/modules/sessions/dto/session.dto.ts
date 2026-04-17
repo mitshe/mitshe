@@ -63,6 +63,11 @@ export class CreateSessionDto {
   @ApiPropertyOptional({ description: 'Enable Docker socket in container' })
   enableDocker?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Enable browser (Playwright/Chromium)' })
+  enableBrowser?: boolean;
+
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Base snapshot ID to start from' })

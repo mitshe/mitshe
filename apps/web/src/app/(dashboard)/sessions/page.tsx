@@ -181,6 +181,7 @@ export default function SessionsPage() {
     startArguments: "",
     environmentId: "",
     enableDocker: false,
+    enableBrowser: false,
     baseImageId: "",
     skillIds: [] as string[],
     instructions: "",
@@ -258,6 +259,7 @@ export default function SessionsPage() {
       startArguments: session.startArguments || "",
       environmentId: session.environmentId || "",
       enableDocker: session.enableDocker,
+      enableBrowser: session.enableBrowser ?? false,
       baseImageId: session.baseImageId || "",
       skillIds: [] as string[],
       instructions: session.instructions || "",
@@ -361,6 +363,7 @@ export default function SessionsPage() {
           startArguments: form.startArguments || undefined,
           environmentId: form.environmentId || undefined,
           enableDocker: form.enableDocker || undefined,
+          enableBrowser: form.enableBrowser || undefined,
           baseImageId: form.baseImageId || undefined,
           skillIds: form.skillIds.length > 0 ? form.skillIds : undefined,
           instructions: form.instructions || undefined,
@@ -830,6 +833,25 @@ export default function SessionsPage() {
                       }`}
                     >
                       Enable Docker-in-Docker
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="enableBrowser"
+                      checked={form.enableBrowser}
+                      onCheckedChange={(checked) =>
+                        setForm({ ...form, enableBrowser: checked === true })
+                      }
+                      disabled={configLocked}
+                    />
+                    <Label
+                      htmlFor="enableBrowser"
+                      className={`font-normal text-sm ${
+                        configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                      }`}
+                    >
+                      Enable browser (Playwright/Chromium for E2E testing)
                     </Label>
                   </div>
 

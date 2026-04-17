@@ -702,6 +702,7 @@ model AgentSession {
   startArguments    String?       @map("start_arguments")
   environmentId     String?       @map("environment_id")
   enableDocker      Boolean       @default(false) @map("enable_docker")
+  enableBrowser     Boolean       @default(false) @map("enable_browser")
   baseImageId       String?       @map("base_image_id")
   status            SessionStatus @default(CREATING)
   aiCredentialId    String?       @map("ai_credential_id")
