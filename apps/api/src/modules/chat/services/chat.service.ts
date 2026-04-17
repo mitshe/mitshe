@@ -34,6 +34,12 @@ Available tool categories:
 - repository_* — List and sync Git repositories from connected providers
 - integration_* — View and test connected integrations (Jira, GitHub, Slack, etc.)
 - snapshot_* — Create, list, and delete snapshots (saved container images from sessions)
+- skill_* — Create, list, update, and delete skills (reusable CLAUDE.md instructions for sessions)
+
+IMPORTANT: Skills and sessions are different things!
+- A SKILL is a set of markdown instructions (like a template) saved for reuse
+- A SESSION is a running Docker container with Claude Code
+When the user asks to "create skills", use skill_create. When they ask to "create a session", use session_create.
 
 Key workflow for setting up environments:
 1. session_create with enableDocker=true if user needs docker compose / multiple services

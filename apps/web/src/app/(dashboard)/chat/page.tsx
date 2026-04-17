@@ -317,6 +317,7 @@ const TOOL_META: Record<string, { icon: React.ReactNode; color: string; basePath
   repository: { icon: <GitBranch className="h-3 w-3" />, color: "text-purple-500", basePath: "/settings/repositories" },
   integration: { icon: <Plug className="h-3 w-3" />, color: "text-cyan-500", basePath: "/settings/integrations" },
   snapshot: { icon: <HardDrive className="h-3 w-3" />, color: "text-orange-500", basePath: "/images" },
+  skill: { icon: <Zap className="h-3 w-3" />, color: "text-yellow-500", basePath: "/skills" },
 };
 
 function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {

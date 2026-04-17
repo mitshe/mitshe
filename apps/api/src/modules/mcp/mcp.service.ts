@@ -7,6 +7,7 @@ import { TaskTools } from './tools/task.tools';
 import { RepositoryTools } from './tools/repository.tools';
 import { IntegrationTools } from './tools/integration.tools';
 import { SnapshotTools } from './tools/snapshot.tools';
+import { SkillTools } from './tools/skill.tools';
 
 @Injectable()
 export class McpService {
@@ -20,6 +21,7 @@ export class McpService {
     private readonly repositoryTools: RepositoryTools,
     private readonly integrationTools: IntegrationTools,
     private readonly snapshotTools: SnapshotTools,
+    private readonly skillTools: SkillTools,
   ) {
     this.registerTools();
   }
@@ -32,6 +34,7 @@ export class McpService {
       ...this.repositoryTools.getTools(),
       ...this.integrationTools.getTools(),
       ...this.snapshotTools.getTools(),
+      ...this.skillTools.getTools(),
     ];
 
     for (const tool of allTools) {
