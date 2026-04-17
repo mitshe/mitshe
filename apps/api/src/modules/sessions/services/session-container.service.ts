@@ -202,9 +202,7 @@ export class SessionContainerService implements OnModuleInit {
   async restartContainer(containerId: string): Promise<void> {
     const container = this.docker.getContainer(containerId);
     await container.start();
-    this.logger.log(
-      `Restarted stopped container: ${containerId.slice(0, 12)}`,
-    );
+    this.logger.log(`Restarted stopped container: ${containerId.slice(0, 12)}`);
   }
 
   // ─── Clone Operations ───────────────────────────────────────────
@@ -215,14 +213,17 @@ export class SessionContainerService implements OnModuleInit {
    */
   async commitContainer(
     containerId: string,
-    sessionId: string,
+    imageTag: string,
   ): Promise<string> {
     const container = this.docker.getContainer(containerId);
     const repo = 'mitshe-clone';
-    const tag = sessionId;
 
-    await container.commit({ repo, tag, comment: `Clone snapshot of session ${sessionId}` });
-    const imageName = `${repo}:${tag}`;
+    await container.commit({
+      repo,
+      tag: imageTag,
+      comment: `Snapshot ${imageTag}`,
+    });
+    const imageName = `${repo}:${imageTag}`;
     this.logger.log(
       `Committed container ${containerId.slice(0, 12)} → image ${imageName}`,
     );
@@ -279,15 +280,12 @@ export class SessionContainerService implements OnModuleInit {
             ? [`mitshe-dind-${config.sessionId}:/var/lib/docker`]
             : []),
         ],
-        Memory:
-          (config.environment?.memoryMb || 4096) * 1024 * 1024,
+        Memory: (config.environment?.memoryMb || 4096) * 1024 * 1024,
         NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
         PidsLimit: config.enableDocker ? 1024 : 512,
         NetworkMode: process.env.DOCKER_NETWORK || 'bridge',
         Privileged: config.enableDocker || false,
-        SecurityOpt: config.enableDocker
-          ? []
-          : ['no-new-privileges:true'],
+        SecurityOpt: config.enableDocker ? [] : ['no-new-privileges:true'],
         CapDrop: config.enableDocker ? [] : ['ALL'],
         CapAdd: config.enableDocker
           ? []

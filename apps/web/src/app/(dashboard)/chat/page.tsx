@@ -33,6 +33,7 @@ import {
   Check,
   Sparkles,
   ExternalLink,
+  HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatToolCall } from "@mitshe/types";
@@ -315,6 +316,7 @@ const TOOL_META: Record<string, { icon: React.ReactNode; color: string; basePath
   task: { icon: <ListTodo className="h-3 w-3" />, color: "text-amber-500", basePath: "/tasks" },
   repository: { icon: <GitBranch className="h-3 w-3" />, color: "text-purple-500", basePath: "/settings/repositories" },
   integration: { icon: <Plug className="h-3 w-3" />, color: "text-cyan-500", basePath: "/settings/integrations" },
+  snapshot: { icon: <HardDrive className="h-3 w-3" />, color: "text-orange-500", basePath: "/images" },
 };
 
 function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {

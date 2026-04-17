@@ -442,8 +442,22 @@ export class UsersService {
 
   async createMember(
     organizationId: string,
-    dto: { email: string; firstName?: string; lastName?: string; role?: OrganizationRole; password?: string },
-  ): Promise<{ user: { id: string; email: string; firstName: string | null; lastName: string | null }; generatedPassword?: string }> {
+    dto: {
+      email: string;
+      firstName?: string;
+      lastName?: string;
+      role?: OrganizationRole;
+      password?: string;
+    },
+  ): Promise<{
+    user: {
+      id: string;
+      email: string;
+      firstName: string | null;
+      lastName: string | null;
+    };
+    generatedPassword?: string;
+  }> {
     if (!this.isValidEmail(dto.email)) {
       throw new BadRequestException('Invalid email format');
     }
@@ -451,15 +465,22 @@ export class UsersService {
     const email = dto.email.toLowerCase();
 
     // Check if user already exists
-    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
     if (existingUser) {
       // Check if already a member
-      const existingMembership = await this.prisma.organizationMember.findUnique({
-        where: { organizationId_userId: { organizationId, userId: existingUser.id } },
-      });
+      const existingMembership =
+        await this.prisma.organizationMember.findUnique({
+          where: {
+            organizationId_userId: { organizationId, userId: existingUser.id },
+          },
+        });
       if (existingMembership) {
-        throw new ConflictException('User is already a member of this organization');
+        throw new ConflictException(
+          'User is already a member of this organization',
+        );
       }
 
       // Add existing user to org
@@ -544,7 +565,9 @@ export class UsersService {
     });
 
     if (!membership) {
-      throw new BadRequestException('User is not a member of this organization');
+      throw new BadRequestException(
+        'User is not a member of this organization',
+      );
     }
 
     if (membership.role === 'OWNER') {
@@ -556,13 +579,19 @@ export class UsersService {
     });
   }
 
-  async updateMemberRole(organizationId: string, userId: string, role: OrganizationRole) {
+  async updateMemberRole(
+    organizationId: string,
+    userId: string,
+    role: OrganizationRole,
+  ) {
     const membership = await this.prisma.organizationMember.findUnique({
       where: { organizationId_userId: { organizationId, userId } },
     });
 
     if (!membership) {
-      throw new BadRequestException('User is not a member of this organization');
+      throw new BadRequestException(
+        'User is not a member of this organization',
+      );
     }
 
     if (membership.role === 'OWNER') {
@@ -576,9 +605,12 @@ export class UsersService {
   }
 
   private generatePassword(): string {
-    const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+    const chars =
+      'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
     const bytes = crypto.randomBytes(14);
-    return Array.from(bytes).map(b => chars[b % chars.length]).join('');
+    return Array.from(bytes)
+      .map((b) => chars[b % chars.length])
+      .join('');
   }
 
   // ============================================================================

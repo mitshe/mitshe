@@ -32,6 +32,7 @@ Available tool categories:
 - task_* — Create, update, track, and process tasks
 - repository_* — List and sync Git repositories from connected providers
 - integration_* — View and test connected integrations (Jira, GitHub, Slack, etc.)
+- snapshot_* — Create, list, and delete snapshots (saved container images from sessions)
 
 Be concise. When you perform an action, briefly confirm what happened with the key details (ID, name, status).
 If unsure what the user wants, ask for clarification before acting.`;

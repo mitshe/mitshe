@@ -97,9 +97,7 @@ export class TrelloAdapter implements IssueTrackerPort {
       closed: card.closed,
       idBoard: card.idBoard,
       idList: card.idList,
-      board: card.board
-        ? { id: card.board.id, name: card.board.name }
-        : null,
+      board: card.board ? { id: card.board.id, name: card.board.name } : null,
       list: card.list ? { id: card.list.id, name: card.list.name } : null,
       labels: (card.labels || []).map((l: any) => ({
         id: l.id,
@@ -185,8 +183,7 @@ export class TrelloAdapter implements IssueTrackerPort {
         ? input.status.map((s) => s.toLowerCase())
         : [input.status.toLowerCase()];
       filteredCards = cards.filter(
-        (c: any) =>
-          c.list && statuses.includes(c.list.name?.toLowerCase()),
+        (c: any) => c.list && statuses.includes(c.list.name?.toLowerCase()),
       );
     }
 
@@ -206,9 +203,7 @@ export class TrelloAdapter implements IssueTrackerPort {
     );
 
     if (!lists || lists.length === 0) {
-      throw new Error(
-        `No open lists found on board ${input.projectKey}`,
-      );
+      throw new Error(`No open lists found on board ${input.projectKey}`);
     }
 
     // Use the first list by default

@@ -10,7 +10,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { AuthGuard } from '../../../shared/auth';
 import {
   OrganizationId,
@@ -36,7 +41,11 @@ export class ImagesController {
     @UserId() userId: string,
     @Body() dto: CreateImageDto,
   ) {
-    const snapshot = await this.imagesService.create(organizationId, userId, dto);
+    const snapshot = await this.imagesService.create(
+      organizationId,
+      userId,
+      dto,
+    );
     return { snapshot };
   }
 

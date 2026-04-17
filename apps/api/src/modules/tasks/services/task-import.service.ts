@@ -224,7 +224,9 @@ export class TaskImportService {
       const trelloAdapter = await this.getTrelloAdapter(organizationId);
 
       if (!trelloAdapter) {
-        throw new BadRequestException('Trello integration no longer configured');
+        throw new BadRequestException(
+          'Trello integration no longer configured',
+        );
       }
 
       const { issue, raw } = await trelloAdapter.getRawCard(cardId);
@@ -397,11 +399,10 @@ export class TaskImportService {
       return null;
     }
 
-    const adapter =
-      await this.adapterFactory.createIssueTrackerFromIntegration(
-        organizationId,
-        integration.id,
-      );
+    const adapter = await this.adapterFactory.createIssueTrackerFromIntegration(
+      organizationId,
+      integration.id,
+    );
 
     if (!adapter || adapter.getProviderType() !== 'trello') {
       return null;

@@ -43,6 +43,7 @@ export class SessionsService {
         startArguments: dto.startArguments || null,
         environmentId: dto.environmentId || null,
         enableDocker: dto.enableDocker ?? false,
+        baseImageId: dto.baseImageId || null,
         instructions: dto.instructions || '',
         createdBy: userId,
         repositories: {
@@ -72,9 +73,25 @@ export class SessionsService {
     return session;
   }
 
+  async resolveSnapshotImage(
+    baseImageId: string,
+    organizationId: string,
+  ): Promise<string | undefined> {
+    const snapshot = await this.prisma.baseImage.findFirst({
+      where: { id: baseImageId, organizationId, status: 'READY' },
+      select: { dockerImage: true },
+    });
+    return snapshot?.dockerImage || undefined;
+  }
+
   async findAll(
     organizationId: string,
-    filters?: { status?: SessionStatus; projectId?: string; page?: number; limit?: number },
+    filters?: {
+      status?: SessionStatus;
+      projectId?: string;
+      page?: number;
+      limit?: number;
+    },
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
@@ -224,7 +241,10 @@ export class SessionsService {
       }
     });
 
-    return { session: await this.findOne(organizationId, id), previous: current };
+    return {
+      session: await this.findOne(organizationId, id),
+      previous: current,
+    };
   }
 
   async remove(organizationId: string, id: string) {
@@ -296,15 +316,26 @@ export class SessionsService {
   }
 
   async buildRepoConfigs(
-    repositories: Array<{ repository: { cloneUrl: string; name: string; defaultBranch: string; provider: string; integrationId: string } }>,
+    repositories: Array<{
+      repository: {
+        cloneUrl: string;
+        name: string;
+        defaultBranch: string;
+        provider: string;
+        integrationId: string;
+      };
+    }>,
     organizationId: string,
   ): Promise<RepoConfig[]> {
-    const integrationIds = [...new Set(repositories.map((sr) => sr.repository.integrationId))];
-    const integrations = integrationIds.length > 0
-      ? await this.prisma.integration.findMany({
-          where: { id: { in: integrationIds }, organizationId },
-        })
-      : [];
+    const integrationIds = [
+      ...new Set(repositories.map((sr) => sr.repository.integrationId)),
+    ];
+    const integrations =
+      integrationIds.length > 0
+        ? await this.prisma.integration.findMany({
+            where: { id: { in: integrationIds }, organizationId },
+          })
+        : [];
 
     const tokenMap = new Map<string, string>();
     for (const integration of integrations) {
@@ -335,7 +366,11 @@ export class SessionsService {
         }
         cloneUrl = url.toString();
       }
-      return { name: sr.repository.name, cloneUrl, branch: sr.repository.defaultBranch };
+      return {
+        name: sr.repository.name,
+        cloneUrl,
+        branch: sr.repository.defaultBranch,
+      };
     });
   }
 
@@ -348,15 +383,20 @@ export class SessionsService {
     let integrationIds = sessionIntegrationIds || [];
 
     if (integrationIds.length === 0 && environmentId) {
-      const envIntegrations = await this.prisma.environmentIntegration.findMany({
-        where: { environmentId },
-        select: { integrationId: true },
-      });
+      const envIntegrations = await this.prisma.environmentIntegration.findMany(
+        {
+          where: { environmentId },
+          select: { integrationId: true },
+        },
+      );
       integrationIds = envIntegrations.map((ei) => ei.integrationId);
 
       if (integrationIds.length > 0 && sessionId) {
         await this.prisma.sessionIntegration.createMany({
-          data: integrationIds.map((integrationId) => ({ sessionId, integrationId })),
+          data: integrationIds.map((integrationId) => ({
+            sessionId,
+            integrationId,
+          })),
         });
       }
     }
@@ -364,7 +404,11 @@ export class SessionsService {
     if (integrationIds.length === 0) return [];
 
     const integrations = await this.prisma.integration.findMany({
-      where: { id: { in: integrationIds }, organizationId, status: 'CONNECTED' },
+      where: {
+        id: { in: integrationIds },
+        organizationId,
+        status: 'CONNECTED',
+      },
     });
 
     const configs: IntegrationConfig[] = [];

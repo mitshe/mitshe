@@ -5,10 +5,12 @@ import { WorkflowTools } from './tools/workflow.tools';
 import { TaskTools } from './tools/task.tools';
 import { RepositoryTools } from './tools/repository.tools';
 import { IntegrationTools } from './tools/integration.tools';
+import { SnapshotTools } from './tools/snapshot.tools';
 import { WorkflowsModule } from '../workflows/workflows.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { RepositoriesModule } from '../repositories/repositories.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { ImagesModule } from '../images/images.module';
 
 @Global()
 @Module({
@@ -17,6 +19,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     TasksModule,
     RepositoriesModule,
     IntegrationsModule,
+    ImagesModule,
   ],
   providers: [
     McpService,
@@ -25,6 +28,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     TaskTools,
     RepositoryTools,
     IntegrationTools,
+    SnapshotTools,
   ],
   exports: [McpService],
 })

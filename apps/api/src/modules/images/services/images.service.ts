@@ -55,7 +55,8 @@ export class ImagesService {
           snapshot.id,
         );
 
-        const sizeBytes = await this.containerService.getImageSize(dockerImageName);
+        const sizeBytes =
+          await this.containerService.getImageSize(dockerImageName);
 
         await this.prisma.baseImage.update({
           where: { id: snapshot.id },
@@ -66,8 +67,14 @@ export class ImagesService {
           },
         });
 
-        this.eventsGateway.emitSnapshotStatus(organizationId, snapshot.id, 'READY');
-        this.logger.log(`Snapshot "${dto.name}" created from session ${dto.sessionId}`);
+        this.eventsGateway.emitSnapshotStatus(
+          organizationId,
+          snapshot.id,
+          'READY',
+        );
+        this.logger.log(
+          `Snapshot "${dto.name}" created from session ${dto.sessionId}`,
+        );
       } catch (error) {
         this.logger.error(
           `Failed to create snapshot: ${(error as Error).message}`,
@@ -77,7 +84,10 @@ export class ImagesService {
           data: { status: 'FAILED' },
         });
         this.eventsGateway.emitSnapshotStatus(
-          organizationId, snapshot.id, 'FAILED', (error as Error).message,
+          organizationId,
+          snapshot.id,
+          'FAILED',
+          (error as Error).message,
         );
       }
     });

@@ -86,7 +86,12 @@ export const knowledgeBaseRegistry = new AdapterRegistry<KnowledgeBasePort>(
 );
 
 // Issue tracker types for type checking
-export const ISSUE_TRACKER_TYPES = ['JIRA', 'YOUTRACK', 'LINEAR', 'TRELLO'] as const;
+export const ISSUE_TRACKER_TYPES = [
+  'JIRA',
+  'YOUTRACK',
+  'LINEAR',
+  'TRELLO',
+] as const;
 export type IssueTrackerType = (typeof ISSUE_TRACKER_TYPES)[number];
 
 // Git provider types

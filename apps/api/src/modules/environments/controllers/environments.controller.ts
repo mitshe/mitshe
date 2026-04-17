@@ -22,7 +22,10 @@ import {
   UpdateEnvironmentDto,
 } from '../dto/environment.dto';
 import { AuthGuard } from '@/shared/auth';
-import { OrganizationId, UserId } from '../../../shared/decorators/organization.decorator';
+import {
+  OrganizationId,
+  UserId,
+} from '../../../shared/decorators/organization.decorator';
 import { ApiRateLimit } from '../../../shared/decorators/throttle.decorator';
 
 @ApiTags('Environments')

@@ -38,7 +38,10 @@ import {
   SessionDetailResponseDto,
 } from '../dto/session.dto';
 import { AuthGuard } from '@/shared/auth';
-import { OrganizationId, UserId } from '../../../shared/decorators/organization.decorator';
+import {
+  OrganizationId,
+  UserId,
+} from '../../../shared/decorators/organization.decorator';
 import { ApiRateLimit } from '../../../shared/decorators/throttle.decorator';
 
 @ApiTags('Sessions')
@@ -88,13 +91,30 @@ export class SessionsController {
       dto,
     );
 
+    // Resolve snapshot image if baseImageId is provided
+    const snapshotImage = dto.baseImageId
+      ? await this.sessionsService.resolveSnapshotImage(
+          dto.baseImageId,
+          organizationId,
+        )
+      : undefined;
+
     const [repos, integrationConfigs, envConfig] = await Promise.all([
-      this.sessionsService.buildRepoConfigs(session.repositories, organizationId),
+      this.sessionsService.buildRepoConfigs(
+        session.repositories,
+        organizationId,
+      ),
       this.sessionsService.resolveIntegrationConfigs(
-        dto.integrationIds, organizationId, dto.environmentId, session.id,
+        dto.integrationIds,
+        organizationId,
+        dto.environmentId,
+        session.id,
       ),
       dto.environmentId
-        ? this.sessionsService.loadEnvironmentConfig(dto.environmentId, organizationId)
+        ? this.sessionsService.loadEnvironmentConfig(
+            dto.environmentId,
+            organizationId,
+          )
         : undefined,
     ]);
 
@@ -109,15 +129,28 @@ export class SessionsController {
           provider: session.aiCredential?.provider,
           enableDocker: session.enableDocker,
           environment: envConfig,
-          integrations: integrationConfigs.length > 0 ? integrationConfigs : undefined,
+          integrations:
+            integrationConfigs.length > 0 ? integrationConfigs : undefined,
+          image: snapshotImage,
         });
 
-        await this.sessionsService.updateStatus(session.id, 'RUNNING', containerId);
-        this.eventsGateway.emitSessionStatus(organizationId, session.id, 'RUNNING');
+        await this.sessionsService.updateStatus(
+          session.id,
+          'RUNNING',
+          containerId,
+        );
+        this.eventsGateway.emitSessionStatus(
+          organizationId,
+          session.id,
+          'RUNNING',
+        );
       } catch (err) {
         await this.sessionsService.updateStatus(session.id, 'FAILED');
         this.eventsGateway.emitSessionStatus(
-          organizationId, session.id, 'FAILED', (err as Error).message,
+          organizationId,
+          session.id,
+          'FAILED',
+          (err as Error).message,
         );
       }
     });
@@ -140,7 +173,10 @@ export class SessionsController {
     @Query('limit') limit?: string,
   ) {
     const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit || '20', 10) || 20));
+    const limitNum = Math.min(
+      100,
+      Math.max(1, parseInt(limit || '20', 10) || 20),
+    );
 
     return this.sessionsService.findAll(organizationId, {
       status,
@@ -211,10 +247,12 @@ export class SessionsController {
       let snapshotImage: string | null = null;
       try {
         if (previousContainerId) {
-          const state = await this.containerService.getContainerState(previousContainerId);
+          const state =
+            await this.containerService.getContainerState(previousContainerId);
           if (state !== 'gone') {
             snapshotImage = await this.containerService.commitContainer(
-              previousContainerId, `${id}-${Date.now()}`,
+              previousContainerId,
+              `${id}-${Date.now()}`,
             );
           }
         }
@@ -225,14 +263,24 @@ export class SessionsController {
           await this.containerService.removeContainer(previousContainerId);
         }
 
-        const sessionIntegrationIds = session.integrations.map((i) => i.integrationId);
+        const sessionIntegrationIds = session.integrations.map(
+          (i) => i.integrationId,
+        );
         const [repos, integrationConfigs, envConfig] = await Promise.all([
-          this.sessionsService.buildRepoConfigs(session.repositories, organizationId),
+          this.sessionsService.buildRepoConfigs(
+            session.repositories,
+            organizationId,
+          ),
           this.sessionsService.resolveIntegrationConfigs(
-            sessionIntegrationIds, organizationId, session.environmentId,
+            sessionIntegrationIds,
+            organizationId,
+            session.environmentId,
           ),
           session.environmentId
-            ? this.sessionsService.loadEnvironmentConfig(session.environmentId, organizationId)
+            ? this.sessionsService.loadEnvironmentConfig(
+                session.environmentId,
+                organizationId,
+              )
             : undefined,
         ]);
 
@@ -244,7 +292,8 @@ export class SessionsController {
           provider: session.aiCredential?.provider,
           enableDocker: session.enableDocker,
           environment: envConfig,
-          integrations: integrationConfigs.length > 0 ? integrationConfigs : undefined,
+          integrations:
+            integrationConfigs.length > 0 ? integrationConfigs : undefined,
           image: snapshotImage ?? undefined,
         });
 
@@ -257,7 +306,10 @@ export class SessionsController {
       } catch (err) {
         await this.sessionsService.updateStatus(id, 'FAILED');
         this.eventsGateway.emitSessionStatus(
-          organizationId, id, 'FAILED', (err as Error).message,
+          organizationId,
+          id,
+          'FAILED',
+          (err as Error).message,
         );
       }
     });
@@ -298,16 +350,10 @@ export class SessionsController {
     );
 
     if (!sourceSession.containerId) {
-      throw new BadRequestException(
-        'Source session has no container to clone',
-      );
+      throw new BadRequestException('Source session has no container to clone');
     }
 
-    const cloned = await this.sessionsService.clone(
-      organizationId,
-      userId,
-      id,
-    );
+    const cloned = await this.sessionsService.clone(organizationId, userId, id);
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     setImmediate(async () => {
@@ -319,7 +365,10 @@ export class SessionsController {
         );
 
         const envConfig = sourceSession.environmentId
-          ? await this.sessionsService.loadEnvironmentConfig(sourceSession.environmentId, organizationId)
+          ? await this.sessionsService.loadEnvironmentConfig(
+              sourceSession.environmentId,
+              organizationId,
+            )
           : undefined;
 
         // 2. Create new container from committed image
@@ -394,7 +443,9 @@ export class SessionsController {
     }
 
     if (!session.containerId) {
-      throw new BadRequestException('No container associated with this session');
+      throw new BadRequestException(
+        'No container associated with this session',
+      );
     }
 
     const containerState = await this.containerService.getContainerState(

@@ -38,7 +38,9 @@ function getOrGenerateSecret(envVar: string, name: string): string {
     fs.mkdirSync(secretsDir, { recursive: true, mode: 0o700 });
     fs.writeFileSync(secretFile, generated, { mode: 0o600 });
   } catch (err) {
-    console.warn(`[mitshe] Could not persist ${name}: ${(err as Error).message}`);
+    console.warn(
+      `[mitshe] Could not persist ${name}: ${(err as Error).message}`,
+    );
   }
 
   process.env[envVar] = generated;

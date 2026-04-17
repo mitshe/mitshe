@@ -193,10 +193,7 @@ export class TrelloWebhookController {
     secret: string,
   ): boolean {
     try {
-      const content = Buffer.concat([
-        payload,
-        Buffer.from(callbackUrl),
-      ]);
+      const content = Buffer.concat([payload, Buffer.from(callbackUrl)]);
 
       const hmac = crypto.createHmac('sha1', secret);
       hmac.update(content);
@@ -220,11 +217,7 @@ export class TrelloWebhookController {
   private sanitizeHeaders(
     headers: Record<string, string>,
   ): Record<string, string> {
-    const allowedHeaders = [
-      'content-type',
-      'x-trello-webhook',
-      'user-agent',
-    ];
+    const allowedHeaders = ['content-type', 'x-trello-webhook', 'user-agent'];
 
     return Object.keys(headers)
       .filter((key) => allowedHeaders.includes(key.toLowerCase()))

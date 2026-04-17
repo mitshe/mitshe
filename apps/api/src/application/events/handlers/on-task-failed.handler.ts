@@ -80,9 +80,7 @@ export class OnTaskFailedHandler implements IEventHandler<TaskFailedEvent> {
         },
       );
 
-      this.logger.log(
-        `Failure notification sent for task ${event.taskId}`,
-      );
+      this.logger.log(`Failure notification sent for task ${event.taskId}`);
     } catch (error) {
       this.logger.warn(
         `Failed to send notification for task ${event.taskId}: ${(error as Error).message}`,

@@ -124,7 +124,9 @@ export class OnTaskCompletedHandler implements IEventHandler<TaskCompletedEvent>
 
       await issueTracker.addComment(task.externalIssueId, comment);
 
-      this.logger.log(`Issue tracker comment added for ${task.externalIssueId}`);
+      this.logger.log(
+        `Issue tracker comment added for ${task.externalIssueId}`,
+      );
     } catch (error) {
       this.logger.warn(
         `Failed to update issue ${task.externalIssueId}: ${(error as Error).message}`,

@@ -15,7 +15,13 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { IsEmail, IsString, IsOptional, MinLength, IsIn } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  IsOptional,
+  MinLength,
+  IsIn,
+} from 'class-validator';
 import { OrganizationRole } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from './users.service';
@@ -320,7 +326,9 @@ export class UsersController {
   @Get('team/members')
   @UseGuards(AuthGuard)
   async listMembers(@Req() req: AuthenticatedRequest) {
-    const members = await this.usersService.listMembers(req.auth.organizationId);
+    const members = await this.usersService.listMembers(
+      req.auth.organizationId,
+    );
     return members.map((m) => ({
       id: m.id,
       userId: m.user.id,
@@ -337,19 +345,24 @@ export class UsersController {
     @Body() dto: CreateMemberDto,
   ) {
     // Only OWNER and ADMIN can add members
-    const callerMembership = await this.usersService.listMembers(req.auth.organizationId);
+    const callerMembership = await this.usersService.listMembers(
+      req.auth.organizationId,
+    );
     const caller = callerMembership.find((m) => m.user.id === req.auth.userId);
     if (!caller || !['OWNER', 'ADMIN'].includes(caller.role)) {
       throw new ForbiddenException('Only admins can add team members');
     }
 
-    const result = await this.usersService.createMember(req.auth.organizationId, {
-      email: dto.email,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
-      role: dto.role || 'MEMBER',
-      password: dto.password,
-    });
+    const result = await this.usersService.createMember(
+      req.auth.organizationId,
+      {
+        email: dto.email,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        role: dto.role || 'MEMBER',
+        password: dto.password,
+      },
+    );
 
     return result;
   }
@@ -361,13 +374,19 @@ export class UsersController {
     @Param('userId') userId: string,
     @Body() dto: UpdateMemberRoleDto,
   ) {
-    const callerMembership = await this.usersService.listMembers(req.auth.organizationId);
+    const callerMembership = await this.usersService.listMembers(
+      req.auth.organizationId,
+    );
     const caller = callerMembership.find((m) => m.user.id === req.auth.userId);
     if (!caller || !['OWNER', 'ADMIN'].includes(caller.role)) {
       throw new ForbiddenException('Only admins can change roles');
     }
 
-    await this.usersService.updateMemberRole(req.auth.organizationId, userId, dto.role);
+    await this.usersService.updateMemberRole(
+      req.auth.organizationId,
+      userId,
+      dto.role,
+    );
     return { status: 'ok' };
   }
 
@@ -378,7 +397,9 @@ export class UsersController {
     @Req() req: AuthenticatedRequest,
     @Param('userId') userId: string,
   ) {
-    const callerMembership = await this.usersService.listMembers(req.auth.organizationId);
+    const callerMembership = await this.usersService.listMembers(
+      req.auth.organizationId,
+    );
     const caller = callerMembership.find((m) => m.user.id === req.auth.userId);
     if (!caller || !['OWNER', 'ADMIN'].includes(caller.role)) {
       throw new ForbiddenException('Only admins can remove members');

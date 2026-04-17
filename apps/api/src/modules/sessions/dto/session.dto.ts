@@ -62,6 +62,11 @@ export class CreateSessionDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Enable Docker socket in container' })
   enableDocker?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Base snapshot ID to start from' })
+  baseImageId?: string;
 }
 
 export class UpdateSessionMetadataDto {
