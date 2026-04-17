@@ -54,6 +54,9 @@ import type {
   CreateConversationDto,
   SendMessageDto,
   SendMessageResponse,
+  Skill,
+  CreateSkillDto,
+  UpdateSkillDto,
 } from "./types";
 
 // API requests go through Next.js proxy (same-origin, no CORS issues)
@@ -832,6 +835,34 @@ export const api = {
       request<SendMessageResponse>(`/chat/conversations/${id}/messages`, {
         method: "POST",
         body: JSON.stringify(data),
+        token,
+      }),
+  },
+
+  skills: {
+    list: (token: string) =>
+      request<{ skills: Skill[] }>("/skills", { token }),
+
+    get: (id: string, token: string) =>
+      request<{ skill: Skill }>(`/skills/${id}`, { token }),
+
+    create: (data: CreateSkillDto, token: string) =>
+      request<{ skill: Skill }>("/skills", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    update: (id: string, data: UpdateSkillDto, token: string) =>
+      request<{ skill: Skill }>(`/skills/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        token,
+      }),
+
+    delete: (id: string, token: string) =>
+      request<void>(`/skills/${id}`, {
+        method: "DELETE",
         token,
       }),
   },

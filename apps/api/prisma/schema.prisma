@@ -107,6 +107,7 @@ model Organization {
   agentSessions     AgentSession[]
   baseImages        BaseImage[]
   chatConversations ChatConversation[]
+  skills            Skill[]
 
   @@index([ownerId])
   @@map("organizations")
@@ -801,6 +802,29 @@ model BaseImage {
 
   @@index([organizationId])
   @@map("base_images")
+}
+
+// ============================================================================
+// SKILLS (Reusable instructions for Claude Code)
+// ============================================================================
+
+model Skill {
+  id             String  @id @default(cuid())
+  organizationId String? @map("organization_id") // null = system skill
+  name           String
+  description    String?
+  category       String? // testing, devops, backend, frontend, etc.
+  instructions   String  // markdown content appended to CLAUDE.md
+  isSystem       Boolean @default(false) @map("is_system")
+  createdBy      String? @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("skills")
 }
 
 // ============================================================================

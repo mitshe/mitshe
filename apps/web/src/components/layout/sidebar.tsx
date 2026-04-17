@@ -26,6 +26,7 @@ import {
   Trash2,
   Loader2,
   MoreHorizontal,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,7 @@ const settingsNavItems: NavItem[] = [
 const workspaceNavItems: NavItem[] = [
   { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "AI agent terminals" },
   { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots", description: "Reusable container images" },
+  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills", description: "Instructions for Claude Code" },
 ];
 
 // ─── Mode config ───
@@ -106,7 +108,7 @@ const MODES: { key: SidebarMode; label: string; icon: React.ComponentType<{ clas
 
 function getModeFromPath(pathname: string): SidebarMode {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return "chat";
-  if (pathname.startsWith("/sessions") || pathname.startsWith("/presets") || pathname.startsWith("/environments") || pathname.startsWith("/images")) return "workspace";
+  if (pathname.startsWith("/sessions") || pathname.startsWith("/presets") || pathname.startsWith("/environments") || pathname.startsWith("/images") || pathname.startsWith("/skills")) return "workspace";
   return "manage";
 }
 

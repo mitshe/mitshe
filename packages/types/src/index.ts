@@ -16,3 +16,4 @@ export * from "./environment";
 export * from "./session";
 export * from "./base-image";
 export * from "./chat";
+export * from "./skill";

@@ -42,6 +42,7 @@ import { AgentsModule } from './modules/agents/agents.module';
 import { EnvironmentsModule } from './modules/environments/environments.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { McpModule } from './modules/mcp/mcp.module';
+import { SkillsModule } from './modules/skills/skills.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ImagesModule } from './modules/images/images.module';
 
@@ -161,6 +162,7 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
     McpModule,
     ChatModule,
     ImagesModule,
+    SkillsModule,
   ],
   controllers: [AppController],
   providers: [
