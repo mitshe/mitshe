@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { SessionContainerService } from '../../sessions/services/session-container.service';
+import { EventsGateway } from '../../../infrastructure/websocket/events.gateway';
 import { CreateImageDto, UpdateImageDto } from '../dto/image.dto';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class ImagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly containerService: SessionContainerService,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async create(organizationId: string, userId: string, dto: CreateImageDto) {
@@ -30,47 +32,57 @@ export class ImagesService {
       throw new BadRequestException('Session has no running container');
     }
 
-    const imageRecord = await this.prisma.baseImage.create({
+    const snapshot = await this.prisma.baseImage.create({
       data: {
         organizationId,
         name: dto.name,
         description: dto.description,
-        dockerImage: '', // will be set after commit
+        dockerImage: '',
+        status: 'CREATING',
         sourceSessionId: dto.sessionId,
         enableDocker: session.enableDocker,
         createdBy: userId,
       },
     });
 
-    // Commit container to persistent image (async heavy work)
+    const containerId = session.containerId;
+
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     setImmediate(async () => {
       try {
-        // commitContainer returns image name like "mitshe-clone:{id}"
         const dockerImageName = await this.containerService.commitContainer(
-          session.containerId!,
-          imageRecord.id,
+          containerId,
+          snapshot.id,
         );
+
+        const sizeBytes = await this.containerService.getImageSize(dockerImageName);
 
         await this.prisma.baseImage.update({
-          where: { id: imageRecord.id },
-          data: { dockerImage: dockerImageName },
+          where: { id: snapshot.id },
+          data: {
+            dockerImage: dockerImageName,
+            status: 'READY',
+            sizeBytes,
+          },
         });
 
-        this.logger.log(
-          `Base image "${dto.name}" created from session ${dto.sessionId}`,
-        );
+        this.eventsGateway.emitSnapshotStatus(organizationId, snapshot.id, 'READY');
+        this.logger.log(`Snapshot "${dto.name}" created from session ${dto.sessionId}`);
       } catch (error) {
         this.logger.error(
-          `Failed to create base image: ${(error as Error).message}`,
+          `Failed to create snapshot: ${(error as Error).message}`,
         );
-        await this.prisma.baseImage.delete({
-          where: { id: imageRecord.id },
+        await this.prisma.baseImage.update({
+          where: { id: snapshot.id },
+          data: { status: 'FAILED' },
         });
+        this.eventsGateway.emitSnapshotStatus(
+          organizationId, snapshot.id, 'FAILED', (error as Error).message,
+        );
       }
     });
 
-    return imageRecord;
+    return snapshot;
   }
 
   async findAll(organizationId: string) {
@@ -86,7 +98,7 @@ export class ImagesService {
   }
 
   async findOne(organizationId: string, id: string) {
-    const image = await this.prisma.baseImage.findFirst({
+    const snapshot = await this.prisma.baseImage.findFirst({
       where: { id, organizationId },
       include: {
         sourceSession: { select: { id: true, name: true } },
@@ -96,18 +108,18 @@ export class ImagesService {
       },
     });
 
-    if (!image) {
-      throw new NotFoundException('Image not found');
+    if (!snapshot) {
+      throw new NotFoundException('Snapshot not found');
     }
 
-    return image;
+    return snapshot;
   }
 
   async update(organizationId: string, id: string, dto: UpdateImageDto) {
-    const image = await this.findOne(organizationId, id);
+    const snapshot = await this.findOne(organizationId, id);
 
     return this.prisma.baseImage.update({
-      where: { id: image.id },
+      where: { id: snapshot.id },
       data: {
         ...(dto.name && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
@@ -116,19 +128,18 @@ export class ImagesService {
   }
 
   async remove(organizationId: string, id: string) {
-    const image = await this.findOne(organizationId, id);
+    const snapshot = await this.findOne(organizationId, id);
 
-    // Remove Docker image
-    if (image.dockerImage) {
+    if (snapshot.dockerImage) {
       try {
-        await this.containerService.removeImage(image.dockerImage);
+        await this.containerService.removeImage(snapshot.dockerImage);
       } catch (error) {
         this.logger.warn(
-          `Failed to remove Docker image ${image.dockerImage}: ${(error as Error).message}`,
+          `Failed to remove Docker image ${snapshot.dockerImage}: ${(error as Error).message}`,
         );
       }
     }
 
-    return this.prisma.baseImage.delete({ where: { id: image.id } });
+    return this.prisma.baseImage.delete({ where: { id: snapshot.id } });
   }
 }

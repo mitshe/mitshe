@@ -319,6 +319,16 @@ export class SessionContainerService implements OnModuleInit {
     }
   }
 
+  async getImageSize(imageName: string): Promise<bigint | null> {
+    try {
+      const image = this.docker.getImage(imageName);
+      const info = await image.inspect();
+      return BigInt(info.Size || 0);
+    } catch {
+      return null;
+    }
+  }
+
   // ─── File Operations ────────────────────────────────────────────
 
   async readFile(containerId: string, filePath: string): Promise<string> {

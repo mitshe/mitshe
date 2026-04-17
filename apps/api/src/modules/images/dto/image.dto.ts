@@ -4,7 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateImageDto {
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({ description: 'Image name' })
+  @ApiProperty({ description: 'Snapshot name' })
   name: string;
 
   @IsString()
@@ -21,7 +21,7 @@ export class CreateImageDto {
 export class UpdateImageDto {
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Image name' })
+  @ApiPropertyOptional({ description: 'Snapshot name' })
   name?: string;
 
   @IsString()

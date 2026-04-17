@@ -740,6 +740,17 @@ export class EventsGateway
       .emit('session:status', { sessionId, status, error });
   }
 
+  emitSnapshotStatus(
+    organizationId: string,
+    snapshotId: string,
+    status: string,
+    error?: string,
+  ) {
+    this.server
+      .to(`org:${organizationId}`)
+      .emit('snapshot:status', { snapshotId, status, error });
+  }
+
   /**
    * Get connection statistics
    */
