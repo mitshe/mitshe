@@ -17,7 +17,6 @@ import {
   PanelLeft,
   X,
   Trash2,
-  Copy,
 } from "lucide-react";
 import {
   Tooltip,
@@ -43,7 +42,6 @@ import {
   useResumeSession,
   useStopSession,
   useDeleteSession,
-  useCloneSession,
   useSessionFiles,
   useSessionGitStatus,
   useReadSessionFile,
@@ -83,7 +81,6 @@ export default function SessionDetailPage() {
   const resumeSession = useResumeSession();
   const stopSession = useStopSession();
   const deleteSession = useDeleteSession();
-  const cloneSession = useCloneSession();
   const closeTerminalMutation = useCloseTerminal();
   const readFile = useReadSessionFile();
   const deleteFile = useDeleteSessionFile();
@@ -569,16 +566,6 @@ export default function SessionDetailPage() {
       router.push("/sessions");
     } catch {
       toast.error("Failed to delete session");
-    }
-  };
-
-  const handleClone = async () => {
-    try {
-      const cloned = await cloneSession.mutateAsync(sessionId);
-      toast.success("Session cloned");
-      router.push(`/sessions/${cloned.id}`);
-    } catch {
-      toast.error("Failed to clone session");
     }
   };
 

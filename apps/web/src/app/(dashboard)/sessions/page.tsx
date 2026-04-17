@@ -53,7 +53,6 @@ import {
   Square,
   Clock,
   Trash2,
-  Copy,
   Pencil,
   ChevronDown,
 } from "lucide-react";
@@ -71,7 +70,6 @@ import {
   useDeleteSession,
   usePauseSession,
   useStopSession,
-  useCloneSession,
   usePresets,
   useProjects,
   useRepositories,
@@ -162,7 +160,6 @@ export default function SessionsPage() {
   const deleteSession = useDeleteSession();
   const pauseSession = usePauseSession();
   const stopSession = useStopSession();
-  const cloneSession = useCloneSession();
 
   // Auto-refresh list when session status changes
   useEffect(() => {
@@ -235,7 +232,7 @@ export default function SessionsPage() {
       setIsDialogOpen(true);
       setSnapshotHandled(true);
     }
-  }, [urlSnapshotId, snapshotsList, snapshotHandled]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [urlSnapshotId, snapshotsList, snapshotHandled]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -468,17 +465,6 @@ export default function SessionsPage() {
       toast.success("Session stopped");
     } catch {
       toast.error("Failed to stop session");
-    }
-  };
-
-  const handleClone = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    try {
-      const session = await cloneSession.mutateAsync(id);
-      toast.success("Session cloned");
-      router.push(`/sessions/${session.id}`);
-    } catch {
-      toast.error("Failed to clone session");
     }
   };
 
