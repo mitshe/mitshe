@@ -2,7 +2,6 @@ import {
   IsString,
   IsOptional,
   IsBoolean,
-  IsEnum,
   IsArray,
 } from 'class-validator';
 import { GitProvider } from '@prisma/client';
