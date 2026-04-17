@@ -49,8 +49,7 @@ export default function SnapshotsPage() {
   const { data: snapshots = [], isLoading } = useSnapshots();
   const createSnapshot = useCreateSnapshot();
   const deleteSnapshot = useDeleteSnapshot();
-  const { data: sessionsData } = useSessions();
-  const sessions = sessionsData?.sessions ?? sessionsData ?? [];
+  const { data: sessions = [] } = useSessions();
   const runningSessions = (sessions as Array<{ id: string; name: string; status: string }>).filter(
     (s) => s.status === "RUNNING" || s.status === "PAUSED",
   );
