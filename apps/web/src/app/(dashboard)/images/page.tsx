@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   useSnapshots,
   useCreateSnapshot,
@@ -42,7 +43,14 @@ import {
   Loader2,
   Container,
   Clock,
+  Play,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Snapshot } from "@mitshe/types";
 
 export default function SnapshotsPage() {
@@ -205,7 +213,7 @@ export default function SnapshotsPage() {
               <TableHead>Source Session</TableHead>
               <TableHead>Size</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead className="w-[60px]" />
+              <TableHead className="w-[100px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -239,14 +247,40 @@ export default function SnapshotsPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
-                    onClick={() => deleteSnapshot.mutate(snap.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <TooltipProvider delayDuration={300}>
+                    <div className="flex items-center gap-1">
+                      {snap.status === "READY" && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              asChild
+                            >
+                              <Link href={`/sessions?snapshot=${snap.id}`}>
+                                <Play className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>New session from snapshot</TooltipContent>
+                        </Tooltip>
+                      )}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => deleteSnapshot.mutate(snap.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete snapshot</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
                 </TableCell>
               </TableRow>
             ))}

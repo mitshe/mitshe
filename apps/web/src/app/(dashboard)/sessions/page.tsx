@@ -130,6 +130,7 @@ export default function SessionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlProjectId = searchParams.get("projectId") || "";
+  const urlSnapshotId = searchParams.get("snapshot") || "";
   const queryClient = useQueryClient();
   const { socket } = useSocket();
   const { data: sessions = [], isLoading } = useSessions();
@@ -215,6 +216,22 @@ export default function SessionsPage() {
       }));
     }
   }, [defaultGithubId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-open dialog when navigating with ?snapshot=id
+  useEffect(() => {
+    if (urlSnapshotId && readySnapshots.length > 0) {
+      const snap = readySnapshots.find((s: { id: string }) => s.id === urlSnapshotId);
+      if (snap) {
+        setForm((prev) => ({
+          ...prev,
+          baseImageId: urlSnapshotId,
+          name: `Session from ${(snap as { name: string }).name}`,
+          enableDocker: (snap as { enableDocker?: boolean }).enableDocker ?? prev.enableDocker,
+        }));
+        setIsDialogOpen(true);
+      }
+    }
+  }, [urlSnapshotId, readySnapshots]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openCreate = () => {
     setEditingId(null);
