@@ -1010,17 +1010,6 @@ export default function SessionsPage() {
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
                       )}
-                      {session.containerId && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={(e) => handleClone(e, session.id)}
-                          title="Clone"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </Button>
-                      )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button

@@ -688,21 +688,6 @@ export default function SessionDetailPage() {
               </TooltipProvider>
             </>
           )}
-          {session.containerId && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClone}
-              disabled={cloneSession.isPending}
-            >
-              {cloneSession.isPending ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <Copy className="w-4 h-4 mr-1" />
-              )}
-              Clone
-            </Button>
-          )}
           {isRunning && (
             <Button variant="outline" size="sm" onClick={handlePause}>
               <Pause className="w-4 h-4 mr-1" /> Pause
