@@ -842,6 +842,32 @@ export default function SessionsPage() {
                     </Label>
                   </div>
 
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="autoAccept"
+                      checked={form.startArguments?.includes("--dangerously-skip-permissions") ?? false}
+                      onCheckedChange={(checked) => {
+                        const flag = "--dangerously-skip-permissions";
+                        const current = form.startArguments || "";
+                        const hasFlag = current.includes(flag);
+                        if (checked && !hasFlag) {
+                          setForm({ ...form, startArguments: (current + " " + flag).trim() });
+                        } else if (!checked && hasFlag) {
+                          setForm({ ...form, startArguments: current.replace(flag, "").trim() });
+                        }
+                      }}
+                      disabled={configLocked}
+                    />
+                    <Label
+                      htmlFor="autoAccept"
+                      className={`font-normal text-sm ${
+                        configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                      }`}
+                    >
+                      Auto-accept permissions (skip confirmation prompts)
+                    </Label>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="instructions">Instructions</Label>
                     <Textarea
