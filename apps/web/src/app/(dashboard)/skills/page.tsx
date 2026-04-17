@@ -19,7 +19,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -38,16 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Plus,
-  Trash2,
-  Loader2,
-  Zap,
-  Pencil,
-  Lock,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import { Plus, Trash2, Loader2, Zap, Pencil } from "lucide-react";
 import type { Skill } from "@mitshe/types";
 
 const CATEGORIES = [
@@ -68,7 +58,6 @@ export default function SkillsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
@@ -133,86 +122,10 @@ export default function SkillsPage() {
             Reusable instructions appended to CLAUDE.md when creating sessions.
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Skill
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingSkill ? "Edit Skill" : "Create Skill"}
-              </DialogTitle>
-              <DialogDescription>
-                Write instructions that Claude Code will follow in sessions
-                using this skill.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g. E2E Testing"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select value={formCategory} onValueChange={setFormCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Input
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Short description of what this skill does"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Instructions (Markdown)</Label>
-                <Textarea
-                  value={formInstructions}
-                  onChange={(e) => setFormInstructions(e.target.value)}
-                  placeholder="Write instructions for Claude Code..."
-                  className="min-h-[200px] font-mono text-sm"
-                  rows={10}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={handleSubmit}
-                disabled={
-                  !formName.trim() ||
-                  !formInstructions.trim() ||
-                  createSkill.isPending ||
-                  updateSkill.isPending
-                }
-              >
-                {createSkill.isPending || updateSkill.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
-                {editingSkill ? "Save Changes" : "Create Skill"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Skill
+        </Button>
       </div>
 
       {isLoading ? (
@@ -224,89 +137,136 @@ export default function SkillsPage() {
           <Zap className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">No skills yet</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Create skills to give Claude Code specific instructions for
-            different tasks.
+            Create skills to give Claude Code specific instructions.
           </p>
         </div>
       ) : (
-        <div className="space-y-1">
-          {skills.map((skill) => {
-            const isExpanded = expandedId === skill.id;
-            return (
-              <div key={skill.id} className="border border-border rounded-lg">
-                <div
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() =>
-                    setExpandedId(isExpanded ? null : skill.id)
-                  }
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="space-y-2">
+          {skills.map((skill) => (
+            <div
+              key={skill.id}
+              className="group flex items-center gap-3 px-4 py-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => openEdit(skill)}
+            >
+              <Zap className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{skill.name}</span>
+                  {skill.category && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {skill.category}
+                    </Badge>
                   )}
-                  <Zap className="h-4 w-4 text-primary shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{skill.name}</span>
-                      {skill.category && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          {skill.category}
-                        </Badge>
-                      )}
-                      {skill.isSystem && (
-                        <Badge variant="outline" className="text-[10px]">
-                          system
-                        </Badge>
-                      )}
-                    </div>
-                    {skill.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {skill.description}
-                      </p>
-                    )}
-                  </div>
-                  <div
-                    className="flex items-center gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {skill.isSystem ? (
-                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                    ) : (
-                      <>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => openEdit(skill)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => setDeleteTarget(skill)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
                 </div>
-                {isExpanded && (
-                  <div className="px-4 pb-4 pt-0 border-t border-border">
-                    <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono mt-3 max-h-[300px] overflow-y-auto">
-                      {skill.instructions}
-                    </pre>
-                  </div>
+                {skill.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {skill.description}
+                  </p>
                 )}
               </div>
-            );
-          })}
+              <div
+                className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => openEdit(skill)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => setDeleteTarget(skill)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
+      {/* Create / Edit dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingSkill ? "Edit Skill" : "Create Skill"}
+            </DialogTitle>
+            <DialogDescription>
+              Instructions that Claude Code will follow in sessions using this
+              skill.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="e.g. E2E Testing"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={formCategory} onValueChange={setFormCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                placeholder="Short description"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Instructions (Markdown)</Label>
+              <Textarea
+                value={formInstructions}
+                onChange={(e) => setFormInstructions(e.target.value)}
+                placeholder="Write instructions for Claude Code..."
+                className="min-h-[250px] font-mono text-sm"
+                rows={12}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                !formName.trim() ||
+                !formInstructions.trim() ||
+                createSkill.isPending ||
+                updateSkill.isPending
+              }
+            >
+              {createSkill.isPending || updateSkill.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {editingSkill ? "Save Changes" : "Create Skill"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}

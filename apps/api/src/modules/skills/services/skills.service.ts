@@ -21,19 +21,14 @@ export class SkillsService {
 
   async findAll(organizationId: string) {
     return this.prisma.skill.findMany({
-      where: {
-        OR: [{ organizationId }, { isSystem: true }],
-      },
-      orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
+      where: { organizationId },
+      orderBy: { name: 'asc' },
     });
   }
 
   async findOne(organizationId: string, id: string) {
     const skill = await this.prisma.skill.findFirst({
-      where: {
-        id,
-        OR: [{ organizationId }, { isSystem: true }],
-      },
+      where: { id, organizationId },
     });
 
     if (!skill) {
@@ -44,13 +39,7 @@ export class SkillsService {
   }
 
   async update(organizationId: string, id: string, dto: UpdateSkillDto) {
-    const skill = await this.prisma.skill.findFirst({
-      where: { id, organizationId, isSystem: false },
-    });
-
-    if (!skill) {
-      throw new NotFoundException('Skill not found or is a system skill');
-    }
+    await this.findOne(organizationId, id);
 
     return this.prisma.skill.update({
       where: { id },
@@ -66,20 +55,10 @@ export class SkillsService {
   }
 
   async remove(organizationId: string, id: string) {
-    const skill = await this.prisma.skill.findFirst({
-      where: { id, organizationId, isSystem: false },
-    });
-
-    if (!skill) {
-      throw new NotFoundException('Skill not found or is a system skill');
-    }
-
+    await this.findOne(organizationId, id);
     return this.prisma.skill.delete({ where: { id } });
   }
 
-  /**
-   * Build combined CLAUDE.md instructions from selected skill IDs.
-   */
   async buildInstructions(
     organizationId: string,
     skillIds: string[],
@@ -89,7 +68,7 @@ export class SkillsService {
     const skills = await this.prisma.skill.findMany({
       where: {
         id: { in: skillIds },
-        OR: [{ organizationId }, { isSystem: true }],
+        organizationId,
       },
     });
 
