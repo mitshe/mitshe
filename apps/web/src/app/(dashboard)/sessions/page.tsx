@@ -745,12 +745,13 @@ export default function SessionsPage() {
                       </p>
                     ) : (
                       <Select
-                        value={form.baseImageId}
+                        value={form.baseImageId || "none"}
                         onValueChange={(v) => {
-                          const snap = readySnapshots.find((s: { id: string }) => s.id === v);
+                          const actualValue = v === "none" ? "" : v;
+                          const snap = readySnapshots.find((s: { id: string }) => s.id === actualValue);
                           setForm({
                             ...form,
-                            baseImageId: v,
+                            baseImageId: actualValue,
                             enableDocker: (snap as { enableDocker?: boolean })?.enableDocker ?? form.enableDocker,
                           });
                         }}
@@ -760,7 +761,7 @@ export default function SessionsPage() {
                           <SelectValue placeholder="No snapshot (fresh container)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No snapshot (fresh container)</SelectItem>
+                          <SelectItem value="none">No snapshot (fresh container)</SelectItem>
                           {readySnapshots.map((snap: { id: string; name: string; description?: string | null }) => (
                             <SelectItem key={snap.id} value={snap.id}>
                               {snap.name}

@@ -322,7 +322,7 @@ export class SessionTools {
               [
                 'bash',
                 '-c',
-                `echo '${promptB64}' | base64 -d | claude -p --output-format text`,
+                `echo '${promptB64}' | base64 -d | claude -p --dangerously-skip-permissions --output-format text`,
               ],
               '/workspace',
               timeoutMs,
