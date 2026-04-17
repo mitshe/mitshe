@@ -45,6 +45,8 @@ import {
   Zap,
   Pencil,
   Lock,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import type { Skill } from "@mitshe/types";
 
@@ -66,14 +68,12 @@ export default function SkillsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState("");
   const [formInstructions, setFormInstructions] = useState("");
-
-  const systemSkills = skills.filter((s) => s.isSystem);
-  const customSkills = skills.filter((s) => !s.isSystem);
 
   const openCreate = () => {
     setEditingSkill(null);
@@ -130,8 +130,7 @@ export default function SkillsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Skills</h1>
           <p className="text-sm text-muted-foreground">
-            Reusable instructions for Claude Code. Skills are appended to
-            CLAUDE.md when creating sessions.
+            Reusable instructions appended to CLAUDE.md when creating sessions.
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -230,41 +229,81 @@ export default function SkillsPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {systemSkills.length > 0 && (
-            <div>
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                System Skills
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {systemSkills.map((skill) => (
-                  <SkillCard
-                    key={skill.id}
-                    skill={skill}
-                    onEdit={() => openEdit(skill)}
-                  />
-                ))}
+        <div className="space-y-1">
+          {skills.map((skill) => {
+            const isExpanded = expandedId === skill.id;
+            return (
+              <div key={skill.id} className="border border-border rounded-lg">
+                <div
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() =>
+                    setExpandedId(isExpanded ? null : skill.id)
+                  }
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
+                  <Zap className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{skill.name}</span>
+                      {skill.category && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {skill.category}
+                        </Badge>
+                      )}
+                      {skill.isSystem && (
+                        <Badge variant="outline" className="text-[10px]">
+                          system
+                        </Badge>
+                      )}
+                    </div>
+                    {skill.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {skill.description}
+                      </p>
+                    )}
+                  </div>
+                  <div
+                    className="flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {skill.isSystem ? (
+                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => openEdit(skill)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => setDeleteTarget(skill)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div className="px-4 pb-4 pt-0 border-t border-border">
+                    <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono mt-3 max-h-[300px] overflow-y-auto">
+                      {skill.instructions}
+                    </pre>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-
-          {customSkills.length > 0 && (
-            <div>
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Custom Skills
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {customSkills.map((skill) => (
-                  <SkillCard
-                    key={skill.id}
-                    skill={skill}
-                    onEdit={() => openEdit(skill)}
-                    onDelete={() => setDeleteTarget(skill)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       )}
 
@@ -277,7 +316,6 @@ export default function SkillsPage() {
             <AlertDialogTitle>Delete skill?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete &ldquo;{deleteTarget?.name}&rdquo;.
-              Sessions already using this skill will not be affected.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -291,70 +329,6 @@ export default function SkillsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-function SkillCard({
-  skill,
-  onEdit,
-  onDelete,
-}: {
-  skill: Skill;
-  onEdit: () => void;
-  onDelete?: () => void;
-}) {
-  return (
-    <div className="group border border-border rounded-lg p-4 hover:border-primary/30 transition-colors">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2 mb-2">
-          <Zap className="h-4 w-4 text-primary" />
-          <h3 className="font-medium text-sm">{skill.name}</h3>
-        </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {skill.isSystem ? (
-            <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-          ) : (
-            <>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={onEdit}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              {onDelete && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-      {skill.description && (
-        <p className="text-xs text-muted-foreground mb-2">
-          {skill.description}
-        </p>
-      )}
-      <div className="flex items-center gap-2">
-        {skill.category && (
-          <Badge variant="secondary" className="text-[10px]">
-            {skill.category}
-          </Badge>
-        )}
-        {skill.isSystem && (
-          <Badge variant="outline" className="text-[10px]">
-            system
-          </Badge>
-        )}
-      </div>
     </div>
   );
 }
