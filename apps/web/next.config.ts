@@ -8,13 +8,6 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.env.TURBO_ROOT || undefined,
   },
-  // Increase proxy timeout for long-running chat requests (session_agent can take minutes)
-  httpAgentOptions: {
-    keepAlive: true,
-  },
-  experimental: {
-    proxyTimeout: 300000, // 5 minutes
-  },
   async headers() {
     return [
       {

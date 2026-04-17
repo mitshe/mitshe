@@ -200,8 +200,14 @@ export class ChatService {
     let finalContent = '';
     let iterations = 0;
 
+    const requestStart = Date.now();
+
     while (iterations < MAX_TOOL_ITERATIONS) {
       iterations++;
+
+      this.logger.debug(
+        `Chat iteration ${iterations}/${MAX_TOOL_ITERATIONS} (${Date.now() - requestStart}ms elapsed)`,
+      );
 
       const response = await aiProvider.completeWithTools(
         currentMessages,
@@ -226,11 +232,15 @@ export class ChatService {
       const toolUseBlocks: ToolUseContent[] = [];
 
       for (const toolCall of response.toolCalls) {
+        const toolStart = Date.now();
         const result = await this.mcpService.executeTool(
           toolCall.name,
           organizationId,
           userId,
           toolCall.input,
+        );
+        this.logger.debug(
+          `Tool ${toolCall.name} took ${Date.now() - toolStart}ms`,
         );
 
         allToolCalls.push({
