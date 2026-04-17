@@ -486,8 +486,8 @@ export default function SessionsPage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Sessions</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight">Sessions</h1>
+          <p className="text-sm text-muted-foreground">
             Interactive AI agent sessions with isolated environments
           </p>
         </div>
