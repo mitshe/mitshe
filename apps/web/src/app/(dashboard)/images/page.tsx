@@ -42,7 +42,6 @@ import {
   Loader2,
   Container,
   Clock,
-  Layers,
 } from "lucide-react";
 
 export default function ImagesPage() {
@@ -202,7 +201,7 @@ export default function ImagesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {images.map((img: any) => (
+            {images.map((img: { id: string; name: string; description?: string; sourceSession?: { name: string }; enableDocker?: boolean; sizeBytes?: number; createdAt: string }) => (
               <TableRow key={img.id}>
                 <TableCell>
                   <div>

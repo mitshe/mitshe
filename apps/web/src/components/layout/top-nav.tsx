@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Search, Menu, User, LogOut } from "lucide-react";
+import { Search, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -30,7 +30,7 @@ const UserButton = dynamic(
 export function TopNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
-  const { isClerkMode, isSelfhostedMode, userName, userEmail, signOut } = useAuthContext();
+  const { isClerkMode, userName, userEmail, signOut } = useAuthContext();
 
   return (
     <header className="flex h-14 items-center justify-between border-b bg-background px-4">

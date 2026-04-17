@@ -19,7 +19,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -29,9 +28,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Save, Loader2, Info, Building2, AlertTriangle } from "lucide-react";
+import { Save, Loader2, Building2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useOrganization, useAuthContext } from "@/lib/auth";
+import { useOrganization } from "@/lib/auth";
 
 const timezones = [
   { value: "Europe/Warsaw", label: "Europe/Warsaw (CET)" },
@@ -43,7 +42,6 @@ const timezones = [
 ];
 
 export default function OrganizationSettingsPage() {
-  const { isSelfhostedMode } = useAuthContext();
   const { organization, isLoaded } = useOrganization();
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);

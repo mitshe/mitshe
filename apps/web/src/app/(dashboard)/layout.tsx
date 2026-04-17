@@ -1,7 +1,3 @@
-import { Sidebar } from "@/components/layout/sidebar";
-import { TopNav } from "@/components/layout/top-nav";
-import { OnboardingTour } from "@/components/onboarding-tour";
-import { BreadcrumbsWrapper } from "@/components/layout/breadcrumbs-wrapper";
 import { AuthGuard } from "@/components/auth";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 

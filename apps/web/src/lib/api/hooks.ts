@@ -29,7 +29,6 @@ import type {
   UpdateSessionMetadataDto,
   RecreateSessionDto,
   CreateBaseImageDto,
-  UpdateBaseImageDto,
   CreateConversationDto,
   SendMessageDto,
 } from "./types";

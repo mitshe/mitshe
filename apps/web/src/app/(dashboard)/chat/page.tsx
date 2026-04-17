@@ -12,7 +12,6 @@ import {
   useAICredentials,
 } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -59,7 +58,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (credentials.length > 0 && !selectedCredentialId) {
-      const defaultCred = credentials.find((c: any) => c.isDefault) || credentials[0];
+      const defaultCred = credentials.find((c: { isDefault?: boolean }) => c.isDefault) || credentials[0];
       setSelectedCredentialId(defaultCred.id);
     }
   }, [credentials, selectedCredentialId]);
@@ -75,8 +74,8 @@ export default function ChatPage() {
       setActiveConversationId(e.detail.conversationId);
       setErrorMessage(null);
     };
-    window.addEventListener("chat:select" as any, handler);
-    return () => window.removeEventListener("chat:select" as any, handler);
+    window.addEventListener("chat:select", handler as EventListener);
+    return () => window.removeEventListener("chat:select", handler as EventListener);
   }, []);
 
   useEffect(() => {
@@ -104,9 +103,10 @@ export default function ChatPage() {
 
     try {
       await sendMessage.mutateAsync({ conversationId: convId, data: { content } });
-    } catch (err: any) {
-      const backendMsg = err?.data?.message;
-      const msg = backendMsg || err?.message || "Something went wrong.";
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
+      const backendMsg = error?.data?.message;
+      const msg = backendMsg || error?.message || "Something went wrong.";
       const cleanMsg =
         msg.includes("ENCRYPTION_KEY") || msg.includes("Unsupported state")
           ? "AI provider key could not be loaded. Re-add it in Settings \u2192 AI Providers."

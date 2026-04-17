@@ -28,22 +28,17 @@ import {
   Trash2,
   Loader2,
   MoreHorizontal,
-  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -233,12 +228,12 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   useEffect(() => {
     const handler = (e: CustomEvent) => setActiveId(e.detail.conversationId);
-    window.addEventListener("chat:select" as any, handler);
-    return () => window.removeEventListener("chat:select" as any, handler);
+    window.addEventListener("chat:select", handler as EventListener);
+    return () => window.removeEventListener("chat:select", handler as EventListener);
   }, []);
 
   const handleNew = async () => {
-    const defaultCred = credentials.find((c: any) => c.isDefault) || credentials[0];
+    const defaultCred = credentials.find((c: { isDefault?: boolean }) => c.isDefault) || credentials[0];
     if (!defaultCred) return;
     const conv = await createConversation.mutateAsync({ aiCredentialId: defaultCred.id });
     setActiveId(conv.id);
@@ -313,7 +308,6 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               conversations.map((c) => (
                 <ConversationItem
                   key={c.id}
-                  id={c.id}
                   title={c.title || "New conversation"}
                   isActive={activeId === c.id}
                   onSelect={() => handleSelect(c.id)}
@@ -355,13 +349,11 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 // ─── Conversation item with hover actions ───
 
 function ConversationItem({
-  id,
   title,
   isActive,
   onSelect,
   onDelete,
 }: {
-  id: string;
   title: string;
   isActive: boolean;
   onSelect: () => void;
