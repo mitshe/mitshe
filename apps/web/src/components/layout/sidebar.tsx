@@ -22,7 +22,7 @@ import {
   BookOpen,
   ExternalLink,
   MessageCircle,
-  HardDrive,
+  Camera,
   MessageSquarePlus,
   Terminal,
   Trash2,
@@ -97,7 +97,7 @@ const workspaceNavItems: NavItem[] = [
   { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "AI agent terminals" },
   { title: "Presets", href: "/presets", icon: SlidersHorizontal, tourId: "nav-presets", description: "Saved session configs" },
   { title: "Environments", href: "/environments", icon: Box, tourId: "nav-environments", description: "Container setup" },
-  { title: "Images", href: "/images", icon: HardDrive, tourId: "nav-images", description: "Base container images" },
+  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots", description: "Session snapshots" },
 ];
 
 // ─── Mode config ───

@@ -46,9 +46,9 @@ import type {
   WorkflowTemplateMetadata,
   WorkflowTemplate,
   CreateFromTemplateDto,
-  BaseImage,
-  CreateBaseImageDto,
-  UpdateBaseImageDto,
+  Snapshot,
+  CreateSnapshotDto,
+  UpdateSnapshotDto,
   ChatConversation,
   ChatMessage,
   CreateConversationDto,
@@ -776,29 +776,29 @@ export const api = {
       ),
   },
 
-  images: {
+  snapshots: {
     list: (token: string) =>
-      request<{ images: BaseImage[] }>("/images", { token }),
+      request<{ snapshots: Snapshot[] }>("/snapshots", { token }),
 
     get: (id: string, token: string) =>
-      request<{ image: BaseImage }>(`/images/${id}`, { token }),
+      request<{ snapshot: Snapshot }>(`/snapshots/${id}`, { token }),
 
-    create: (data: CreateBaseImageDto, token: string) =>
-      request<{ image: BaseImage }>("/images", {
+    create: (data: CreateSnapshotDto, token: string) =>
+      request<{ snapshot: Snapshot }>("/snapshots", {
         method: "POST",
         body: JSON.stringify(data),
         token,
       }),
 
-    update: (id: string, data: UpdateBaseImageDto, token: string) =>
-      request<{ image: BaseImage }>(`/images/${id}`, {
+    update: (id: string, data: UpdateSnapshotDto, token: string) =>
+      request<{ snapshot: Snapshot }>(`/snapshots/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),
         token,
       }),
 
     delete: (id: string, token: string) =>
-      request<void>(`/images/${id}`, {
+      request<void>(`/snapshots/${id}`, {
         method: "DELETE",
         token,
       }),

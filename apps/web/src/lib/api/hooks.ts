@@ -28,7 +28,7 @@ import type {
   CreateSessionDto,
   UpdateSessionMetadataDto,
   RecreateSessionDto,
-  CreateBaseImageDto,
+  CreateSnapshotDto,
   CreateConversationDto,
   SendMessageDto,
 } from "./types";
@@ -107,10 +107,10 @@ export const queryKeys = {
     files: (id: string) =>
       [...queryKeys.sessions.all, "files", id] as const,
   },
-  images: {
-    all: ["images"] as const,
-    list: () => [...queryKeys.images.all, "list"] as const,
-    detail: (id: string) => [...queryKeys.images.all, "detail", id] as const,
+  snapshots: {
+    all: ["snapshots"] as const,
+    list: () => [...queryKeys.snapshots.all, "list"] as const,
+    detail: (id: string) => [...queryKeys.snapshots.all, "detail", id] as const,
   },
   chat: {
     all: ["chat"] as const,
@@ -1504,62 +1504,69 @@ export function useDeleteEnvironment() {
 // BASE IMAGES
 // ============================================================================
 
-export function useImages() {
+export function useSnapshots() {
   const getToken = useAuthToken();
   return useQuery({
-    queryKey: queryKeys.images.list(),
+    queryKey: queryKeys.snapshots.list(),
     queryFn: async () => {
       const token = await getToken();
-      const { images } = await api.images.list(token);
-      return images;
+      const { snapshots } = await api.snapshots.list(token);
+      return snapshots;
     },
   });
 }
 
-export function useImage(id: string) {
+export function useSnapshot(id: string) {
   const getToken = useAuthToken();
   return useQuery({
-    queryKey: queryKeys.images.detail(id),
+    queryKey: queryKeys.snapshots.detail(id),
     queryFn: async () => {
       const token = await getToken();
-      const { image } = await api.images.get(id, token);
-      return image;
+      const { snapshot } = await api.snapshots.get(id, token);
+      return snapshot;
     },
     enabled: !!id,
   });
 }
 
-export function useCreateImage() {
+export function useCreateSnapshot() {
   const getToken = useAuthToken();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: CreateBaseImageDto) => {
+    mutationFn: async (data: CreateSnapshotDto) => {
       const token = await getToken();
-      const { image } = await api.images.create(data, token);
-      return image;
+      const { snapshot } = await api.snapshots.create(data, token);
+      return snapshot;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.images.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.snapshots.all });
     },
   });
 }
 
-export function useDeleteImage() {
+export function useDeleteSnapshot() {
   const getToken = useAuthToken();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
       const token = await getToken();
-      await api.images.delete(id, token);
+      await api.snapshots.delete(id, token);
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.images.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.snapshots.all });
     },
   });
 }
+
+/** @deprecated Use useSnapshots */
+export const useImages = useSnapshots;
+/** @deprecated Use useCreateSnapshot */
+export const useCreateImage = useCreateSnapshot;
+/** @deprecated Use useDeleteSnapshot */
+export const useDeleteImage = useDeleteSnapshot;
 
 // ============================================================================
 // CHAT

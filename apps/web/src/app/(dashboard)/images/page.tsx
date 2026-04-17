@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import {
-  useImages,
-  useCreateImage,
-  useDeleteImage,
+  useSnapshots,
+  useCreateSnapshot,
+  useDeleteSnapshot,
   useSessions,
 } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
@@ -36,20 +36,22 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  HardDrive,
+  Camera,
   Plus,
   Trash2,
   Loader2,
   Container,
   Clock,
 } from "lucide-react";
+import type { Snapshot } from "@mitshe/types";
 
-export default function ImagesPage() {
-  const { data: images = [], isLoading } = useImages();
-  const createImage = useCreateImage();
-  const deleteImage = useDeleteImage();
-  const { data: sessions = [] } = useSessions();
-  const runningSessions = sessions.filter(
+export default function SnapshotsPage() {
+  const { data: snapshots = [], isLoading } = useSnapshots();
+  const createSnapshot = useCreateSnapshot();
+  const deleteSnapshot = useDeleteSnapshot();
+  const { data: sessionsData } = useSessions();
+  const sessions = sessionsData?.sessions ?? sessionsData ?? [];
+  const runningSessions = (sessions as Array<{ id: string; name: string; status: string }>).filter(
     (s) => s.status === "RUNNING" || s.status === "PAUSED",
   );
 
@@ -61,7 +63,7 @@ export default function ImagesPage() {
   const handleCreate = async () => {
     if (!formName || !formSessionId) return;
 
-    await createImage.mutateAsync({
+    await createSnapshot.mutateAsync({
       name: formName,
       description: formDescription || undefined,
       sessionId: formSessionId,
@@ -74,9 +76,9 @@ export default function ImagesPage() {
   };
 
   function formatBytes(bytes: string | null) {
-    if (!bytes) return "—";
+    if (!bytes) return "\u2014";
     const num = Number(bytes);
-    if (num === 0) return "—";
+    if (num === 0) return "\u2014";
     const units = ["B", "KB", "MB", "GB"];
     let i = 0;
     let val = num;
@@ -87,30 +89,40 @@ export default function ImagesPage() {
     return `${val.toFixed(1)} ${units[i]}`;
   }
 
+  function statusBadge(status: string) {
+    switch (status) {
+      case "CREATING":
+        return <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />Creating</Badge>;
+      case "READY":
+        return <Badge variant="default">Ready</Badge>;
+      case "FAILED":
+        return <Badge variant="destructive">Failed</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Base Images
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Snapshots</h1>
           <p className="text-sm text-muted-foreground">
-            Snapshot sessions as reusable base images for new sessions and
-            workflows.
+            Save session state as reusable snapshots for new sessions and workflows.
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create Image
+              Create Snapshot
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create Base Image</DialogTitle>
+              <DialogTitle>Create Snapshot</DialogTitle>
               <DialogDescription>
-                Snapshot a running session to create a reusable base image.
+                Snapshot a running session to save its current state.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -127,7 +139,7 @@ export default function ImagesPage() {
                 <Textarea
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="What's installed in this image..."
+                  placeholder="What's set up in this snapshot..."
                   rows={2}
                 />
               </div>
@@ -159,14 +171,12 @@ export default function ImagesPage() {
             <DialogFooter>
               <Button
                 onClick={handleCreate}
-                disabled={
-                  !formName || !formSessionId || createImage.isPending
-                }
+                disabled={!formName || !formSessionId || createSnapshot.isPending}
               >
-                {createImage.isPending ? (
+                {createSnapshot.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
-                  <HardDrive className="h-4 w-4 mr-2" />
+                  <Camera className="h-4 w-4 mr-2" />
                 )}
                 Create Snapshot
               </Button>
@@ -179,13 +189,12 @@ export default function ImagesPage() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
-      ) : images.length === 0 ? (
+      ) : snapshots.length === 0 ? (
         <div className="text-center py-12">
           <Container className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No base images yet</h3>
+          <h3 className="text-lg font-medium">No snapshots yet</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Create a session, set it up how you want, then snapshot it as a base
-            image.
+            Create a session, set it up how you want, then snapshot it to save the state.
           </p>
         </div>
       ) : (
@@ -193,47 +202,41 @@ export default function ImagesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Source Session</TableHead>
-              <TableHead>Docker</TableHead>
               <TableHead>Size</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="w-[60px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {images.map((img: { id: string; name: string; description?: string; sourceSession?: { name: string }; enableDocker?: boolean; sizeBytes?: number; createdAt: string }) => (
-              <TableRow key={img.id}>
+            {snapshots.map((snap: Snapshot) => (
+              <TableRow key={snap.id}>
                 <TableCell>
                   <div>
-                    <p className="font-medium">{img.name}</p>
-                    {img.description && (
+                    <p className="font-medium">{snap.name}</p>
+                    {snap.description && (
                       <p className="text-xs text-muted-foreground truncate max-w-xs">
-                        {img.description}
+                        {snap.description}
                       </p>
                     )}
                   </div>
                 </TableCell>
+                <TableCell>{statusBadge(snap.status)}</TableCell>
                 <TableCell>
-                  {img.sourceSession ? (
-                    <span className="text-sm">{img.sourceSession.name}</span>
+                  {(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession ? (
+                    <span className="text-sm">{(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession!.name}</span>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {img.enableDocker ? (
-                    <Badge variant="secondary">DinD</Badge>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">{"\u2014"}</span>
                   )}
                 </TableCell>
                 <TableCell className="text-sm">
-                  {formatBytes(img.sizeBytes)}
+                  {formatBytes(snap.sizeBytes)}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {new Date(img.createdAt).toLocaleDateString()}
+                    {new Date(snap.createdAt).toLocaleDateString()}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -241,7 +244,7 @@ export default function ImagesPage() {
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7"
-                    onClick={() => deleteImage.mutate(img.id)}
+                    onClick={() => deleteSnapshot.mutate(snap.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
