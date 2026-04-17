@@ -97,6 +97,8 @@ export class SessionExecutor extends BaseExecutor {
     const instructions = this.getOptionalString(config, 'instructions');
     const presetId = this.getOptionalString(config, 'presetId');
     const environmentId = this.getOptionalString(config, 'environmentId');
+    const snapshotId = this.getOptionalString(config, 'snapshotId');
+    const enableDocker = config.enableDocker === true || config.enableDocker === 'true';
 
     const result = await this.apiCall(ctx, 'POST', '/sessions', {
       name,
@@ -104,6 +106,8 @@ export class SessionExecutor extends BaseExecutor {
       instructions,
       agentDefinitionId: presetId,
       environmentId,
+      baseImageId: snapshotId || undefined,
+      enableDocker: enableDocker || undefined,
     });
 
     const session = result.session;
