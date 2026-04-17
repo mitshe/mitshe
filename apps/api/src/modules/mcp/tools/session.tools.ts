@@ -313,12 +313,16 @@ export class SessionTools {
           const timeoutSec = parseInt((input.timeout as string) || '300', 10);
           const timeoutMs = timeoutSec * 1000;
           try {
+            // Write prompt to temp file to avoid shell escaping issues
+            const promptB64 = Buffer.from(input.prompt as string).toString(
+              'base64',
+            );
             const stdout = await this.containerService.execCommand(
               session.containerId,
               [
                 'bash',
                 '-c',
-                `echo ${JSON.stringify(input.prompt as string)} | claude -p --output-format text`,
+                `echo '${promptB64}' | base64 -d | claude -p --output-format text`,
               ],
               '/workspace',
               timeoutMs,
