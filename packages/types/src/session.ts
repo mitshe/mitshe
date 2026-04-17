@@ -17,6 +17,7 @@ export interface AgentSession {
   instructions: string;
   startArguments: string | null;
   enableDocker: boolean;
+  baseImageId: string | null;
   status: SessionStatus;
   aiCredentialId: string | null;
   containerId: string | null;
@@ -74,6 +75,7 @@ export interface CreateSessionDto {
   startArguments?: string;
   environmentId?: string;
   enableDocker?: boolean;
+  baseImageId?: string;
   instructions?: string;
 }
 

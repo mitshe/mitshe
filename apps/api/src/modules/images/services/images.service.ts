@@ -95,8 +95,17 @@ export class ImagesService {
     return snapshot;
   }
 
+  private serializeBigInt<T extends Record<string, unknown>>(obj: T) {
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [
+        k,
+        typeof v === 'bigint' ? v.toString() : v,
+      ]),
+    );
+  }
+
   async findAll(organizationId: string) {
-    return this.prisma.baseImage.findMany({
+    const snapshots = await this.prisma.baseImage.findMany({
       where: { organizationId },
       include: {
         sourceSession: { select: { id: true, name: true } },
@@ -105,6 +114,7 @@ export class ImagesService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return snapshots.map((s) => this.serializeBigInt(s));
   }
 
   async findOne(organizationId: string, id: string) {
@@ -122,14 +132,14 @@ export class ImagesService {
       throw new NotFoundException('Snapshot not found');
     }
 
-    return snapshot;
+    return this.serializeBigInt(snapshot);
   }
 
   async update(organizationId: string, id: string, dto: UpdateImageDto) {
-    const snapshot = await this.findOne(organizationId, id);
+    await this.findOne(organizationId, id);
 
     return this.prisma.baseImage.update({
-      where: { id: snapshot.id },
+      where: { id },
       data: {
         ...(dto.name && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
@@ -142,7 +152,7 @@ export class ImagesService {
 
     if (snapshot.dockerImage) {
       try {
-        await this.containerService.removeImage(snapshot.dockerImage);
+        await this.containerService.removeImage(snapshot.dockerImage as string);
       } catch (error) {
         this.logger.warn(
           `Failed to remove Docker image ${snapshot.dockerImage}: ${(error as Error).message}`,
@@ -150,6 +160,6 @@ export class ImagesService {
       }
     }
 
-    return this.prisma.baseImage.delete({ where: { id: snapshot.id } });
+    return this.prisma.baseImage.delete({ where: { id } });
   }
 }

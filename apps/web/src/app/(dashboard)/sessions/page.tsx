@@ -78,6 +78,7 @@ import {
   useAICredentials,
   useEnvironments,
   useIntegrations,
+  useSnapshots,
 } from "@/lib/api/hooks";
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
@@ -142,6 +143,8 @@ export default function SessionsPage() {
   const { data: repositories = [] } = useRepositories();
   const { data: aiCredentials = [] } = useAICredentials();
   const { data: environmentsList = [] } = useEnvironments();
+  const { data: snapshotsList = [] } = useSnapshots();
+  const readySnapshots = snapshotsList.filter((s: { status: string }) => s.status === "READY");
   const { data: connectedIntegrations = [] } = useIntegrations();
 
   const activeIntegrations = connectedIntegrations.filter(
@@ -178,6 +181,7 @@ export default function SessionsPage() {
     startArguments: "",
     environmentId: "",
     enableDocker: false,
+    baseImageId: "",
     instructions: "",
   };
 
@@ -236,6 +240,7 @@ export default function SessionsPage() {
       startArguments: session.startArguments || "",
       environmentId: session.environmentId || "",
       enableDocker: session.enableDocker,
+      baseImageId: session.baseImageId || "",
       instructions: session.instructions || "",
     };
     setEditingId(session.id);
@@ -337,6 +342,7 @@ export default function SessionsPage() {
           startArguments: form.startArguments || undefined,
           environmentId: form.environmentId || undefined,
           enableDocker: form.enableDocker || undefined,
+          baseImageId: form.baseImageId || undefined,
           instructions: form.instructions || undefined,
         });
         toast.success("Session created");
@@ -707,6 +713,49 @@ export default function SessionsPage() {
                       className="font-mono text-sm"
                       disabled={configLocked}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Snapshot</Label>
+                    {readySnapshots.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-2 border rounded-md px-3">
+                        No snapshots available.{" "}
+                        <a href="/images" className="underline font-medium text-foreground">
+                          Create one
+                        </a>{" "}
+                        from a running session.
+                      </p>
+                    ) : (
+                      <Select
+                        value={form.baseImageId}
+                        onValueChange={(v) => {
+                          const snap = readySnapshots.find((s: { id: string }) => s.id === v);
+                          setForm({
+                            ...form,
+                            baseImageId: v,
+                            enableDocker: (snap as { enableDocker?: boolean })?.enableDocker ?? form.enableDocker,
+                          });
+                        }}
+                        disabled={configLocked}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="No snapshot (fresh container)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No snapshot (fresh container)</SelectItem>
+                          {readySnapshots.map((snap: { id: string; name: string; description?: string | null }) => (
+                            <SelectItem key={snap.id} value={snap.id}>
+                              {snap.name}
+                              {snap.description && (
+                                <span className="text-muted-foreground ml-2">
+                                  - {snap.description}
+                                </span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
                   <div className="space-y-2">
