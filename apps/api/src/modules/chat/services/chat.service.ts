@@ -43,7 +43,7 @@ Key workflow for setting up environments:
 Be concise. When you perform an action, briefly confirm what happened with the key details (ID, name, status).
 If unsure what the user wants, ask for clarification before acting.`;
 
-const MAX_TOOL_ITERATIONS = 10;
+const MAX_TOOL_ITERATIONS = 5;
 
 @Injectable()
 export class ChatService {
