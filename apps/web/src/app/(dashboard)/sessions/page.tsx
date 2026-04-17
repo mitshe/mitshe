@@ -79,6 +79,7 @@ import {
   useEnvironments,
   useIntegrations,
   useSnapshots,
+  useSkills,
 } from "@/lib/api/hooks";
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
@@ -146,6 +147,7 @@ export default function SessionsPage() {
   const { data: environmentsList = [] } = useEnvironments();
   const { data: snapshotsList = [] } = useSnapshots();
   const readySnapshots = snapshotsList.filter((s: { status: string }) => s.status === "READY");
+  const { data: skillsList = [] } = useSkills();
   const { data: connectedIntegrations = [] } = useIntegrations();
 
   const activeIntegrations = connectedIntegrations.filter(
@@ -183,6 +185,7 @@ export default function SessionsPage() {
     environmentId: "",
     enableDocker: false,
     baseImageId: "",
+    skillIds: [] as string[],
     instructions: "",
   };
 
@@ -259,6 +262,7 @@ export default function SessionsPage() {
       environmentId: session.environmentId || "",
       enableDocker: session.enableDocker,
       baseImageId: session.baseImageId || "",
+      skillIds: [] as string[],
       instructions: session.instructions || "",
     };
     setEditingId(session.id);
@@ -361,6 +365,7 @@ export default function SessionsPage() {
           environmentId: form.environmentId || undefined,
           enableDocker: form.enableDocker || undefined,
           baseImageId: form.baseImageId || undefined,
+          skillIds: form.skillIds.length > 0 ? form.skillIds : undefined,
           instructions: form.instructions || undefined,
         });
         toast.success("Session created");
@@ -867,6 +872,47 @@ export default function SessionsPage() {
                       Auto-accept permissions (skip confirmation prompts)
                     </Label>
                   </div>
+
+                  {skillsList.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Skills</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {skillsList.map((skill: { id: string; name: string; category?: string | null; isSystem?: boolean }) => {
+                          const selected = form.skillIds.includes(skill.id);
+                          return (
+                            <button
+                              key={skill.id}
+                              type="button"
+                              disabled={configLocked}
+                              onClick={() => {
+                                setForm({
+                                  ...form,
+                                  skillIds: selected
+                                    ? form.skillIds.filter((id) => id !== skill.id)
+                                    : [...form.skillIds, skill.id],
+                                });
+                              }}
+                              className={`text-left px-3 py-2 rounded-md border text-sm transition-colors ${
+                                selected
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                              } ${configLocked ? "opacity-60 cursor-not-allowed" : ""}`}
+                            >
+                              <span className="font-medium">{skill.name}</span>
+                              {skill.category && (
+                                <span className="ml-1.5 text-xs text-muted-foreground">
+                                  {skill.category}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selected skills append instructions to CLAUDE.md
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="instructions">Instructions</Label>

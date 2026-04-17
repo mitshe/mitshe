@@ -26,6 +26,7 @@ import { SessionsService } from '../services/sessions.service';
 import { SessionContainerService } from '../services/session-container.service';
 import { TerminalManagerService } from '../services/terminal-manager.service';
 import { EventsGateway } from '../../../infrastructure/websocket/events.gateway';
+import { SkillsService } from '../../skills/services/skills.service';
 import {
   CreateSessionDto,
   ExecCommandDto,
@@ -55,6 +56,7 @@ export class SessionsController {
     private readonly containerService: SessionContainerService,
     private readonly terminalManager: TerminalManagerService,
     private readonly eventsGateway: EventsGateway,
+    private readonly skillsService: SkillsService,
   ) {}
 
   /**
@@ -90,6 +92,21 @@ export class SessionsController {
       userId,
       dto,
     );
+
+    // Resolve skill instructions and append to session
+    if (dto.skillIds && dto.skillIds.length > 0) {
+      const skillInstructions = await this.skillsService.buildInstructions(
+        organizationId,
+        dto.skillIds,
+      );
+      if (skillInstructions) {
+        const combined = session.instructions
+          ? `${session.instructions}\n\n---\n\n${skillInstructions}`
+          : skillInstructions;
+        await this.sessionsService.updateInstructions(session.id, combined);
+        session.instructions = combined;
+      }
+    }
 
     // Resolve snapshot image if baseImageId is provided
     const snapshotImage = dto.baseImageId

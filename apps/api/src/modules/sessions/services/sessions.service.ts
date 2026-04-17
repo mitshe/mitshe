@@ -175,6 +175,13 @@ export class SessionsService {
     );
   }
 
+  async updateInstructions(id: string, instructions: string) {
+    await this.prisma.agentSession.update({
+      where: { id },
+      data: { instructions },
+    });
+  }
+
   async findOne(organizationId: string, id: string) {
     const session = await this.prisma.agentSession.findFirst({
       where: { id, organizationId },

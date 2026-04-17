@@ -67,6 +67,12 @@ export class CreateSessionDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Base snapshot ID to start from' })
   baseImageId?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Skill IDs to apply' })
+  skillIds?: string[];
 }
 
 export class UpdateSessionMetadataDto {

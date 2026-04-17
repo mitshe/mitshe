@@ -76,6 +76,7 @@ export interface CreateSessionDto {
   environmentId?: string;
   enableDocker?: boolean;
   baseImageId?: string;
+  skillIds?: string[];
   instructions?: string;
 }
 
