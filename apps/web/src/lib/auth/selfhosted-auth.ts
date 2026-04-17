@@ -303,8 +303,8 @@ class SelfhostedAuthService {
       localStorage.removeItem(TOKEN_EXPIRY_KEY);
       localStorage.removeItem(CURRENT_ORG_KEY);
 
-      if (redirect && !window.location.pathname.startsWith("/login")) {
-        window.location.href = "/login";
+      if (redirect && !window.location.pathname.startsWith("/sign-in")) {
+        window.location.href = "/sign-in";
       }
     }
   }
