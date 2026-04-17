@@ -270,6 +270,80 @@ export class SessionTools {
         },
       },
       {
+        name: 'session_agent',
+        description:
+          'Send a prompt to Claude Code running inside a session. Claude Code will execute the task ' +
+          '(install packages, configure projects, write code, run tests, etc.) and return the result. ' +
+          'The session must be RUNNING. Use this to automate setup, coding tasks, and testing inside sessions.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            sessionId: { type: 'string', description: 'Session ID' },
+            prompt: {
+              type: 'string',
+              description:
+                'Prompt for Claude Code. Be specific about what to do. ' +
+                'Example: "Install PHP 8.3 and Composer. Clone repo at /workspace/api. Run composer install."',
+            },
+            timeout: {
+              type: 'string',
+              description:
+                'Timeout in seconds (default: 300). Increase for long tasks like installing dependencies.',
+            },
+          },
+          required: ['sessionId', 'prompt'],
+        },
+        execute: async (orgId, _userId, input): Promise<McpToolResult> => {
+          const session = await this.sessionsService.findOne(
+            orgId,
+            input.sessionId as string,
+          );
+          if (!session.containerId) {
+            return {
+              content: 'Session has no running container.',
+              isError: true,
+            };
+          }
+          if (session.status !== 'RUNNING') {
+            return {
+              content: `Session is ${session.status}, not RUNNING.`,
+              isError: true,
+            };
+          }
+          const timeoutSec = parseInt((input.timeout as string) || '300', 10);
+          const timeoutMs = timeoutSec * 1000;
+          try {
+            const stdout = await this.containerService.execCommand(
+              session.containerId,
+              [
+                'bash',
+                '-c',
+                `echo ${JSON.stringify(input.prompt as string)} | claude -p --output-format text`,
+              ],
+              '/workspace',
+              timeoutMs,
+            );
+            // Truncate very long outputs
+            const maxLen = 4000;
+            const truncated =
+              stdout.length > maxLen
+                ? stdout.slice(0, maxLen) + '\n... (output truncated)'
+                : stdout;
+            return {
+              content: JSON.stringify({
+                output: truncated,
+                message: 'Claude Code completed the task.',
+              }),
+            };
+          } catch (error) {
+            return {
+              content: `Claude Code failed: ${(error as Error).message}`,
+              isError: true,
+            };
+          }
+        },
+      },
+      {
         name: 'session_delete',
         description: 'Delete a session and its container.',
         inputSchema: {

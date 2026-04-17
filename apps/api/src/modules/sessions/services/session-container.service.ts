@@ -442,6 +442,7 @@ export class SessionContainerService implements OnModuleInit {
     containerId: string,
     cmd: string[],
     workDir = '/workspace',
+    timeoutMs = 60000,
   ): Promise<string> {
     const container = this.docker.getContainer(containerId);
 
@@ -454,9 +455,14 @@ export class SessionContainerService implements OnModuleInit {
       Tty: false,
     });
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`Command timed out after ${timeoutMs / 1000}s`));
+      }, timeoutMs);
+
       exec.start({}, (err, stream) => {
         if (err || !stream) {
+          clearTimeout(timer);
           resolve('');
           return;
         }
@@ -464,6 +470,7 @@ export class SessionContainerService implements OnModuleInit {
         const chunks: Buffer[] = [];
         stream.on('data', (chunk: Buffer) => chunks.push(chunk));
         stream.on('end', () => {
+          clearTimeout(timer);
           const data = Buffer.concat(chunks);
           // Demux Docker multiplexed stream
           let output = '';
@@ -482,7 +489,10 @@ export class SessionContainerService implements OnModuleInit {
           }
           resolve(output);
         });
-        stream.on('error', () => resolve(''));
+        stream.on('error', () => {
+          clearTimeout(timer);
+          resolve('');
+        });
       });
     });
   }
