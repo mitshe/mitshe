@@ -27,14 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
   Camera,
@@ -45,12 +37,6 @@ import {
   Clock,
   Play,
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type { Snapshot } from "@mitshe/types";
 
 export default function SnapshotsPage() {
@@ -205,87 +191,53 @@ export default function SnapshotsPage() {
           </p>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Source Session</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="w-[100px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {snapshots.map((snap: Snapshot) => (
-              <TableRow key={snap.id}>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{snap.name}</p>
-                    {snap.description && (
-                      <p className="text-xs text-muted-foreground truncate max-w-xs">
-                        {snap.description}
-                      </p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{statusBadge(snap.status)}</TableCell>
-                <TableCell>
-                  {(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession ? (
-                    <span className="text-sm">{(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession!.name}</span>
-                  ) : (
-                    <span className="text-muted-foreground">{"\u2014"}</span>
+        <div className="space-y-2">
+          {snapshots.map((snap: Snapshot) => (
+            <div
+              key={snap.id}
+              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{snap.name}</span>
+                  {statusBadge(snap.status)}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                  {(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession && (
+                    <span>from {(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession!.name}</span>
                   )}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {formatBytes(snap.sizeBytes)}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
+                  {snap.sizeBytes && <span>{formatBytes(snap.sizeBytes)}</span>}
+                  <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {new Date(snap.createdAt).toLocaleDateString()}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <TooltipProvider delayDuration={300}>
-                    <div className="flex items-center gap-1">
-                      {snap.status === "READY" && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              asChild
-                            >
-                              <Link href={`/sessions?snapshot=${snap.id}`}>
-                                <Play className="h-3.5 w-3.5" />
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>New session from snapshot</TooltipContent>
-                        </Tooltip>
-                      )}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={() => deleteSnapshot.mutate(snap.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete snapshot</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TooltipProvider>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  </span>
+                </div>
+                {snap.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {snap.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                {snap.status === "READY" && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
+                    <Link href={`/sessions?snapshot=${snap.id}`}>
+                      <Play className="h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                )}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => deleteSnapshot.mutate(snap.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
