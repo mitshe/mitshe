@@ -108,7 +108,7 @@ const MODES: { key: SidebarMode; label: string; icon: React.ComponentType<{ clas
 
 function getModeFromPath(pathname: string): SidebarMode {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return "chat";
-  if (pathname.startsWith("/sessions") || pathname.startsWith("/presets") || pathname.startsWith("/environments") || pathname.startsWith("/images") || pathname.startsWith("/skills")) return "workspace";
+  if (pathname.startsWith("/sessions") || pathname.startsWith("/images") || pathname.startsWith("/skills")) return "workspace";
   return "manage";
 }
 

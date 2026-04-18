@@ -70,11 +70,9 @@ import {
   useDeleteSession,
   usePauseSession,
   useStopSession,
-  usePresets,
   useProjects,
   useRepositories,
   useAICredentials,
-  useEnvironments,
   useIntegrations,
   useSnapshots,
   useSkills,
@@ -138,11 +136,9 @@ export default function SessionsPage() {
     if (!urlProjectId) return sessions;
     return sessions.filter((s) => s.projectId === urlProjectId);
   }, [sessions, urlProjectId]);
-  const { data: presetsList = [] } = usePresets();
   const { data: projects = [] } = useProjects();
   const { data: repositories = [] } = useRepositories();
   const { data: aiCredentials = [] } = useAICredentials();
-  const { data: environmentsList = [] } = useEnvironments();
   const { data: snapshotsList = [] } = useSnapshots();
   const readySnapshots = snapshotsList.filter((s: { status: string }) => s.status === "READY");
   const { data: skillsList = [] } = useSkills();
@@ -172,14 +168,12 @@ export default function SessionsPage() {
   }, [socket, queryClient]);
 
   const emptyForm = {
-    agentDefinitionId: "",
     name: "",
     projectId: "",
     repositoryIds: [] as string[],
     integrationIds: [] as string[],
     aiCredentialId: "",
     startArguments: "",
-    environmentId: "",
     enableDocker: false,
     enableBrowser: false,
     baseImageId: "",
@@ -208,10 +202,10 @@ export default function SessionsPage() {
 
   // Set default GitHub integration once data loads
   useEffect(() => {
-    if (defaultGithubId && form.integrationIds.length === 0 && !form.environmentId) {
+    if (defaultGithubId && form.integrationIds.length === 0) {
       setForm((prev) => ({
         ...prev,
-        integrationIds: prev.integrationIds.length === 0 && !prev.environmentId
+        integrationIds: prev.integrationIds.length === 0
           ? [defaultGithubId]
           : prev.integrationIds,
       }));
@@ -248,7 +242,6 @@ export default function SessionsPage() {
 
   const openEdit = (session: AgentSession) => {
     const initial = {
-      agentDefinitionId: session.agentDefinitionId || "",
       name: session.name,
       projectId: session.projectId || "",
       repositoryIds:
@@ -257,7 +250,6 @@ export default function SessionsPage() {
         session.integrations?.map((i) => i.integrationId) || [],
       aiCredentialId: session.aiCredentialId || "",
       startArguments: session.startArguments || "",
-      environmentId: session.environmentId || "",
       enableDocker: session.enableDocker,
       enableBrowser: session.enableBrowser ?? false,
       baseImageId: session.baseImageId || "",
@@ -269,25 +261,6 @@ export default function SessionsPage() {
     setOriginalForm(initial);
     setForm(initial);
     setIsDialogOpen(true);
-  };
-
-  const handleAgentSelect = (agentId: string) => {
-    const agent = presetsList.find((a) => a.id === agentId);
-    if (!agent) {
-      setForm((prev) => ({ ...prev, agentDefinitionId: "" }));
-      return;
-    }
-    setForm((prev) => ({
-      ...prev,
-      agentDefinitionId: agentId,
-      aiCredentialId: agent.aiCredentialId || prev.aiCredentialId,
-      startArguments: agent.startArguments || prev.startArguments,
-      instructions: agent.instructions || prev.instructions,
-      projectId: agent.defaultProjectId || prev.projectId,
-      repositoryIds:
-        agent.defaultRepositories?.map((r) => r.repositoryId) ||
-        prev.repositoryIds,
-    }));
   };
 
   const toggleRepo = (repoId: string) => {
@@ -307,10 +280,8 @@ export default function SessionsPage() {
 
   const metadataFields = ["name", "projectId", "instructions"] as const;
   const configFields = [
-    "agentDefinitionId",
     "aiCredentialId",
     "startArguments",
-    "environmentId",
     "enableDocker",
   ] as const;
 
@@ -359,9 +330,7 @@ export default function SessionsPage() {
           integrationIds:
             form.integrationIds.length > 0 ? form.integrationIds : undefined,
           aiCredentialId: form.aiCredentialId || undefined,
-          agentDefinitionId: form.agentDefinitionId || undefined,
           startArguments: form.startArguments || undefined,
-          environmentId: form.environmentId || undefined,
           enableDocker: form.enableDocker || undefined,
           enableBrowser: form.enableBrowser || undefined,
           baseImageId: form.baseImageId || undefined,
@@ -406,9 +375,7 @@ export default function SessionsPage() {
             repositoryIds: form.repositoryIds,
             integrationIds: form.integrationIds,
             aiCredentialId: form.aiCredentialId,
-            agentDefinitionId: form.agentDefinitionId,
             startArguments: form.startArguments,
-            environmentId: form.environmentId,
             enableDocker: form.enableDocker,
             instructions: form.instructions,
           },
@@ -560,33 +527,6 @@ export default function SessionsPage() {
                   Sessions run CLI agents (Claude Code or OpenClaw) in isolated containers
                 </p>
               </div>
-
-              {presetsList.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Preset</Label>
-                  <Select
-                    value={form.agentDefinitionId}
-                    onValueChange={handleAgentSelect}
-                    disabled={configLocked}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="No preset - configure manually" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {presetsList.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                          {a.description && (
-                            <span className="text-muted-foreground ml-2">
-                              - {a.description}
-                            </span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
 
               <Collapsible>
                 <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1 group w-full">
@@ -771,52 +711,6 @@ export default function SessionsPage() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Environment</Label>
-                    {environmentsList.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-2 border rounded-md px-3">
-                        No environments defined.{" "}
-                        <a href="/environments" className="underline font-medium text-foreground">
-                          Create one
-                        </a>{" "}
-                        to set up custom packages, env vars, and resource limits.
-                      </p>
-                    ) : (
-                      <Select
-                        value={form.environmentId}
-                        onValueChange={(v) => {
-                          const env = environmentsList.find((e) => e.id === v);
-                          setForm({
-                            ...form,
-                            environmentId: v,
-                            enableDocker: env?.enableDocker ?? form.enableDocker,
-                            integrationIds:
-                              env?.integrations?.map((i) => i.integrationId) ??
-                              form.integrationIds,
-                          })
-                        }
-                        }
-                        disabled={configLocked}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Default environment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {environmentsList.map((env) => (
-                            <SelectItem key={env.id} value={env.id}>
-                              {env.name}
-                              {env.description && (
-                                <span className="text-muted-foreground ml-2">
-                                  - {env.description}
-                                </span>
-                              )}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="enableDocker"
@@ -981,14 +875,6 @@ export default function SessionsPage() {
                 <Plus className="w-4 h-4 mr-2" />
                 New Session
               </Button>
-              <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
-                <a href="/presets" className="underline hover:text-foreground transition-colors">
-                  Manage presets
-                </a>
-                <a href="/environments" className="underline hover:text-foreground transition-colors">
-                  Manage environments
-                </a>
-              </div>
             </div>
           ) : (
             <div className="space-y-2">
