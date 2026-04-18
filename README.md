@@ -13,10 +13,14 @@ mitshe automates development workflows using AI agents and provides interactive 
 
 | | |
 |---|---|
-| ![Dashboard](docs/dashboard.png) | ![Projects](docs/projects.png) |
-| ![Tasks](docs/tasks.png) | ![Workflows](docs/workflows.png) |
-| ![Executions](docs/executions.png) | ![Integrations](docs/integrations.png) |
-| ![Sessions](docs/session.png) | ![Documentation](docs/documentation.png) |
+| ![Dashboard](docs/dashboard.png) | ![Tasks](docs/tasks.png) |
+| Dashboard — tasks, sessions, workflows at a glance | Tasks — AI-processed work items with status tracking |
+| ![Workflows](docs/workflows.png) | ![Sessions](docs/session.png) |
+| Workflows — automated pipelines with triggers | Sessions — interactive AI agent workspaces |
+| ![Projects](docs/projects.png) | ![Executions](docs/executions.png) |
+| Projects — organize repos, tasks, workflows | Executions — workflow run history |
+| ![Integrations](docs/integrations.png) | ![Documentation](docs/documentation.png) |
+| Integrations — GitHub, Jira, Slack, and more | Documentation — built-in guides and API reference |
 
 ## Run it
 
