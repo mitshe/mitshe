@@ -52,7 +52,7 @@ export function BreadcrumbsWrapper() {
     return null;
   }
   // Workflow editor, session detail, and chat have their own navigation
-  if (/^\/workflows\/[^/]+\/edit/.test(pathname) || /^\/sessions\/[^/]+$/.test(pathname) || pathname.startsWith("/chat")) {
+  if (/^\/workflows\/[^/]+\/edit/.test(pathname) || /^\/sessions\/[^/]+$/.test(pathname) || pathname.startsWith("/chat") || pathname.endsWith("/terminal")) {
     return null;
   }
 
