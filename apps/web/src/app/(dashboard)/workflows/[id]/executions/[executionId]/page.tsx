@@ -513,16 +513,6 @@ export default function ExecutionDetailPage() {
         nodes={nodes as Array<{ id: string; name: string; type: string }>}
       />
 
-      {/* Error */}
-      {execution?.error && (
-        <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
-          <p className="text-sm text-destructive flex items-center gap-1.5 mb-1">
-            <AlertCircle className="w-3.5 h-3.5" />
-            {execution.error}
-          </p>
-        </div>
-      )}
-
       {/* Steps */}
       {sortedNodeResults.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
