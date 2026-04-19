@@ -17,7 +17,7 @@ function selfhostedMiddleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(new URL("/chat", req.url));
   }
 
   return NextResponse.next();
@@ -28,7 +28,7 @@ export default authMode === "clerk"
       const { pathname } = req.nextUrl;
 
       if (pathname === "/") {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
+        return NextResponse.redirect(new URL("/chat", req.url));
       }
 
       if (!isPublicRoute(req)) {

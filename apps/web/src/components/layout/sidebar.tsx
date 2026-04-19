@@ -101,8 +101,8 @@ const workspaceNavItems: NavItem[] = [
 // ─── Mode config ───
 
 const MODES: { key: SidebarMode; label: string; icon: React.ComponentType<{ className?: string }>; defaultHref: string; tooltip: string }[] = [
-  { key: "manage", label: "Manage", icon: LayoutDashboard, defaultHref: "/dashboard", tooltip: "Projects, tasks & workflows" },
   { key: "chat", label: "Chat", icon: MessageCircle, defaultHref: "/chat", tooltip: "AI assistant" },
+  { key: "manage", label: "Manage", icon: LayoutDashboard, defaultHref: "/dashboard", tooltip: "Projects, tasks & workflows" },
   { key: "workspace", label: "Workspace", icon: Terminal, defaultHref: "/sessions", tooltip: "Sessions & environments" },
 ];
 
@@ -404,7 +404,7 @@ export function Sidebar() {
   return (
     <div className="hidden md:flex h-full w-64 flex-col border-r bg-background">
       <div className="flex h-14 items-center border-b px-4 shrink-0">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+        <Link href="/chat" className="flex items-center gap-2 font-semibold">
           <img src="/logo.svg" alt="mitshe" className="h-8 w-8" />
           <span className="font-brand">mitshe</span>
         </Link>
