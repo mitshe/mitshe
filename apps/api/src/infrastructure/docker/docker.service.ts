@@ -147,6 +147,12 @@ export type RunnerEvent =
       level: 'debug' | 'info' | 'warn' | 'error';
       message: string;
       timestamp: string;
+    }
+  | {
+      type: 'cmd';
+      command: string;
+      output?: string;
+      timestamp: string;
     };
 
 export interface WorkflowResult {

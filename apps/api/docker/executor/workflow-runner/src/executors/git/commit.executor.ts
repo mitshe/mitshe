@@ -37,14 +37,13 @@ export class GitCommitExecutor extends BaseExecutor {
       );
     }
 
-    logger.info(`Committing ${files.length} file(s): ${files.map(f => f.path).join(', ')}`);
+    logger.cmd(`git add ${files.map(f => f.path).join(' ')}`);
 
     // Write files to disk
     for (const file of files) {
       const filePath = join(repoDir, file.path);
       await mkdir(dirname(filePath), { recursive: true });
       await writeFile(filePath, file.content, 'utf8');
-      logger.info(`Written: ${file.path}`);
     }
 
     const git = getGit(ctx);
@@ -62,7 +61,7 @@ export class GitCommitExecutor extends BaseExecutor {
       throw new Error('Commit failed - no changes detected or commit was empty');
     }
 
-    logger.info(`Committed: ${result.commit}`);
+    logger.cmd(`git commit -m "${message}"`, `[${result.branch} ${result.commit}] ${message}\n ${files.length} file(s) changed`);
 
     return {
       committed: true,

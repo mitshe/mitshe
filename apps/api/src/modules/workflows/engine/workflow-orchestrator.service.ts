@@ -149,15 +149,37 @@ export class WorkflowOrchestratorService {
             );
           }
 
-          // Collect user-visible log entries (skip debug noise)
-          if (event.type === 'log' && event.level !== 'debug') {
-            // Skip internal debug messages
+          // Collect user-visible log entries
+          if (event.type === 'cmd') {
+            // CLI command with real output
+            executionLogs.push({
+              timestamp: event.timestamp,
+              message: `$ ${event.command}`,
+            });
+            if (event.output?.trim()) {
+              executionLogs.push({
+                timestamp: event.timestamp,
+                message: event.output.trim(),
+              });
+            }
+            this.eventEmitter.emitExecutionLog(
+              organizationId,
+              executionId,
+              workflowId,
+              'info',
+              `$ ${event.command}${event.output ? '\n' + event.output.trim() : ''}`,
+            );
+          } else if (event.type === 'log' && event.level === 'info') {
+            // Skip debug noise
             const msg = event.message;
             const isDebug =
               msg.includes('Original config:') ||
               msg.includes('Interpolated config:') ||
               msg.includes('Output stored:') ||
-              msg.includes('Available outputs:');
+              msg.includes('Available outputs:') ||
+              msg.startsWith('Node ') ||
+              msg.startsWith('Executing level') ||
+              msg.startsWith('Parallel execution');
             if (!isDebug) {
               executionLogs.push({
                 timestamp: event.timestamp,
@@ -167,7 +189,7 @@ export class WorkflowOrchestratorService {
                 organizationId,
                 executionId,
                 workflowId,
-                event.level,
+                'info',
                 msg,
               );
             }

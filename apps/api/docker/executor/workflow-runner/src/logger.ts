@@ -33,4 +33,13 @@ export const logger = {
   info: (msg: string) => log('info', msg),
   warn: (msg: string) => log('warn', msg),
   error: (msg: string) => log('error', msg),
+  /** Log a CLI command + its output as structured event */
+  cmd: (command: string, output?: string) => {
+    emit({
+      type: 'cmd',
+      command,
+      output: output || '',
+      timestamp: new Date().toISOString(),
+    });
+  },
 };

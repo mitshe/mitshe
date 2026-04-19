@@ -22,7 +22,7 @@ export class GitPushExecutor extends BaseExecutor {
       throw new Error('Branch name is required. Create a branch first.');
     }
 
-    logger.info(`Pushing branch: ${branch}`);
+    logger.cmd(`git push${force ? ' --force' : ''} origin ${branch}`);
 
     const git = getGit(ctx);
 
@@ -40,7 +40,7 @@ export class GitPushExecutor extends BaseExecutor {
 
       await git.push(pushArgs);
 
-      logger.info(`Successfully pushed branch: ${branch}`);
+      logger.cmd(`git push origin ${branch}`, `To origin\n * [new branch]  ${branch} -> ${branch}`);
     } catch (error) {
       const message = (error as Error).message;
 

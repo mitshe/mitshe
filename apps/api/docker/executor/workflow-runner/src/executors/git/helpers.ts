@@ -4,6 +4,7 @@
  */
 
 import { simpleGit, SimpleGit } from 'simple-git';
+import { spawn } from 'child_process';
 import type { ExecutorContext } from '../base.js';
 import { logger } from '../../logger.js';
 
@@ -65,6 +66,33 @@ export async function configureGitUser(git: SimpleGit): Promise<void> {
   } catch {
     // Config might already exist, ignore
   }
+}
+
+/**
+ * Run a git command directly via spawn, capturing real stdout/stderr.
+ * Emits a 'cmd' event with the command and its actual output.
+ */
+export async function runGitCmd(
+  args: string[],
+  cwd: string,
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  const cmdStr = `git ${args.join(' ')}`;
+
+  return new Promise((resolve) => {
+    const proc = spawn('git', args, { cwd });
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout.on('data', (d) => { stdout += d.toString(); });
+    proc.stderr.on('data', (d) => { stderr += d.toString(); });
+
+    proc.on('close', (code) => {
+      // Emit command + real output
+      const output = (stdout + stderr).trim();
+      logger.cmd(cmdStr, output || undefined);
+      resolve({ stdout, stderr, exitCode: code ?? 0 });
+    });
+  });
 }
 
 /**

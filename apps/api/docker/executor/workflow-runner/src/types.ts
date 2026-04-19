@@ -125,4 +125,5 @@ export type RunnerEvent =
   | { type: 'node:failed'; nodeId: string; nodeName: string; nodeType: string; error: string; duration: number; timestamp: string }
   | { type: 'workflow:completed'; result: WorkflowResult; timestamp: string }
   | { type: 'workflow:failed'; error: string; result: WorkflowResult; timestamp: string }
-  | { type: 'log'; level: 'debug' | 'info' | 'warn' | 'error'; message: string; timestamp: string };
+  | { type: 'log'; level: 'debug' | 'info' | 'warn' | 'error'; message: string; timestamp: string }
+  | { type: 'cmd'; command: string; output?: string; timestamp: string };

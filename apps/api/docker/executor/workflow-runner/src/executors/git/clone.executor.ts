@@ -43,7 +43,8 @@ export class GitCloneExecutor extends BaseExecutor {
     ctx.workflowContext.cloneUrl = cloneUrl;
     ctx.workflowContext.defaultBranch = defaultBranch;
 
-    logger.info(`Cloning repository: ${repoFullPath || repoName || cloneUrl}`);
+    const cloneArgs = shallow ? `--depth 1 --branch ${defaultBranch}` : '';
+    logger.cmd(`git clone ${cloneArgs} ${repoFullPath || cloneUrl} ${targetDir}`.trim());
 
     const authUrl = buildAuthUrl(cloneUrl, ctx);
     const git = simpleGit();
@@ -85,7 +86,7 @@ export class GitCloneExecutor extends BaseExecutor {
     const repoGit = simpleGit(targetDir);
     await configureGitUser(repoGit);
 
-    logger.info(`Repository cloned to ${targetDir}`);
+    logger.cmd(`git clone`, `Cloning into '${targetDir}'...\ndone.`);
 
     return {
       repositoryName: repoName,

@@ -19,7 +19,7 @@ export class GitBranchExecutor extends BaseExecutor {
 
     const git = getGit(ctx);
 
-    logger.info(`Creating branch: ${branchName}`);
+    logger.cmd(`git checkout -b ${branchName}${sourceBranch ? ` ${sourceBranch}` : ''}`);
 
     // If source branch specified, checkout it first
     if (sourceBranch) {
@@ -36,7 +36,7 @@ export class GitBranchExecutor extends BaseExecutor {
     // Create and checkout new branch
     try {
       await git.checkoutLocalBranch(branchName);
-      logger.info(`Branch "${branchName}" created and checked out`);
+      logger.cmd(`git checkout -b ${branchName}`, `Switched to a new branch '${branchName}'`);
     } catch (error) {
       const message = (error as Error).message;
       if (message.includes('already exists')) {
