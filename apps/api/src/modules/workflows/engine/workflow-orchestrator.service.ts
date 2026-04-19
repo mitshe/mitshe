@@ -183,23 +183,16 @@ export class WorkflowOrchestratorService {
               addLog(event.timestamp, msg);
             }
           } else if (event.type === 'node:started') {
-            executionLogs.push({
-              timestamp: event.timestamp,
-              message: `▶ ${event.nodeName}`,
-            });
+            addLog(event.timestamp, `▶ ${event.nodeName}`);
           } else if (event.type === 'node:completed') {
             const msg = event.output?.message
               ? ` — ${event.output.message}`
               : '';
-            executionLogs.push({
-              timestamp: event.timestamp,
-              message: `✓ ${event.nodeName}${msg}`,
-            });
+            addLog(event.timestamp, `✓ ${event.nodeName}${msg}`);
           } else if (event.type === 'node:failed') {
-            executionLogs.push({
-              timestamp: event.timestamp,
-              message: `✗ ${event.nodeName} — ${event.error}`,
-            });
+            addLog(event.timestamp, `✗ ${event.nodeName} — ${event.error}`);
+          } else if (event.type === 'workflow:failed') {
+            addLog(event.timestamp, `✗ Workflow failed: ${event.error}`);
           }
         },
       );
