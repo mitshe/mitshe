@@ -29,6 +29,90 @@ export class IntegrationTools {
         },
       },
       {
+        name: 'integration_create',
+        description:
+          'Connect a new integration (GitHub, GitLab, Jira, Slack, etc.). ' +
+          'If the integration already exists, it will update the credentials. ' +
+          'Use this when the user provides an API token or wants to connect a service.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string',
+              description: 'Integration type',
+              enum: [
+                'GITHUB',
+                'GITLAB',
+                'JIRA',
+                'SLACK',
+                'DISCORD',
+                'TELEGRAM',
+                'YOUTRACK',
+                'LINEAR',
+                'TRELLO',
+                'OBSIDIAN',
+              ],
+            },
+            token: {
+              type: 'string',
+              description:
+                'API token / Personal Access Token / Bot token for the service',
+            },
+            url: {
+              type: 'string',
+              description:
+                'Base URL (required for Jira, YouTrack, GitLab self-hosted). ' +
+                'E.g. https://your-domain.atlassian.net for Jira',
+            },
+          },
+          required: ['type', 'token'],
+        },
+        execute: async (orgId, _userId, input): Promise<McpToolResult> => {
+          const type = input.type as string;
+          const token = input.token as string;
+          const url = input.url as string | undefined;
+
+          const config: Record<string, string> = {};
+          if (type === 'GITHUB' || type === 'GITLAB' || type === 'LINEAR') {
+            config.accessToken = token;
+          } else if (type === 'JIRA') {
+            config.apiToken = token;
+            if (url) config.baseUrl = url;
+          } else if (type === 'SLACK') {
+            config.botToken = token;
+          } else if (type === 'DISCORD') {
+            config.webhookUrl = token;
+          } else if (type === 'TELEGRAM') {
+            config.botToken = token;
+          } else if (type === 'YOUTRACK') {
+            config.token = token;
+            if (url) config.baseUrl = url;
+          } else {
+            config.token = token;
+          }
+
+          try {
+            const integration = await this.integrationsService.create(orgId, {
+              type: type as any,
+              config,
+            });
+            return {
+              content: JSON.stringify({
+                id: integration.id,
+                type: integration.type,
+                status: integration.status,
+                message: `${type} connected successfully.`,
+              }),
+            };
+          } catch (error) {
+            return {
+              content: `Failed to connect ${type}: ${(error as Error).message}`,
+              isError: true,
+            };
+          }
+        },
+      },
+      {
         name: 'integration_test',
         description: 'Test connection of a specific integration.',
         inputSchema: {

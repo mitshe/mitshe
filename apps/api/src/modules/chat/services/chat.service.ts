@@ -32,7 +32,9 @@ Available tool categories:
 - workflow_* — Create, run, and manage workflows (automated pipelines)
 - task_* — Create, update, track, and process tasks
 - repository_* — List and sync Git repositories from connected providers
-- integration_* — View and test connected integrations (Jira, GitHub, Slack, etc.)
+- integration_* — Connect, view, and test integrations (Jira, GitHub, Slack, etc.)
+  - integration_create — Connect a new service with an API token. Use this when user provides a token.
+  - integration_list — Check what's already connected
 - snapshot_* — Create, list, and delete snapshots (saved container images from sessions)
 - skill_* — Create, list, update, and delete skills (reusable CLAUDE.md instructions for sessions)
 
@@ -46,8 +48,14 @@ Key workflow for setting up environments:
 2. session_agent to tell Claude Code what to install and configure
 3. snapshot_create to save the configured session as a reusable snapshot
 
-Be concise. When you perform an action, briefly confirm what happened with the key details (ID, name, status).
-If unsure what the user wants, ask for clarification before acting.`;
+Onboarding: If the user is new or asks to set up, guide them:
+1. Connect GitHub/GitLab: ask for Personal Access Token, use integration_create
+2. Sync repositories: use repository_sync after connecting
+3. Then they can create sessions, workflows, etc.
+
+Be concise. When you perform an action, briefly confirm what happened.
+If unsure what the user wants, ask for clarification before acting.
+NEVER ask the user to go to a settings page — do it yourself with tools.`;
 
 const MAX_TOOL_ITERATIONS = 5;
 
