@@ -169,19 +169,13 @@ export class ExecutionEventEmitterService {
   emitExecutionLog(
     organizationId: string,
     executionId: string,
-    workflowId: string,
-    level: string,
+    _workflowId: string,
+    _level: string,
     message: string,
   ): void {
-    this.eventsGateway.emitWorkflowNodeUpdate(organizationId, executionId, {
-      executionId,
-      workflowId,
-      nodeId: '_log',
-      nodeName: '',
-      nodeType: 'log',
-      status: 'log',
-      log: { level, message },
-    });
+    this.eventsGateway.server
+      .to(`execution:${executionId}`)
+      .emit('workflow:execution:log', { executionId, message });
   }
 
   emitExecutionCancelled(

@@ -108,76 +108,24 @@ export function ExecutionLogs({
       setLiveEntries((prev) => [...prev, entry]);
     };
 
-    const nodeHandler = (payload: {
-      nodeId: string;
-      nodeName?: string;
-      status: string;
-      error?: string;
-      output?: Record<string, unknown>;
-    }) => {
-      // Skip if already in DB data
-      const key = `${payload.nodeId}:${payload.status}`;
-      if (seenNodeIdsRef.current.has(key)) return;
-      seenNodeIdsRef.current.add(key);
-
-      const name = payload.nodeName || payload.nodeId;
+    // Listen to dedicated log event — same format as saved logs in DB
+    const logHandler = (payload: { message: string }) => {
       const time = new Date().toLocaleTimeString("en-US", { hour12: false });
-
-      if (payload.status === "running") {
-        addLive({ timestamp: time, type: "node", text: `\u25B6 ${name}` });
-      } else if (payload.status === "completed") {
-        const msg = payload.output?.message ? ` \u2014 ${payload.output.message}` : "";
-        addLive({ timestamp: time, type: "success", text: `\u2713 ${name}${msg}` });
-      } else if (payload.status === "failed") {
-        addLive({ timestamp: time, type: "error", text: `\u2717 ${name} \u2014 ${payload.error || "Failed"}` });
-      }
-    };
-
-    const completeHandler = () => {
+      const msg = payload.message;
+      const isCmd = msg.startsWith("$");
+      const isError = msg.startsWith("\u2717");
+      const isSuccess = msg.startsWith("\u2713");
       addLive({
-        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-        type: "success",
-        text: "\u2713 Workflow completed",
+        timestamp: time,
+        type: isCmd ? "cmd" : isError ? "error" : isSuccess ? "success" : msg.startsWith("\u25B6") ? "node" : "info",
+        text: msg,
       });
     };
 
-    const failHandler = (payload: { error?: string }) => {
-      addLive({
-        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-        type: "error",
-        text: `\u2717 Workflow failed: ${payload.error || "Unknown error"}`,
-      });
-    };
-
-    const logHandler = (payload: {
-      nodeId?: string;
-      status?: string;
-      log?: { level: string; message: string };
-    }) => {
-      if (payload.status === "log" && payload.log) {
-        const time = new Date().toLocaleTimeString("en-US", { hour12: false });
-        const msg = payload.log.message;
-        const isCmd = msg.startsWith("$");
-        const isError = msg.startsWith("\u2717") || payload.log.level === "error";
-        const isSuccess = msg.startsWith("\u2713");
-        addLive({
-          timestamp: time,
-          type: isCmd ? "cmd" : isError ? "error" : isSuccess ? "success" : "info",
-          text: msg,
-        });
-        return;
-      }
-      nodeHandler(payload as Parameters<typeof nodeHandler>[0]);
-    };
-
-    socket.on("workflow:node:update", logHandler);
-    socket.on("workflow:execution:completed", completeHandler);
-    socket.on("workflow:execution:failed", failHandler);
+    socket.on("workflow:execution:log", logHandler);
 
     return () => {
-      socket.off("workflow:node:update", logHandler);
-      socket.off("workflow:execution:completed", completeHandler);
-      socket.off("workflow:execution:failed", failHandler);
+      socket.off("workflow:execution:log", logHandler);
       unsubscribeFromExecution(executionId);
     };
   }, [socket, executionId, subscribeToExecution, unsubscribeFromExecution]);
