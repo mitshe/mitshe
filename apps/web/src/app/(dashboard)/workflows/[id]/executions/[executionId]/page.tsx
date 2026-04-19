@@ -3,13 +3,6 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
@@ -144,52 +137,18 @@ function PipelineProgress({
   const progress = total > 0 ? ((completed + failed) / total) * 100 : 0;
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-          <div
-            className={`h-full transition-all duration-500 ${
-              running > 0
-                ? "bg-blue-500"
-                : failed > 0
-                  ? "bg-zinc-500"
-                  : "bg-emerald-500"
-            }`}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <span className="text-xs font-medium text-muted-foreground tabular-nums">
-          {completed + failed}/{total} steps
-        </span>
-      </div>
-
-      <div className="flex gap-1.5 overflow-x-auto pb-2">
-        {nodes.map((node, idx) => {
-          const step = steps.find((s) => s.nodeId === node.id);
-          const status = step?.status || "pending";
-
-          return (
-            <div
-              key={node.id}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                status === "running"
-                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30"
-                  : status === "completed"
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    : status === "failed"
-                      ? "bg-zinc-100 dark:bg-zinc-800 text-rose-600 dark:text-rose-400"
-                      : "bg-muted text-muted-foreground"
-              }`}
-            >
-              <span>{idx + 1}</span>
-              {status === "running" && (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              )}
-              {status === "completed" && <CheckCircle2 className="w-3 h-3" />}
-              {status === "failed" && <XCircle className="w-3 h-3" />}
-            </div>
-          );
-        })}
+    <div className="flex items-center gap-3">
+      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full transition-all duration-500 rounded-full ${
+            running > 0
+              ? "bg-blue-500"
+              : failed > 0
+                ? "bg-destructive"
+                : "bg-emerald-500"
+          }`}
+          style={{ width: `${progress}%` }}
+        />
       </div>
     </div>
   );
@@ -199,122 +158,80 @@ function StepCard({
   step,
   nodeName,
   nodeType,
-  isLast,
-  stepNumber,
 }: {
   step: NodeExecutionResult;
   nodeName: string;
   nodeType: string;
-  isLast: boolean;
-  stepNumber: number;
 }) {
-  const [isOpen, setIsOpen] = useState(step.status === "failed");
+  const [isOpen, setIsOpen] = useState(false);
   const status = statusConfig[step.status] || statusConfig.pending;
   const icon = nodeTypeIcons[nodeType] || <Zap className="w-4 h-4" />;
+  const hasDetails = step.error || (step.output && Object.keys(step.output).length > 0);
 
   return (
-    <div className="relative">
-      {!isLast && (
-        <div className="absolute left-5 top-12 w-px h-full -ml-px bg-border" />
-      )}
-
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-start gap-4">
-          <div
-            className={`w-10 h-10 rounded-full mt-4 flex items-center justify-center text-white z-10 font-semibold text-sm transition-all ${status.bgColor} ${
-              step.status === "running" ? "shadow-md shadow-blue-500/30" : ""
-            } ${step.status === "failed" ? "text-rose-400" : ""}`}
-          >
-            {step.status === "running" ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : step.status === "failed" ? (
-              <XCircle className="w-5 h-5" />
-            ) : (
-              stepNumber
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger className="w-full text-left" disabled={!hasDetails}>
+        <div
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors ${
+            step.status === "running"
+              ? "border-blue-500/30 bg-blue-500/5"
+              : step.status === "failed"
+                ? "border-destructive/20 bg-destructive/5"
+                : "hover:bg-muted/50"
+          }`}
+        >
+          <div className={status.color}>{icon}</div>
+          <div className="flex-1 min-w-0">
+            <span className="font-medium text-sm">{nodeName}</span>
+            {step.error && (
+              <p className="text-xs text-destructive truncate mt-0.5">
+                {String(step.error)}
+              </p>
             )}
           </div>
-
-          <div className="flex-1 pb-6">
-            <CollapsibleTrigger className="w-full text-left">
-              <div
-                className={`flex items-center justify-between p-4 bg-card border rounded-xl hover:bg-accent/30 transition-all cursor-pointer ${
-                  step.status === "running"
-                    ? "border-blue-500/30 shadow-sm"
-                    : step.status === "failed"
-                      ? "border-border"
-                      : ""
+          <div className="flex items-center gap-2 shrink-0">
+            {step.durationMs ? (
+              <span className="text-xs text-muted-foreground font-mono">
+                {formatDuration(step.durationMs)}
+              </span>
+            ) : null}
+            {step.status === "running" ? (
+              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+            ) : step.status === "completed" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            ) : step.status === "failed" ? (
+              <XCircle className="w-4 h-4 text-destructive" />
+            ) : (
+              <Clock className="w-4 h-4 text-muted-foreground" />
+            )}
+            {hasDetails && (
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${
+                  isOpen ? "rotate-0" : "-rotate-90"
                 }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      step.status === "running"
-                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                        : step.status === "failed"
-                          ? "bg-zinc-100 dark:bg-zinc-800 text-rose-500 dark:text-rose-400"
-                          : step.status === "completed"
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                            : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {icon}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{nodeName}</p>
-                    <p className="text-xs text-muted-foreground">{nodeType}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {step.durationMs && (
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {formatDuration(step.durationMs)}
-                    </span>
-                  )}
-                  <Badge
-                    variant="secondary"
-                    className={`text-xs font-medium ${status.color}`}
-                  >
-                    {status.label}
-                  </Badge>
-                  <ChevronDown
-                    className={`w-4 h-4 text-muted-foreground transition-transform ${
-                      isOpen ? "rotate-0" : "-rotate-90"
-                    }`}
-                  />
-                </div>
-              </div>
-            </CollapsibleTrigger>
-
-            <CollapsibleContent>
-              <div className="mt-2 px-4 pb-3 space-y-3">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Started</p>
-                    <p className="font-mono text-xs">
-                      {step.startedAt ? new Date(step.startedAt).toLocaleTimeString() : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Duration</p>
-                    <p className="font-mono text-xs">{formatDuration(step.durationMs ?? undefined)}</p>
-                  </div>
-                </div>
-                {step.error && (
-                  <pre className="p-3 bg-rose-950/20 border border-rose-900/30 rounded-lg text-xs text-rose-300 overflow-x-auto whitespace-pre-wrap font-mono">
-                    {String(step.error)}
-                  </pre>
-                )}
-                {step.output && Object.keys(step.output).length > 0 && (
-                  <pre className="p-3 bg-muted/50 border rounded-lg text-xs overflow-x-auto max-h-48 font-mono">
-                    {JSON.stringify(step.output, null, 2)}
-                  </pre>
-                )}
-              </div>
-            </CollapsibleContent>
+              />
+            )}
           </div>
         </div>
-      </Collapsible>
-    </div>
+      </CollapsibleTrigger>
+
+      {hasDetails && (
+        <CollapsibleContent>
+          <div className="mx-4 mb-2 mt-1 space-y-2">
+            {step.error && (
+              <pre className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-xs text-destructive overflow-x-auto whitespace-pre-wrap font-mono">
+                {String(step.error)}
+              </pre>
+            )}
+            {step.output && Object.keys(step.output).length > 0 && (
+              <pre className="p-3 bg-muted/50 border rounded-lg text-xs overflow-x-auto max-h-48 font-mono">
+                {JSON.stringify(step.output, null, 2)}
+              </pre>
+            )}
+          </div>
+        </CollapsibleContent>
+      )}
+    </Collapsible>
   );
 }
 
@@ -508,155 +425,127 @@ export default function ExecutionDetailPage() {
     nodes.map((n: { id: string; name: string; type: string }) => [n.id, n]),
   );
 
+  const completedCount = sortedNodeResults.filter(
+    (n) => n.status === "completed",
+  ).length;
+  const totalDuration =
+    execution?.startedAt && execution?.completedAt
+      ? new Date(execution.completedAt).getTime() -
+        new Date(execution.startedAt).getTime()
+      : undefined;
+
   return (
     <div className="space-y-6 p-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Link href={`/workflows/${workflowId}/executions`}>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">
-                {workflow?.name || "Workflow"}
-              </h1>
-              <Badge
-                variant="outline"
-                className={`gap-1 ${executionStatus.color}`}
-              >
-                {executionStatus.icon}
-                {executionStatus.label}
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">
-              Execution {executionId.slice(0, 8)}...
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {workflow?.name || "Workflow"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {executionId.slice(0, 8)} · {execution?.startedAt
+                ? formatDistanceToNow(new Date(execution.startedAt))
+                : ""}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          {/* WebSocket connection indicator */}
-          <div className="flex items-center gap-2 text-xs">
-            <Radio
-              className={`w-3 h-3 ${
-                isConnected ? "text-emerald-500 animate-pulse" : "text-zinc-400"
-              }`}
-            />
-            <span className="text-muted-foreground">
-              {isConnected ? "Live" : "Offline"}
-            </span>
-          </div>
-
-          <div className="flex gap-2">
-            <Link href={`/workflows/${workflowId}/executions/${executionId}/terminal`}>
-              <Button variant="outline" size="sm">
-                <TerminalIcon className="w-4 h-4 mr-2" />
-                Terminal
-              </Button>
-            </Link>
-            {currentStatus === "running" && (
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                disabled={cancelExecution.isPending}
-              >
-                <StopCircle className="w-4 h-4 mr-2" />
-                Cancel
-              </Button>
-            )}
-            {currentStatus === "failed" && (
-              <Button onClick={handleRetry} disabled={retryExecution.isPending}>
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Retry
-              </Button>
-            )}
-          </div>
+        <div className="flex items-center gap-2">
+          <Link href={`/workflows/${workflowId}/executions/${executionId}/terminal`}>
+            <Button variant="outline" size="sm">
+              <TerminalIcon className="w-4 h-4 mr-1.5" />
+              Terminal
+            </Button>
+          </Link>
+          {currentStatus === "running" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancel}
+              disabled={cancelExecution.isPending}
+            >
+              <StopCircle className="w-4 h-4 mr-1.5" />
+              Cancel
+            </Button>
+          )}
+          {currentStatus === "failed" && (
+            <Button size="sm" onClick={handleRetry} disabled={retryExecution.isPending}>
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              Retry
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Subtle execution summary bar */}
-      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground border-b pb-4">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          <span>
-            Started{" "}
-            {execution?.startedAt
-              ? formatDistanceToNow(new Date(execution.startedAt))
-              : "-"}
+      {/* Status bar */}
+      <div className="flex items-center gap-3">
+        <Badge
+          variant="outline"
+          className={`gap-1.5 px-3 py-1 ${executionStatus.color}`}
+        >
+          {executionStatus.icon}
+          {executionStatus.label}
+        </Badge>
+        <span className="text-sm text-muted-foreground">
+          {completedCount}/{nodes.length} steps
+        </span>
+        {totalDuration && (
+          <span className="text-sm text-muted-foreground">
+            · {formatDuration(totalDuration)}
           </span>
-        </div>
-        {execution?.completedAt && (
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>
-              Completed {formatDistanceToNow(new Date(execution.completedAt))}
-            </span>
-          </div>
         )}
-        <div className="flex items-center gap-2">
-          <span className="text-foreground font-medium">
-            {sortedNodeResults.filter((n) => n.status === "completed").length}
+        {currentStatus === "running" && (
+          <span className="flex items-center gap-1.5 text-xs text-emerald-500">
+            <Radio className="w-3 h-3 animate-pulse" />
+            Live
           </span>
-          <span>of {nodes.length} steps completed</span>
-        </div>
+        )}
       </div>
 
+      {/* Progress bar */}
+      <PipelineProgress
+        steps={sortedNodeResults}
+        nodes={nodes as Array<{ id: string; name: string; type: string }>}
+      />
+
+      {/* Error */}
       {execution?.error && (
-        <div className="p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 rounded-lg">
-          <p className="text-sm font-medium text-rose-600 dark:text-rose-400 mb-2 flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4" />
-            Execution Error
-          </p>
-          <pre className="text-sm text-rose-700 dark:text-rose-300 overflow-x-auto font-mono">
+        <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive flex items-center gap-1.5 mb-1">
+            <AlertCircle className="w-3.5 h-3.5" />
             {execution.error}
-          </pre>
+          </p>
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Pipeline Execution</CardTitle>
-          <CardDescription>Step-by-step execution progress</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PipelineProgress
-            steps={sortedNodeResults}
-            nodes={nodes as Array<{ id: string; name: string; type: string }>}
-          />
-
-          {sortedNodeResults.length === 0 && nodes.length > 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Clock className="w-12 h-12 mx-auto mb-4" />
-              <p>Waiting for execution to start...</p>
-            </div>
-          ) : sortedNodeResults.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Clock className="w-12 h-12 mx-auto mb-4" />
-              <p>No steps defined</p>
-            </div>
-          ) : (
-            <div className="space-y-0">
-              {sortedNodeResults.map((result, index) => {
-                const nodeDef = nodeMap.get(result.nodeId) as
-                  | { name: string; type: string }
-                  | undefined;
-                return (
-                  <StepCard
-                    key={result.nodeId}
-                    step={result}
-                    nodeName={nodeDef?.name || result.nodeId}
-                    nodeType={nodeDef?.type || "unknown"}
-                    isLast={index === sortedNodeResults.length - 1}
-                    stepNumber={index + 1}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
+      {/* Steps */}
+      {sortedNodeResults.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
+          <p className="text-sm">Waiting for execution to start...</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sortedNodeResults.map((result) => {
+            const nodeDef = nodeMap.get(result.nodeId) as
+              | { name: string; type: string }
+              | undefined;
+            return (
+              <StepCard
+                key={result.nodeId}
+                step={result}
+                nodeName={nodeDef?.name || result.nodeId}
+                nodeType={nodeDef?.type || "unknown"}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
