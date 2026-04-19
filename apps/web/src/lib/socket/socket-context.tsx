@@ -114,8 +114,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         console.log("[WebSocket] Authenticated for org:", data.organizationId);
       };
 
-      const handleAuthError = (data: { message: string }) => {
-        console.error("[WebSocket] Authentication error:", data.message);
+      const handleAuthError = (_data: { message: string }) => {
+        // Silenced — auth retries automatically on reconnect
       };
 
       socket.on("connect", handleConnect);

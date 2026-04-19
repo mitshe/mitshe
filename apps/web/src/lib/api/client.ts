@@ -33,12 +33,6 @@ import type {
   RemoteRepository,
   SyncRepositoriesResult,
   SyncAllRepositoriesResult,
-  AgentDefinition,
-  CreateAgentDefinitionDto,
-  UpdateAgentDefinitionDto,
-  Environment,
-  CreateEnvironmentDto,
-  UpdateEnvironmentDto,
   AgentSession,
   CreateSessionDto,
   UpdateSessionMetadataDto,
@@ -594,62 +588,6 @@ export const api = {
     syncIntegration: (integrationId: string, token: string) =>
       request<SyncRepositoriesResult>(`/repositories/sync/${integrationId}`, {
         method: "POST",
-        token,
-      }),
-  },
-
-  presets: {
-    list: (token: string) =>
-      request<{ agents: AgentDefinition[] }>("/presets", { token }),
-
-    get: (id: string, token: string) =>
-      request<{ agent: AgentDefinition }>(`/presets/${id}`, { token }),
-
-    create: (data: CreateAgentDefinitionDto, token: string) =>
-      request<{ agent: AgentDefinition }>("/presets", {
-        method: "POST",
-        body: JSON.stringify(data),
-        token,
-      }),
-
-    update: (id: string, data: UpdateAgentDefinitionDto, token: string) =>
-      request<{ agent: AgentDefinition }>(`/presets/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-        token,
-      }),
-
-    delete: (id: string, token: string) =>
-      request<void>(`/presets/${id}`, {
-        method: "DELETE",
-        token,
-      }),
-  },
-
-  environments: {
-    list: (token: string) =>
-      request<{ environments: Environment[] }>("/environments", { token }),
-
-    get: (id: string, token: string) =>
-      request<{ environment: Environment }>(`/environments/${id}`, { token }),
-
-    create: (data: CreateEnvironmentDto, token: string) =>
-      request<{ environment: Environment }>("/environments", {
-        method: "POST",
-        body: JSON.stringify(data),
-        token,
-      }),
-
-    update: (id: string, data: UpdateEnvironmentDto, token: string) =>
-      request<{ environment: Environment }>(`/environments/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-        token,
-      }),
-
-    delete: (id: string, token: string) =>
-      request<void>(`/environments/${id}`, {
-        method: "DELETE",
         token,
       }),
   },

@@ -21,10 +21,6 @@ import type {
   UpdateRepositoryDto,
   BulkUpdateRepositoriesDto,
   CreateFromTemplateDto,
-  CreateAgentDefinitionDto,
-  UpdateAgentDefinitionDto,
-  CreateEnvironmentDto,
-  UpdateEnvironmentDto,
   CreateSessionDto,
   UpdateSessionMetadataDto,
   RecreateSessionDto,
@@ -88,17 +84,6 @@ export const queryKeys = {
     available: () => [...queryKeys.repositories.all, "available"] as const,
     detail: (id: string) =>
       [...queryKeys.repositories.all, "detail", id] as const,
-  },
-  presets: {
-    all: ["presets"] as const,
-    list: () => [...queryKeys.presets.all, "list"] as const,
-    detail: (id: string) => [...queryKeys.presets.all, "detail", id] as const,
-  },
-  environments: {
-    all: ["environments"] as const,
-    list: () => [...queryKeys.environments.all, "list"] as const,
-    detail: (id: string) =>
-      [...queryKeys.environments.all, "detail", id] as const,
   },
   sessions: {
     all: ["sessions"] as const,
@@ -1278,22 +1263,6 @@ export function useStopSession() {
   });
 }
 
-export function useCloneSession() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const token = await getToken();
-      const { session } = await api.sessions.clone(id, token);
-      return session;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
-    },
-  });
-}
-
 export function useSessionFiles(id: string) {
   const getToken = useAuthToken();
 
@@ -1365,150 +1334,8 @@ export function useWriteSessionFile() {
   });
 }
 
-// =========================================================================
-// Agents
-// =========================================================================
-
-export function usePresets() {
-  const getToken = useAuthToken();
-
-  return useQuery({
-    queryKey: queryKeys.presets.list(),
-    queryFn: async () => {
-      const token = await getToken();
-      const { agents } = await api.presets.list(token);
-      return agents;
-    },
-  });
-}
-
-export function useCreatePreset() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: CreateAgentDefinitionDto) => {
-      const token = await getToken();
-      const { agent } = await api.presets.create(data, token);
-      return agent;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.presets.all });
-    },
-  });
-}
-
-export function useUpdatePreset() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: UpdateAgentDefinitionDto;
-    }) => {
-      const token = await getToken();
-      const { agent } = await api.presets.update(id, data, token);
-      return agent;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.presets.all });
-    },
-  });
-}
-
-export function useDeletePreset() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const token = await getToken();
-      await api.presets.delete(id, token);
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.presets.all });
-    },
-  });
-}
-
-// =========================================================================
-// Environments
-// =========================================================================
-
-export function useEnvironments() {
-  const getToken = useAuthToken();
-
-  return useQuery({
-    queryKey: queryKeys.environments.list(),
-    queryFn: async () => {
-      const token = await getToken();
-      const { environments } = await api.environments.list(token);
-      return environments;
-    },
-  });
-}
-
-export function useCreateEnvironment() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: CreateEnvironmentDto) => {
-      const token = await getToken();
-      const { environment } = await api.environments.create(data, token);
-      return environment;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.environments.all });
-    },
-  });
-}
-
-export function useUpdateEnvironment() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: UpdateEnvironmentDto;
-    }) => {
-      const token = await getToken();
-      const { environment } = await api.environments.update(id, data, token);
-      return environment;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.environments.all });
-    },
-  });
-}
-
-export function useDeleteEnvironment() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const token = await getToken();
-      await api.environments.delete(id, token);
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.environments.all });
-    },
-  });
-}
-
 // ============================================================================
-// BASE IMAGES
+// SNAPSHOTS
 // ============================================================================
 
 export function useSnapshots() {
