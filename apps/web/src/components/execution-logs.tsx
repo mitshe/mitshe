@@ -179,8 +179,9 @@ export function ExecutionLogs({
     };
   }, [socket, executionId, subscribeToExecution, unsubscribeFromExecution]);
 
-  const baseLogs = savedLogEntries.length > 0 ? savedLogEntries : dbLogs.entries;
-  const allLogs = [...baseLogs, ...liveEntries];
+  const hasSavedLogs = savedLogEntries.length > 0;
+  const baseLogs = hasSavedLogs ? savedLogEntries : dbLogs.entries;
+  const allLogs = hasSavedLogs ? baseLogs : [...baseLogs, ...liveEntries];
 
   // Auto-scroll
   useEffect(() => {

@@ -149,19 +149,28 @@ export class WorkflowOrchestratorService {
             );
           }
 
-          // Collect all events as log entries for persistence
-          if (event.type === 'log') {
-            executionLogs.push({
-              timestamp: event.timestamp,
-              message: event.message,
-            });
-            this.eventEmitter.emitExecutionLog(
-              organizationId,
-              executionId,
-              workflowId,
-              event.level,
-              event.message,
-            );
+          // Collect user-visible log entries (skip debug noise)
+          if (event.type === 'log' && event.level !== 'debug') {
+            // Skip internal debug messages
+            const msg = event.message;
+            const isDebug =
+              msg.includes('Original config:') ||
+              msg.includes('Interpolated config:') ||
+              msg.includes('Output stored:') ||
+              msg.includes('Available outputs:');
+            if (!isDebug) {
+              executionLogs.push({
+                timestamp: event.timestamp,
+                message: msg,
+              });
+              this.eventEmitter.emitExecutionLog(
+                organizationId,
+                executionId,
+                workflowId,
+                event.level,
+                msg,
+              );
+            }
           } else if (event.type === 'node:started') {
             executionLogs.push({
               timestamp: event.timestamp,
