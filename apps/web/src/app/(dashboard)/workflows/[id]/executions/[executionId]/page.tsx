@@ -190,9 +190,14 @@ function StepCard({
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {step.durationMs ? (
+            {(step.durationMs || (step.completedAt && step.startedAt)) ? (
               <span className="text-xs text-muted-foreground font-mono">
-                {formatDuration(step.durationMs)}
+                {formatDuration(
+                  step.durationMs ??
+                  (step.completedAt && step.startedAt
+                    ? new Date(step.completedAt).getTime() - new Date(step.startedAt).getTime()
+                    : undefined)
+                )}
               </span>
             ) : null}
             {step.status === "running" ? (
