@@ -656,6 +656,7 @@ export default function ExecutionDetailPage() {
         <CardContent className="space-y-4">
           <ExecutionLogs
             executionId={executionId}
+            nodeExecutions={sortedNodeResults}
             isRunning={currentStatus === "running"}
           />
 

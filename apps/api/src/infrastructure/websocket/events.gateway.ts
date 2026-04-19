@@ -40,12 +40,13 @@ export interface WorkflowNodeExecutionPayload {
   nodeId: string;
   nodeName: string;
   nodeType: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'log';
   startedAt?: string;
   completedAt?: string;
   output?: Record<string, unknown>;
   error?: string;
   duration?: number;
+  log?: { level: string; message: string };
 }
 
 export interface IntegrationEventPayload {

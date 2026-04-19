@@ -146,6 +146,17 @@ export class WorkflowOrchestratorService {
               nodeEvent,
             );
           }
+
+          // Emit log events to WebSocket
+          if (event.type === 'log') {
+            this.eventEmitter.emitExecutionLog(
+              organizationId,
+              executionId,
+              workflowId,
+              event.level,
+              event.message,
+            );
+          }
         },
       );
 

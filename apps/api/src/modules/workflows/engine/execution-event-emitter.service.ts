@@ -166,6 +166,24 @@ export class ExecutionEventEmitterService {
   /**
    * Emit when execution is cancelled
    */
+  emitExecutionLog(
+    organizationId: string,
+    executionId: string,
+    workflowId: string,
+    level: string,
+    message: string,
+  ): void {
+    this.eventsGateway.emitWorkflowNodeUpdate(organizationId, executionId, {
+      executionId,
+      workflowId,
+      nodeId: '_log',
+      nodeName: '',
+      nodeType: 'log',
+      status: 'log',
+      log: { level, message },
+    });
+  }
+
   emitExecutionCancelled(
     organizationId: string,
     executionId: string,

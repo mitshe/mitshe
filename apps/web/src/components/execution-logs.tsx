@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useSocket } from "@/lib/socket/socket-context";
+import type { NodeExecutionResult } from "@/lib/api/types";
 
 interface LogEntry {
   timestamp: string;
@@ -11,27 +12,81 @@ interface LogEntry {
 
 /**
  * Terminal-like execution log viewer.
- * Shows real-time workflow events as they happen.
+ * Builds initial logs from DB data, then appends live WebSocket events.
  */
 export function ExecutionLogs({
   executionId,
+  nodeExecutions,
   isRunning,
 }: {
   executionId: string;
+  nodeExecutions: NodeExecutionResult[];
   isRunning: boolean;
 }) {
   const { socket, subscribeToExecution, unsubscribeFromExecution } = useSocket();
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [liveEntries, setLiveEntries] = useState<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScroll = useRef(true);
+  const seenNodeIdsRef = useRef(new Set<string>());
 
+  // Build logs from DB data (persisted node executions)
+  const dbLogs = useMemo(() => {
+    const entries: LogEntry[] = [];
+    const seen = new Set<string>();
+
+    const sorted = [...nodeExecutions].sort(
+      (a, b) =>
+        new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime(),
+    );
+
+    for (const node of sorted) {
+      const name = node.nodeName || node.nodeId;
+      const time = node.startedAt
+        ? new Date(node.startedAt).toLocaleTimeString("en-US", {
+            hour12: false,
+          })
+        : "";
+
+      seen.add(`${node.nodeId}:${node.status}`);
+
+      if (node.status === "completed") {
+        const msg = (node.output as Record<string, string>)?.message;
+        entries.push({
+          timestamp: time,
+          type: "success",
+          text: `\u2713 ${name}${msg ? ` \u2014 ${msg}` : ""}`,
+        });
+      } else if (node.status === "failed") {
+        entries.push({
+          timestamp: time,
+          type: "error",
+          text: `\u2717 ${name} \u2014 ${node.error || "Failed"}`,
+        });
+      } else if (node.status === "running") {
+        entries.push({
+          timestamp: time,
+          type: "node",
+          text: `\u25B6 ${name}`,
+        });
+      }
+    }
+
+    return { entries, seen };
+  }, [nodeExecutions]);
+
+  // Sync seen IDs to ref (for WebSocket dedup)
+  useEffect(() => {
+    seenNodeIdsRef.current = dbLogs.seen;
+  }, [dbLogs.seen]);
+
+  // Subscribe to live WebSocket events
   useEffect(() => {
     if (!socket || !executionId) return;
 
     subscribeToExecution(executionId);
 
-    const addLog = (entry: LogEntry) => {
-      setLogs((prev) => [...prev, entry]);
+    const addLive = (entry: LogEntry) => {
+      setLiveEntries((prev) => [...prev, entry]);
     };
 
     const nodeHandler = (payload: {
@@ -41,77 +96,79 @@ export function ExecutionLogs({
       error?: string;
       output?: Record<string, unknown>;
     }) => {
+      // Skip if already in DB data
+      const key = `${payload.nodeId}:${payload.status}`;
+      if (seenNodeIdsRef.current.has(key)) return;
+      seenNodeIdsRef.current.add(key);
+
       const name = payload.nodeName || payload.nodeId;
       const time = new Date().toLocaleTimeString("en-US", { hour12: false });
 
       if (payload.status === "running") {
-        addLog({
-          timestamp: time,
-          type: "node",
-          text: `\u25B6 ${name}`,
-        });
+        addLive({ timestamp: time, type: "node", text: `\u25B6 ${name}` });
       } else if (payload.status === "completed") {
-        const msg = payload.output?.message
-          ? ` \u2014 ${payload.output.message}`
-          : "";
-        addLog({
-          timestamp: time,
-          type: "success",
-          text: `\u2713 ${name}${msg}`,
-        });
+        const msg = payload.output?.message ? ` \u2014 ${payload.output.message}` : "";
+        addLive({ timestamp: time, type: "success", text: `\u2713 ${name}${msg}` });
       } else if (payload.status === "failed") {
-        addLog({
-          timestamp: time,
-          type: "error",
-          text: `\u2717 ${name} \u2014 ${payload.error || "Failed"}`,
-        });
+        addLive({ timestamp: time, type: "error", text: `\u2717 ${name} \u2014 ${payload.error || "Failed"}` });
       }
     };
 
-    const startedHandler = () => {
-      addLog({
-        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-        type: "info",
-        text: "Workflow started",
-      });
-    };
-
     const completeHandler = () => {
-      addLog({
+      addLive({
         timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
         type: "success",
-        text: "Workflow completed",
+        text: "\u2713 Workflow completed",
       });
     };
 
     const failHandler = (payload: { error?: string }) => {
-      addLog({
+      addLive({
         timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
         type: "error",
-        text: `Workflow failed: ${payload.error || "Unknown error"}`,
+        text: `\u2717 Workflow failed: ${payload.error || "Unknown error"}`,
       });
     };
 
-    socket.on("workflow:node:update", nodeHandler);
-    socket.on("workflow:execution:started", startedHandler);
+    const logHandler = (payload: {
+      nodeId?: string;
+      status?: string;
+      log?: { level: string; message: string };
+    }) => {
+      // Handle log events (CLI output, commands, etc.)
+      if (payload.status === "log" && payload.log) {
+        const time = new Date().toLocaleTimeString("en-US", { hour12: false });
+        addLive({
+          timestamp: time,
+          type: payload.log.level === "error" ? "error" : "info",
+          text: `  ${payload.log.message}`,
+        });
+        return;
+      }
+      // Delegate to nodeHandler for regular node events
+      nodeHandler(payload as Parameters<typeof nodeHandler>[0]);
+    };
+
+    socket.on("workflow:node:update", logHandler);
     socket.on("workflow:execution:completed", completeHandler);
     socket.on("workflow:execution:failed", failHandler);
 
     return () => {
-      socket.off("workflow:node:update", nodeHandler);
-      socket.off("workflow:execution:started", startedHandler);
+      socket.off("workflow:node:update", logHandler);
       socket.off("workflow:execution:completed", completeHandler);
       socket.off("workflow:execution:failed", failHandler);
       unsubscribeFromExecution(executionId);
     };
   }, [socket, executionId, subscribeToExecution, unsubscribeFromExecution]);
 
+  const allLogs = [...dbLogs.entries, ...liveEntries];
+
   // Auto-scroll
   useEffect(() => {
     if (autoScroll.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [logs.length]);
+  }, [allLogs.length]);
 
   const handleScroll = () => {
     if (!scrollRef.current) return;
@@ -137,15 +194,15 @@ export function ExecutionLogs({
       ref={scrollRef}
       onScroll={handleScroll}
       className="rounded-lg border bg-[#0a0a0a] overflow-y-auto font-mono text-[13px] leading-5"
-      style={{ height: 280 }}
+      style={{ height: 300 }}
     >
       <div className="p-3 space-y-0.5">
-        {logs.length === 0 && (
+        {allLogs.length === 0 && (
           <div className="text-zinc-600">
             {isRunning ? "$ waiting for events..." : "$ no events recorded"}
           </div>
         )}
-        {logs.map((log, i) => (
+        {allLogs.map((log, i) => (
           <div key={i} className="flex gap-2">
             <span className="text-zinc-600 select-none shrink-0">
               {log.timestamp}
@@ -153,7 +210,7 @@ export function ExecutionLogs({
             <span className={typeColor(log.type)}>{log.text}</span>
           </div>
         ))}
-        {isRunning && logs.length > 0 && (
+        {isRunning && allLogs.length > 0 && (
           <div className="text-zinc-600 animate-pulse">$ _</div>
         )}
       </div>
