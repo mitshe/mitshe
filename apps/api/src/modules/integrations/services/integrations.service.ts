@@ -1,11 +1,5 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import { EncryptionService } from '../../../shared/encryption/encryption.service';
 import { AdapterFactoryService } from '../../../infrastructure/adapters/adapter-factory.service';
 import {
@@ -25,43 +19,42 @@ export class IntegrationsService {
   ) {}
 
   async create(organizationId: string, dto: CreateIntegrationDto) {
-    // Encrypt configuration
     const { encrypted, iv } = this.encryption.encryptJson(dto.config);
 
-    try {
-      // Use try-catch to handle unique constraint violation
-      // This prevents TOCTOU race condition from check-then-create
-      return await this.prisma.integration.create({
-        data: {
+    const select = {
+      id: true,
+      organizationId: true,
+      type: true,
+      status: true,
+      lastSyncAt: true,
+      errorMessage: true,
+      createdAt: true,
+      updatedAt: true,
+    };
+
+    // Upsert: create or update existing integration with new credentials
+    return this.prisma.integration.upsert({
+      where: {
+        organizationId_type: {
           organizationId,
           type: dto.type,
-          status: IntegrationStatus.CONNECTED,
-          config: new Uint8Array(encrypted),
-          configIv: new Uint8Array(iv),
         },
-        select: {
-          id: true,
-          organizationId: true,
-          type: true,
-          status: true,
-          lastSyncAt: true,
-          errorMessage: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-    } catch (error) {
-      // P2002 is Prisma's unique constraint violation code
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          `Integration ${dto.type} already exists for this organization`,
-        );
-      }
-      throw error;
-    }
+      },
+      create: {
+        organizationId,
+        type: dto.type,
+        status: IntegrationStatus.CONNECTED,
+        config: new Uint8Array(encrypted),
+        configIv: new Uint8Array(iv),
+      },
+      update: {
+        status: IntegrationStatus.CONNECTED,
+        config: new Uint8Array(encrypted),
+        configIv: new Uint8Array(iv),
+        errorMessage: null,
+      },
+      select,
+    });
   }
 
   async findAll(organizationId: string) {
