@@ -45,7 +45,7 @@ export function TopNav() {
         </Button>
 
         <Link
-          href="/dashboard"
+          href="/chat"
           className="flex md:hidden items-center gap-2 font-semibold"
         >
           <img src="/logo.svg" alt="mitshe" className="h-8 w-8" />

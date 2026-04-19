@@ -70,7 +70,7 @@ export function SelfhostedSignUp() {
         lastName: formData.lastName || undefined,
         organizationName: formData.organizationName || undefined,
       });
-      router.push("/dashboard");
+      router.push("/chat");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");

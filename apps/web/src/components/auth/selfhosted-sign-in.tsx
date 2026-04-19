@@ -32,7 +32,7 @@ export function SelfhostedSignIn() {
 
     try {
       await selfhostedAuth.login({ email, password });
-      router.push("/dashboard");
+      router.push("/chat");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

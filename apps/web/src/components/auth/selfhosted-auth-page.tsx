@@ -72,7 +72,7 @@ function SetupForm() {
         firstName: form.firstName || undefined,
         lastName: form.lastName || undefined,
       });
-      window.location.href = "/dashboard";
+      window.location.href = "/chat";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -223,7 +223,7 @@ function LoginForm() {
         email: form.email,
         password: form.password,
       });
-      window.location.href = "/dashboard";
+      window.location.href = "/chat";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
