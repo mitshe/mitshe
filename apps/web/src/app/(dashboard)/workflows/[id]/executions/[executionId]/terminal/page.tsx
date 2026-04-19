@@ -14,12 +14,13 @@ export default function ExecutionTerminalPage() {
   const workflowId = params.id as string;
   const executionId = params.executionId as string;
 
+  const { isConnected } = useSocket();
+  const { status: wsStatus } = useWorkflowExecution(executionId);
+
   const { data, isLoading } = useWorkflowExecutionDetails(
     workflowId,
     executionId,
   );
-  const { isConnected } = useSocket();
-  const { status: wsStatus } = useWorkflowExecution(executionId);
 
   const execution = data?.execution;
   const currentStatus = wsStatus !== "pending" ? wsStatus : execution?.status;

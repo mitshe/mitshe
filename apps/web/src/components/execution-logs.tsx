@@ -130,9 +130,13 @@ export function ExecutionLogs({
     };
   }, [socket, executionId, subscribeToExecution, unsubscribeFromExecution]);
 
-  const hasSavedLogs = savedLogEntries.length > 0;
-  const baseLogs = hasSavedLogs ? savedLogEntries : dbLogs.entries;
-  const allLogs = hasSavedLogs ? baseLogs : [...baseLogs, ...liveEntries];
+  // Use saved logs (from DB) as base — they persist and grow during execution.
+  // Append live WebSocket entries that arrived after the last DB poll.
+  const baseLogs = savedLogEntries.length > 0 ? savedLogEntries : dbLogs.entries;
+  // Deduplicate: only keep live entries not already in base
+  const baseTexts = new Set(baseLogs.map((l) => l.text));
+  const newLiveEntries = liveEntries.filter((l) => !baseTexts.has(l.text));
+  const allLogs = [...baseLogs, ...newLiveEntries];
 
   // Auto-scroll
   useEffect(() => {

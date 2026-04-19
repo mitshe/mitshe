@@ -114,6 +114,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         console.log("[WebSocket] Authenticated for org:", data.organizationId);
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const handleAuthError = (_data: { message: string }) => {
         // Silenced — auth retries automatically on reconnect
       };

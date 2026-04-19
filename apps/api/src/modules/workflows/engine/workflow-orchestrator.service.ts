@@ -149,9 +149,15 @@ export class WorkflowOrchestratorService {
             );
           }
 
-          // Helper: add log entry to both DB array and WebSocket
+          // Helper: add log entry to DB array + WebSocket + periodic save
           const addLog = (timestamp: string, message: string) => {
             executionLogs.push({ timestamp, message });
+            // Save to DB every 5 entries so terminal page can poll
+            if (executionLogs.length % 5 === 0) {
+              this.persistence
+                .saveExecutionLogs(executionId, executionLogs)
+                .catch(() => {});
+            }
             this.eventEmitter.emitExecutionLog(
               organizationId,
               executionId,

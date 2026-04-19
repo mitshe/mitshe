@@ -36,7 +36,7 @@ import {
   useCancelExecution,
   useRetryExecution,
 } from "@/lib/api/hooks";
-import { useWorkflowExecution, useSocket } from "@/lib/socket/socket-context";
+import { useWorkflowExecution } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
 import { useState, useMemo, useEffect } from "react";
 import type { NodeExecutionResult } from "@/lib/api/types";
@@ -254,7 +254,6 @@ export default function ExecutionDetailPage() {
   const retryExecution = useRetryExecution();
 
   // WebSocket for real-time updates
-  const { isConnected } = useSocket();
   const { status: wsStatus, nodeUpdates } = useWorkflowExecution(executionId);
 
   // Refetch when execution completes/fails via WebSocket
