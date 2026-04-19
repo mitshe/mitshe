@@ -107,6 +107,8 @@ export class WorkflowOrchestratorService {
     workflow: WorkflowWithDefinition,
     triggerData: Record<string, unknown>,
   ): Promise<void> {
+    const executionLogs: Array<{ timestamp: string; message: string }> = [];
+
     try {
       // Execute workflow in Docker
       const result = await this.executor.execute(
@@ -147,8 +149,12 @@ export class WorkflowOrchestratorService {
             );
           }
 
-          // Emit log events to WebSocket
+          // Collect all events as log entries for persistence
           if (event.type === 'log') {
+            executionLogs.push({
+              timestamp: event.timestamp,
+              message: event.message,
+            });
             this.eventEmitter.emitExecutionLog(
               organizationId,
               executionId,
@@ -156,9 +162,30 @@ export class WorkflowOrchestratorService {
               event.level,
               event.message,
             );
+          } else if (event.type === 'node:started') {
+            executionLogs.push({
+              timestamp: event.timestamp,
+              message: `▶ ${event.nodeName}`,
+            });
+          } else if (event.type === 'node:completed') {
+            const msg = event.output?.message
+              ? ` — ${event.output.message}`
+              : '';
+            executionLogs.push({
+              timestamp: event.timestamp,
+              message: `✓ ${event.nodeName}${msg}`,
+            });
+          } else if (event.type === 'node:failed') {
+            executionLogs.push({
+              timestamp: event.timestamp,
+              message: `✗ ${event.nodeName} — ${event.error}`,
+            });
           }
         },
       );
+
+      // Save execution logs
+      await this.persistence.saveExecutionLogs(executionId, executionLogs);
 
       // Persist final result
       if (result.status === 'completed') {

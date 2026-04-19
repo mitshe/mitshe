@@ -92,6 +92,16 @@ export class WorkflowPersistenceService {
     return executionId;
   }
 
+  async saveExecutionLogs(
+    executionId: string,
+    logs: Array<{ timestamp: string; message: string }>,
+  ): Promise<void> {
+    await this.prisma.workflowExecution.update({
+      where: { id: executionId },
+      data: { logs: logs as Prisma.InputJsonValue },
+    });
+  }
+
   /**
    * Mark execution as completed
    * Final sync: ensures all nodeResults are saved to nodeExecutions table

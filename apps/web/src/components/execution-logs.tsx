@@ -18,10 +18,12 @@ export function ExecutionLogs({
   executionId,
   nodeExecutions,
   isRunning,
+  fullHeight = false,
 }: {
   executionId: string;
   nodeExecutions: NodeExecutionResult[];
   isRunning: boolean;
+  fullHeight?: boolean;
 }) {
   const { socket, subscribeToExecution, unsubscribeFromExecution } = useSocket();
   const [liveEntries, setLiveEntries] = useState<LogEntry[]>([]);
@@ -193,8 +195,8 @@ export function ExecutionLogs({
     <div
       ref={scrollRef}
       onScroll={handleScroll}
-      className="rounded-lg border bg-[#0a0a0a] overflow-y-auto font-mono text-[13px] leading-5"
-      style={{ height: 300 }}
+      className={`bg-[#0a0a0a] overflow-y-auto font-mono text-[13px] leading-5 ${fullHeight ? "" : "rounded-lg border"}`}
+      style={fullHeight ? { height: "100%" } : { height: 300 }}
     >
       <div className="p-3 space-y-0.5">
         {allLogs.length === 0 && (

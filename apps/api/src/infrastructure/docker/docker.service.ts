@@ -403,8 +403,17 @@ export class DockerService implements OnModuleInit {
               this.logger[event.level](`[Container] ${event.message}`);
             }
           } catch {
-            // Not JSON, log as plain text
-            this.logger.debug(`[Container stdout] ${line}`);
+            // Not JSON — emit as log event so it shows in terminal
+            const logEvent: RunnerEvent = {
+              type: 'log',
+              level: 'info',
+              message: line,
+              timestamp: new Date().toISOString(),
+            };
+            events.push(logEvent);
+            if (onEvent) {
+              onEvent(logEvent);
+            }
           }
         }
       };

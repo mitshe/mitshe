@@ -288,16 +288,29 @@ function StepCard({
             </CollapsibleTrigger>
 
             <CollapsibleContent>
-              <div className="mt-2 px-4 pb-2 space-y-2">
-                {step.error ? (
+              <div className="mt-2 px-4 pb-3 space-y-3">
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Started</p>
+                    <p className="font-mono text-xs">
+                      {step.startedAt ? new Date(step.startedAt).toLocaleTimeString() : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Duration</p>
+                    <p className="font-mono text-xs">{formatDuration(step.durationMs ?? undefined)}</p>
+                  </div>
+                </div>
+                {step.error && (
                   <pre className="p-3 bg-rose-950/20 border border-rose-900/30 rounded-lg text-xs text-rose-300 overflow-x-auto whitespace-pre-wrap font-mono">
-                    {step.error as string}
+                    {String(step.error)}
                   </pre>
-                ) : step.output ? (
-                  <p className="text-xs text-muted-foreground">
-                    {String((step.output as Record<string, string>).message || "Completed")}
-                  </p>
-                ) : null}
+                )}
+                {step.output && Object.keys(step.output).length > 0 && (
+                  <pre className="p-3 bg-muted/50 border rounded-lg text-xs overflow-x-auto max-h-48 font-mono">
+                    {JSON.stringify(step.output, null, 2)}
+                  </pre>
+                )}
               </div>
             </CollapsibleContent>
           </div>
@@ -358,8 +371,9 @@ export default function ExecutionDetailPage() {
   // Merge REST data with WebSocket updates for real-time node status
   // This must be called before any conditional returns (Rules of Hooks)
   const nodeResults: NodeExecutionResult[] = useMemo(() => {
-    const nodeExecutions = data?.nodeExecutions || [];
-    // Start with the REST data, ensuring it has the correct structure
+    const nodeExecutions = (data?.nodeExecutions || []).filter(
+      (ne) => ne.nodeId !== "_log",
+    );
     const results: NodeExecutionResult[] = nodeExecutions.map((ne) => ({
       nodeId: ne.nodeId,
       nodeName: ne.nodeName,
@@ -380,6 +394,7 @@ export default function ExecutionDetailPage() {
     // Apply WebSocket updates on top of REST data
     // Merge instead of replace to preserve REST data when available
     nodeUpdates.forEach((update, nodeId) => {
+      if (nodeId === "_log") return;
       const existingIdx = results.findIndex((r) => r.nodeId === nodeId);
 
       if (existingIdx >= 0) {
@@ -536,6 +551,12 @@ export default function ExecutionDetailPage() {
           </div>
 
           <div className="flex gap-2">
+            <Link href={`/workflows/${workflowId}/executions/${executionId}/terminal`}>
+              <Button variant="outline" size="sm">
+                <TerminalIcon className="w-4 h-4 mr-2" />
+                Terminal
+              </Button>
+            </Link>
             {currentStatus === "running" && (
               <Button
                 variant="outline"
