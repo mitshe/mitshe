@@ -5,7 +5,7 @@
 
 import { simpleGit } from 'simple-git';
 import { BaseExecutor, type ExecutorContext } from '../base.js';
-import { buildAuthUrl, configureGitUser } from './helpers.js';
+import { buildAuthUrl, configureGitUser, runGitCmd } from './helpers.js';
 import { logger } from '../../logger.js';
 
 export class GitCloneExecutor extends BaseExecutor {
@@ -43,50 +43,31 @@ export class GitCloneExecutor extends BaseExecutor {
     ctx.workflowContext.cloneUrl = cloneUrl;
     ctx.workflowContext.defaultBranch = defaultBranch;
 
-    const cloneArgs = shallow ? `--depth 1 --branch ${defaultBranch}` : '';
-    logger.cmd(`git clone ${cloneArgs} ${repoFullPath || cloneUrl} ${targetDir}`.trim());
-
     const authUrl = buildAuthUrl(cloneUrl, ctx);
-    const git = simpleGit();
 
-    // Build clone options
-    const options: string[] = [];
-    if (shallow) {
-      options.push('--depth', '1');
-    }
-    if (defaultBranch) {
-      options.push('--branch', defaultBranch);
-    }
+    const args = ['clone'];
+    if (shallow) args.push('--depth', '1');
+    if (defaultBranch) args.push('--branch', defaultBranch);
+    args.push(authUrl, targetDir);
 
-    try {
-      await git.clone(authUrl, targetDir, options);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+    const result = await runGitCmd(args, '/workspace');
 
-      if (message.includes('already exists')) {
-        logger.warn('Repository directory already exists, using existing clone');
-      } else if (
-        message.includes('Authentication failed') ||
-        message.includes('could not read Username')
-      ) {
-        throw new Error(
-          `Git authentication failed. Check your git integration token. ` +
-          `Original error: ${message}`,
-        );
+    if (result.exitCode !== 0) {
+      const msg = result.stderr || result.stdout;
+      if (msg.includes('already exists')) {
+        logger.info('Repository directory already exists, using existing clone');
+      } else if (msg.includes('Authentication failed') || msg.includes('could not read Username')) {
+        throw new Error('Git authentication failed. Check your git integration token.');
       } else {
-        throw new Error(`Failed to clone repository: ${message}`);
+        throw new Error(`Failed to clone repository: ${msg}`);
       }
     }
 
-    // Update context
     ctx.workflowContext.repoDir = targetDir;
     ctx.workflowContext.branch = defaultBranch;
 
-    // Configure git user for future commits
     const repoGit = simpleGit(targetDir);
     await configureGitUser(repoGit);
-
-    logger.cmd(`git clone`, `Cloning into '${targetDir}'...\ndone.`);
 
     return {
       repositoryName: repoName,

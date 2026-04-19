@@ -4,8 +4,7 @@
  */
 
 import { BaseExecutor, type ExecutorContext } from '../base.js';
-import { getGit, getCurrentBranch } from './helpers.js';
-import { logger } from '../../logger.js';
+import { getCurrentBranch, getRepoDir, runGitCmd } from './helpers.js';
 
 export class GitPushExecutor extends BaseExecutor {
   readonly supportedTypes = ['action:git_push'];
@@ -17,44 +16,25 @@ export class GitPushExecutor extends BaseExecutor {
     const branch = this.getOptionalString(config, 'branch') || getCurrentBranch(ctx);
     const force = this.getBoolean(config, 'force', false);
     const setUpstream = this.getBoolean(config, 'setUpstream', true);
+    const repoDir = getRepoDir(ctx);
 
     if (!branch) {
       throw new Error('Branch name is required. Create a branch first.');
     }
 
-    logger.cmd(`git push${force ? ' --force' : ''} origin ${branch}`);
+    const args = ['push'];
+    if (setUpstream) args.push('--set-upstream');
+    if (force) args.push('--force');
+    args.push('origin', branch);
 
-    const git = getGit(ctx);
+    const result = await runGitCmd(args, repoDir);
 
-    try {
-      const pushArgs: string[] = [];
-
-      if (setUpstream) {
-        pushArgs.push('--set-upstream');
+    if (result.exitCode !== 0) {
+      const msg = result.stderr || result.stdout;
+      if (msg.includes('Authentication failed') || msg.includes('could not read Username')) {
+        throw new Error('Git push authentication failed. Check your git integration token.');
       }
-      if (force) {
-        pushArgs.push('--force');
-      }
-
-      pushArgs.push('origin', branch);
-
-      await git.push(pushArgs);
-
-      logger.cmd(`git push origin ${branch}`, `To origin\n * [new branch]  ${branch} -> ${branch}`);
-    } catch (error) {
-      const message = (error as Error).message;
-
-      if (
-        message.includes('Authentication failed') ||
-        message.includes('could not read Username')
-      ) {
-        throw new Error(
-          `Git push authentication failed. Check your git integration token. ` +
-          `Original error: ${message}`,
-        );
-      }
-
-      throw new Error(`Failed to push branch "${branch}": ${message}`);
+      throw new Error(`Failed to push branch "${branch}": ${msg}`);
     }
 
     return {

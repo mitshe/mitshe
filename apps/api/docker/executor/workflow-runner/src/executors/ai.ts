@@ -165,7 +165,7 @@ Always include complete, working code. Do not use placeholders or TODO comments.
 
   userPrompt += '\n\nNow implement the task and output the files:';
 
-  logger.info(`Executing AI code task with ${provider}: ${task.substring(0, 100)}...`);
+  logger.cmd(`ai code-task --provider ${provider} --model ${model}`, `Task: ${task.substring(0, 200)}`);
 
   const result = await callAI(provider, {
     model,
@@ -180,7 +180,7 @@ Always include complete, working code. Do not use placeholders or TODO comments.
   // Store files in workflow context
   if (files.length > 0) {
     ctx.workflowContext.files = files;
-    logger.info(`Generated ${files.length} files: ${files.map(f => f.path).join(', ')}`);
+    logger.cmd(`ai code-task`, `Generated ${files.length} file(s):\n${files.map(f => `  ${f.path}`).join('\n')}`);
   }
 
   return {

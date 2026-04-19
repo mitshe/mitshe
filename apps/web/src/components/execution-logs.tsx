@@ -6,7 +6,7 @@ import type { NodeExecutionResult } from "@/lib/api/types";
 
 interface LogEntry {
   timestamp: string;
-  type: "node" | "info" | "error" | "success";
+  type: "node" | "info" | "error" | "success" | "cmd";
   text: string;
 }
 
@@ -37,11 +37,12 @@ export function ExecutionLogs({
   const savedLogEntries: LogEntry[] = useMemo(() => {
     return savedLogs.map((log) => {
       const time = new Date(log.timestamp).toLocaleTimeString("en-US", { hour12: false });
+      const isCmd = log.message.startsWith("$");
       const isError = log.message.startsWith("\u2717") || log.message.toLowerCase().includes("failed");
       const isSuccess = log.message.startsWith("\u2713");
       return {
         timestamp: time,
-        type: isError ? "error" as const : isSuccess ? "success" as const : "info" as const,
+        type: isCmd ? "cmd" as const : isError ? "error" as const : isSuccess ? "success" as const : "info" as const,
         text: log.message,
       };
     });
@@ -198,6 +199,8 @@ export function ExecutionLogs({
 
   const typeColor = (type: LogEntry["type"]) => {
     switch (type) {
+      case "cmd":
+        return "text-yellow-300 font-semibold";
       case "node":
         return "text-blue-400";
       case "success":

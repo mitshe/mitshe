@@ -43,7 +43,7 @@ async function executeShellCommand(
     throw new Error('Command is required');
   }
 
-  logger.info(`Executing: ${command} ${args.join(' ')}`);
+  const cmdStr = `${command} ${args.join(' ')}`.trim();
 
   return new Promise((resolve) => {
     const proc = spawn(command, args, {
@@ -79,6 +79,7 @@ async function executeShellCommand(
 
     proc.on('close', (code) => {
       clearTimeout(timer);
+      logger.cmd(cmdStr, (stdout + stderr).trim() || undefined);
       resolve({
         success: code === 0,
         exitCode: code ?? 1,

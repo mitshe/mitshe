@@ -6,8 +6,7 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { BaseExecutor, type ExecutorContext } from '../base.js';
-import { getGit, getRepoDir, configureGitUser } from './helpers.js';
-import { logger } from '../../logger.js';
+import { getRepoDir, runGitCmd } from './helpers.js';
 
 interface FileToCommit {
   path: string;
@@ -37,8 +36,6 @@ export class GitCommitExecutor extends BaseExecutor {
       );
     }
 
-    logger.cmd(`git add ${files.map(f => f.path).join(' ')}`);
-
     // Write files to disk
     for (const file of files) {
       const filePath = join(repoDir, file.path);
@@ -46,26 +43,29 @@ export class GitCommitExecutor extends BaseExecutor {
       await writeFile(filePath, file.content, 'utf8');
     }
 
-    const git = getGit(ctx);
-
-    // Ensure git user is configured
-    await configureGitUser(git);
+    // Configure git user
+    await runGitCmd(['config', 'user.email', 'workflow@mitshe.com'], repoDir);
+    await runGitCmd(['config', 'user.name', 'Mitshe Workflow'], repoDir);
 
     // Stage files
-    await git.add(files.map(f => f.path));
+    await runGitCmd(['add', ...files.map((f) => f.path)], repoDir);
 
     // Commit
-    const result = await git.commit(message);
+    const result = await runGitCmd(['commit', '-m', message], repoDir);
 
-    if (!result.commit) {
-      throw new Error('Commit failed - no changes detected or commit was empty');
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `Commit failed: ${result.stderr || result.stdout || 'no changes detected'}`,
+      );
     }
 
-    logger.cmd(`git commit -m "${message}"`, `[${result.branch} ${result.commit}] ${message}\n ${files.length} file(s) changed`);
+    // Extract commit hash from output
+    const hashMatch = result.stdout.match(/\[[\w-]+ ([a-f0-9]+)\]/);
+    const commitHash = hashMatch ? hashMatch[1] : '';
 
     return {
       committed: true,
-      commitHash: result.commit,
+      commitHash,
       filesCommitted: files.length,
       message,
     };

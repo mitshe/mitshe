@@ -4,7 +4,7 @@
  */
 
 import { BaseExecutor, type ExecutorContext } from '../base.js';
-import { getGit, getCurrentBranch, branchExistsOnRemote } from './helpers.js';
+import { getCurrentBranch, getRepoDir, branchExistsOnRemote, getGit } from './helpers.js';
 import { GitPushExecutor } from './push.executor.js';
 import { logger } from '../../logger.js';
 
@@ -70,7 +70,8 @@ export class GitMergeRequestExecutor extends BaseExecutor {
       }
     }
 
-    logger.info(`Creating MR/PR: "${title}" (${sourceBranch} → ${targetBranch})`);
+    const provider = ctx.credentials.gitProvider === 'gitlab' ? 'GitLab' : 'GitHub';
+    logger.cmd(`${provider.toLowerCase()} create-pr --title "${title}" --head ${sourceBranch} --base ${targetBranch}`);
 
     // Create MR/PR based on provider
     const options: MROptions = {
@@ -140,7 +141,7 @@ export class GitMergeRequestExecutor extends BaseExecutor {
 
     const mr = (await response.json()) as { iid: number; web_url: string };
 
-    logger.info(`Created MR #${mr.iid}: ${mr.web_url}`);
+    logger.cmd(`gitlab create-mr`, `Created MR !${mr.iid}\n${mr.web_url}`);
 
     return {
       created: true,
@@ -204,7 +205,7 @@ export class GitMergeRequestExecutor extends BaseExecutor {
 
     const pr = (await response.json()) as { number: number; html_url: string };
 
-    logger.info(`Created PR #${pr.number}: ${pr.html_url}`);
+    logger.cmd(`gh pr create`, `Created PR #${pr.number}\n${pr.html_url}`);
 
     return {
       created: true,
