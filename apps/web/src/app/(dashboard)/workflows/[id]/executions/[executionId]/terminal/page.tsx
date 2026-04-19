@@ -80,6 +80,7 @@ export default function ExecutionTerminalPage() {
         <ExecutionLogs
           executionId={executionId}
           nodeExecutions={data?.nodeExecutions || []}
+          savedLogs={(execution?.logs as Array<{ timestamp: string; message: string }>) || []}
           isRunning={currentStatus === "running"}
           fullHeight
         />

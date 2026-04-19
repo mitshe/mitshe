@@ -19,11 +19,13 @@ export function ExecutionLogs({
   nodeExecutions,
   isRunning,
   fullHeight = false,
+  savedLogs = [],
 }: {
   executionId: string;
   nodeExecutions: NodeExecutionResult[];
   isRunning: boolean;
   fullHeight?: boolean;
+  savedLogs?: Array<{ timestamp: string; message: string }>;
 }) {
   const { socket, subscribeToExecution, unsubscribeFromExecution } = useSocket();
   const [liveEntries, setLiveEntries] = useState<LogEntry[]>([]);
@@ -31,7 +33,21 @@ export function ExecutionLogs({
   const autoScroll = useRef(true);
   const seenNodeIdsRef = useRef(new Set<string>());
 
-  // Build logs from DB data (persisted node executions)
+  // Build saved logs entries
+  const savedLogEntries: LogEntry[] = useMemo(() => {
+    return savedLogs.map((log) => {
+      const time = new Date(log.timestamp).toLocaleTimeString("en-US", { hour12: false });
+      const isError = log.message.startsWith("\u2717") || log.message.toLowerCase().includes("failed");
+      const isSuccess = log.message.startsWith("\u2713");
+      return {
+        timestamp: time,
+        type: isError ? "error" as const : isSuccess ? "success" as const : "info" as const,
+        text: log.message,
+      };
+    });
+  }, [savedLogs]);
+
+  // Build logs from node executions (fallback when no saved logs)
   const dbLogs = useMemo(() => {
     const entries: LogEntry[] = [];
     const seen = new Set<string>();
@@ -163,7 +179,8 @@ export function ExecutionLogs({
     };
   }, [socket, executionId, subscribeToExecution, unsubscribeFromExecution]);
 
-  const allLogs = [...dbLogs.entries, ...liveEntries];
+  const baseLogs = savedLogEntries.length > 0 ? savedLogEntries : dbLogs.entries;
+  const allLogs = [...baseLogs, ...liveEntries];
 
   // Auto-scroll
   useEffect(() => {

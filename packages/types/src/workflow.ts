@@ -87,6 +87,7 @@ export interface WorkflowExecution {
   input: Record<string, unknown> | null;
   output: Record<string, unknown> | null;
   error: string | null;
+  logs?: Array<{ timestamp: string; message: string }> | null;
   startedAt: string;
   completedAt: string | null;
   currentNode?: string;
