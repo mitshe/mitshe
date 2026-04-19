@@ -288,61 +288,16 @@ function StepCard({
             </CollapsibleTrigger>
 
             <CollapsibleContent>
-              <div className="mt-2 p-4 bg-muted/20 border rounded-xl space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Started
-                    </p>
-                    <p className="font-mono text-xs">
-                      {step.startedAt
-                        ? new Date(step.startedAt).toLocaleTimeString()
-                        : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Completed
-                    </p>
-                    <p className="font-mono text-xs">
-                      {step.completedAt
-                        ? new Date(step.completedAt).toLocaleTimeString()
-                        : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Duration
-                    </p>
-                    <p className="font-mono text-xs">
-                      {formatDuration(step.durationMs ?? undefined)}
-                    </p>
-                  </div>
-                </div>
-
-                {step.error && (
-                  <div>
-                    <p className="text-xs font-medium text-rose-600 dark:text-rose-400 mb-2 flex items-center gap-1.5">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      Error Details
-                    </p>
-                    <pre className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs text-zinc-700 dark:text-zinc-300 overflow-x-auto whitespace-pre-wrap font-mono">
-                      {step.error}
-                    </pre>
-                  </div>
-                )}
-
-                {step.output && Object.keys(step.output).length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">
-                      Output
-                    </p>
-                    <pre className="p-3 bg-muted/50 border rounded-lg text-xs overflow-x-auto max-h-48 font-mono">
-                      {JSON.stringify(step.output, null, 2)}
-                    </pre>
-                  </div>
-                )}
-
+              <div className="mt-2 px-4 pb-2 space-y-2">
+                {step.error ? (
+                  <pre className="p-3 bg-rose-950/20 border border-rose-900/30 rounded-lg text-xs text-rose-300 overflow-x-auto whitespace-pre-wrap font-mono">
+                    {step.error as string}
+                  </pre>
+                ) : step.output ? (
+                  <p className="text-xs text-muted-foreground">
+                    {String((step.output as Record<string, string>).message || "Completed")}
+                  </p>
+                ) : null}
               </div>
             </CollapsibleContent>
           </div>
@@ -717,21 +672,6 @@ export default function ExecutionDetailPage() {
         </CardContent>
       </Card>
 
-      {execution?.input && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Trigger Data</CardTitle>
-            <CardDescription>
-              Input data that triggered this execution
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="p-3 bg-muted border rounded text-sm overflow-x-auto max-h-64">
-              {JSON.stringify(execution.input, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -2,19 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSocket } from "@/lib/socket/socket-context";
-import { Terminal, ScrollText } from "lucide-react";
 
 interface LogEntry {
   timestamp: string;
-  nodeId?: string;
-  nodeName?: string;
-  status?: string;
-  message?: string;
+  type: "node" | "info" | "error" | "success";
+  text: string;
 }
 
 /**
- * Live execution log viewer — shows real-time node events from workflow execution.
- * Subscribes to workflow WebSocket events and displays them as a scrolling log.
+ * Terminal-like execution log viewer.
+ * Shows real-time workflow events as they happen.
  */
 export function ExecutionLogs({
   executionId,
@@ -26,11 +23,16 @@ export function ExecutionLogs({
   const { socket, subscribeToExecution, unsubscribeFromExecution } = useSocket();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const autoScroll = useRef(true);
 
   useEffect(() => {
     if (!socket || !executionId) return;
 
     subscribeToExecution(executionId);
+
+    const addLog = (entry: LogEntry) => {
+      setLogs((prev) => [...prev, entry]);
+    };
 
     const nodeHandler = (payload: {
       nodeId: string;
@@ -39,115 +41,120 @@ export function ExecutionLogs({
       error?: string;
       output?: Record<string, unknown>;
     }) => {
-      const entry: LogEntry = {
-        timestamp: new Date().toLocaleTimeString(),
-        nodeId: payload.nodeId,
-        nodeName: payload.nodeName,
-        status: payload.status,
-        message:
-          payload.status === "failed"
-            ? `Failed: ${payload.error || "Unknown error"}`
-            : payload.status === "completed"
-              ? payload.output?.message
-                ? String(payload.output.message)
-                : "Completed"
-              : payload.status === "running"
-                ? "Started..."
-                : payload.status,
-      };
-      setLogs((prev) => [...prev, entry]);
+      const name = payload.nodeName || payload.nodeId;
+      const time = new Date().toLocaleTimeString("en-US", { hour12: false });
+
+      if (payload.status === "running") {
+        addLog({
+          timestamp: time,
+          type: "node",
+          text: `\u25B6 ${name}`,
+        });
+      } else if (payload.status === "completed") {
+        const msg = payload.output?.message
+          ? ` \u2014 ${payload.output.message}`
+          : "";
+        addLog({
+          timestamp: time,
+          type: "success",
+          text: `\u2713 ${name}${msg}`,
+        });
+      } else if (payload.status === "failed") {
+        addLog({
+          timestamp: time,
+          type: "error",
+          text: `\u2717 ${name} \u2014 ${payload.error || "Failed"}`,
+        });
+      }
+    };
+
+    const startedHandler = () => {
+      addLog({
+        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        type: "info",
+        text: "Workflow started",
+      });
     };
 
     const completeHandler = () => {
-      setLogs((prev) => [
-        ...prev,
-        {
-          timestamp: new Date().toLocaleTimeString(),
-          message: "Workflow completed",
-        },
-      ]);
+      addLog({
+        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        type: "success",
+        text: "Workflow completed",
+      });
     };
 
     const failHandler = (payload: { error?: string }) => {
-      setLogs((prev) => [
-        ...prev,
-        {
-          timestamp: new Date().toLocaleTimeString(),
-          message: `Workflow failed: ${payload.error || "Unknown error"}`,
-        },
-      ]);
+      addLog({
+        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        type: "error",
+        text: `Workflow failed: ${payload.error || "Unknown error"}`,
+      });
     };
 
     socket.on("workflow:node:update", nodeHandler);
+    socket.on("workflow:execution:started", startedHandler);
     socket.on("workflow:execution:completed", completeHandler);
     socket.on("workflow:execution:failed", failHandler);
 
     return () => {
       socket.off("workflow:node:update", nodeHandler);
+      socket.off("workflow:execution:started", startedHandler);
       socket.off("workflow:execution:completed", completeHandler);
       socket.off("workflow:execution:failed", failHandler);
       unsubscribeFromExecution(executionId);
     };
   }, [socket, executionId, subscribeToExecution, unsubscribeFromExecution]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+    if (autoScroll.current && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [logs.length]);
 
-  const statusColor = (status?: string) => {
-    switch (status) {
-      case "running":
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    autoScroll.current = scrollHeight - scrollTop - clientHeight < 40;
+  };
+
+  const typeColor = (type: LogEntry["type"]) => {
+    switch (type) {
+      case "node":
         return "text-blue-400";
-      case "completed":
+      case "success":
         return "text-emerald-400";
-      case "failed":
+      case "error":
         return "text-red-400";
       default:
-        return "text-muted-foreground";
+        return "text-zinc-400";
     }
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <ScrollText className="w-3.5 h-3.5" />
-          Live Logs
-        </p>
-        {isRunning && (
-          <span className="text-xs text-emerald-500 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-            Streaming
-          </span>
+    <div
+      ref={scrollRef}
+      onScroll={handleScroll}
+      className="rounded-lg border bg-[#0a0a0a] overflow-y-auto font-mono text-[13px] leading-5"
+      style={{ height: 280 }}
+    >
+      <div className="p-3 space-y-0.5">
+        {logs.length === 0 && (
+          <div className="text-zinc-600">
+            {isRunning ? "$ waiting for events..." : "$ no events recorded"}
+          </div>
         )}
-      </div>
-      <div
-        ref={scrollRef}
-        className="rounded-lg border bg-[#0a0a0a] p-3 overflow-y-auto font-mono text-xs"
-        style={{ height: 250 }}
-      >
-        {logs.length === 0 ? (
-          <p className="text-muted-foreground">
-            {isRunning ? "Waiting for events..." : "No log events recorded"}
-          </p>
-        ) : (
-          logs.map((log, i) => (
-            <div key={i} className="flex gap-2 py-0.5">
-              <span className="text-muted-foreground/60 shrink-0">
-                {log.timestamp}
-              </span>
-              {log.nodeName && (
-                <span className={`shrink-0 ${statusColor(log.status)}`}>
-                  [{log.nodeName}]
-                </span>
-              )}
-              <span className="text-zinc-300">{log.message}</span>
-            </div>
-          ))
+        {logs.map((log, i) => (
+          <div key={i} className="flex gap-2">
+            <span className="text-zinc-600 select-none shrink-0">
+              {log.timestamp}
+            </span>
+            <span className={typeColor(log.type)}>{log.text}</span>
+          </div>
+        ))}
+        {isRunning && logs.length > 0 && (
+          <div className="text-zinc-600 animate-pulse">$ _</div>
         )}
       </div>
     </div>
