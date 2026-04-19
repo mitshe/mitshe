@@ -34,8 +34,10 @@ import {
   Webhook,
   Calendar,
   Radio,
+  Terminal as TerminalIcon,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
+import { TerminalStream } from "@/components/terminal-stream";
 import {
   useWorkflow,
   useWorkflowExecutionDetails,
@@ -339,6 +341,7 @@ function StepCard({
                     </pre>
                   </div>
                 )}
+
               </div>
             </CollapsibleContent>
           </div>
@@ -678,6 +681,39 @@ export default function ExecutionDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Live session terminal — shown when any step created a session */}
+      {(() => {
+        const sessionId = sortedNodeResults.find(
+          (r) => r.output?.sessionId,
+        )?.output?.sessionId as string | undefined;
+        if (!sessionId) return null;
+        const isRunning = currentStatus === "running";
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TerminalIcon className="w-4 h-4" />
+                Session Terminal
+                {isRunning && (
+                  <Badge variant="outline" className="text-emerald-500 gap-1 ml-2">
+                    <Radio className="w-3 h-3 animate-pulse" />
+                    Live
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {isRunning
+                  ? "Watch Claude Code working in real-time"
+                  : "Terminal output from the session"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TerminalStream sessionId={sessionId} />
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {execution?.input && (
         <Card>
