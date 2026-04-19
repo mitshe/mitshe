@@ -154,17 +154,19 @@ export function ExecutionLogs({
       status?: string;
       log?: { level: string; message: string };
     }) => {
-      // Handle log events (CLI output, commands, etc.)
       if (payload.status === "log" && payload.log) {
         const time = new Date().toLocaleTimeString("en-US", { hour12: false });
+        const msg = payload.log.message;
+        const isCmd = msg.startsWith("$");
+        const isError = msg.startsWith("\u2717") || payload.log.level === "error";
+        const isSuccess = msg.startsWith("\u2713");
         addLive({
           timestamp: time,
-          type: payload.log.level === "error" ? "error" : "info",
-          text: `  ${payload.log.message}`,
+          type: isCmd ? "cmd" : isError ? "error" : isSuccess ? "success" : "info",
+          text: msg,
         });
         return;
       }
-      // Delegate to nodeHandler for regular node events
       nodeHandler(payload as Parameters<typeof nodeHandler>[0]);
     };
 

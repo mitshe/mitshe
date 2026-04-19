@@ -149,28 +149,27 @@ export class WorkflowOrchestratorService {
             );
           }
 
-          // Collect user-visible log entries
-          if (event.type === 'cmd') {
-            // CLI command with real output
-            executionLogs.push({
-              timestamp: event.timestamp,
-              message: `$ ${event.command}`,
-            });
-            if (event.output?.trim()) {
-              executionLogs.push({
-                timestamp: event.timestamp,
-                message: event.output.trim(),
-              });
-            }
+          // Helper: add log entry to both DB array and WebSocket
+          const addLog = (timestamp: string, message: string) => {
+            executionLogs.push({ timestamp, message });
             this.eventEmitter.emitExecutionLog(
               organizationId,
               executionId,
               workflowId,
               'info',
-              `$ ${event.command}${event.output ? '\n' + event.output.trim() : ''}`,
+              message,
             );
+          };
+
+          // Collect user-visible log entries
+          if (event.type === 'cmd') {
+            addLog(event.timestamp, `$ ${event.command}`);
+            if (event.output?.trim()) {
+              for (const line of event.output.trim().split('\n')) {
+                addLog(event.timestamp, `  ${line}`);
+              }
+            }
           } else if (event.type === 'log' && event.level === 'info') {
-            // Skip debug noise
             const msg = event.message;
             const isDebug =
               msg.includes('Original config:') ||
@@ -181,17 +180,7 @@ export class WorkflowOrchestratorService {
               msg.startsWith('Executing level') ||
               msg.startsWith('Parallel execution');
             if (!isDebug) {
-              executionLogs.push({
-                timestamp: event.timestamp,
-                message: msg,
-              });
-              this.eventEmitter.emitExecutionLog(
-                organizationId,
-                executionId,
-                workflowId,
-                'info',
-                msg,
-              );
+              addLog(event.timestamp, msg);
             }
           } else if (event.type === 'node:started') {
             executionLogs.push({
