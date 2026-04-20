@@ -92,6 +92,19 @@ export class IntegrationTools {
           }
 
           try {
+            // First test the credentials before saving
+            const testResult = await this.integrationsService.testBeforeConnect(
+              type as any,
+              config,
+            );
+
+            if (!testResult.success) {
+              return {
+                content: `Invalid ${type} credentials: ${testResult.message || 'Connection test failed'}. Please check your token and try again.`,
+                isError: true,
+              };
+            }
+
             const integration = await this.integrationsService.create(orgId, {
               type: type as any,
               config,
@@ -101,7 +114,7 @@ export class IntegrationTools {
                 id: integration.id,
                 type: integration.type,
                 status: integration.status,
-                message: `${type} connected successfully.`,
+                message: `${type} connected and verified successfully.`,
               }),
             };
           } catch (error) {
