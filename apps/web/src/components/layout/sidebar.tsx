@@ -63,16 +63,16 @@ type SidebarMode = "chat" | "workflows" | "workspace";
 // ─── Nav items per mode ───
 
 const workflowsNavItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: FolderKanban, tourId: "nav-dashboard" },
-  { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows" },
-  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions" },
-  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks" },
+  { title: "Dashboard", href: "/dashboard", icon: FolderKanban, tourId: "nav-dashboard", description: "Overview & stats" },
+  { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows", description: "Automation pipelines" },
+  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions", description: "Run history" },
+  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks", description: "Work items" },
 ];
 
 const workspaceNavItems: NavItem[] = [
-  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions" },
-  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots" },
-  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills" },
+  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "AI agent terminals" },
+  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots", description: "Saved environments" },
+  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills", description: "Claude Code instructions" },
 ];
 
 // ─── Mode config ───
