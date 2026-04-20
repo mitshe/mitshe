@@ -12,6 +12,7 @@ import {
   Bot,
   Settings,
   PanelLeftClose,
+  PanelLeftOpen,
   MessageCircle,
   Camera,
   MessageSquarePlus,
@@ -382,13 +383,17 @@ export function Sidebar({
 }) {
   if (collapsed) {
     return (
-      <div className="hidden md:flex h-full w-14 flex-col border-r bg-background items-center">
+      <div className="hidden md:flex h-full w-12 flex-col border-r bg-background items-center">
         <div className="flex h-14 items-center justify-center border-b w-full shrink-0">
-          <button onClick={onToggle} className="p-1.5 rounded-md hover:bg-muted transition-colors">
-            <img src="/logo.svg" alt="mitshe" className="h-7 w-7" />
+          <button
+            onClick={onToggle}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Expand sidebar"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex-1 flex flex-col items-center gap-1 py-3">
+        <div className="flex-1 flex flex-col items-center gap-1.5 py-3">
           {MODES.map((mode) => (
             <Link
               key={mode.key}
@@ -400,7 +405,7 @@ export function Sidebar({
             </Link>
           ))}
         </div>
-        <div className="border-t py-2 w-full flex justify-center shrink-0">
+        <div className="border-t py-2 w-full flex flex-col items-center gap-1.5 shrink-0">
           <Link
             href="/settings"
             className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
