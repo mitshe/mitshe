@@ -292,7 +292,7 @@ function ChatMessage({
       <Sparkles className="h-5 w-5 text-primary shrink-0 mt-1" />
       <div className="flex-1 min-w-0 space-y-3">
         {toolUse && toolUse.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col gap-1">
             {toolUse.map((tool, i) => (
               <ToolChip key={i} toolCall={tool} />
             ))}
@@ -324,30 +324,44 @@ function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
   const prefix = toolCall.name.split("_")[0];
   const meta = TOOL_META[prefix] || { icon: <Zap className="h-3 w-3" />, color: "text-muted-foreground", basePath: "" };
   const action = toolCall.name.replace(/^[^_]+_/, "").replace(/_/g, " ");
+
+  const isError = toolCall.result?.message
+    ? String(toolCall.result.message).toLowerCase().includes("error") ||
+      String(toolCall.result.message).toLowerCase().includes("invalid") ||
+      String(toolCall.result.message).toLowerCase().includes("failed") ||
+      String(toolCall.result.message).includes("no running container")
+    : false;
+
   const resultMsg = toolCall.result?.message
     ? String(toolCall.result.message)
     : toolCall.result?.name
       ? String(toolCall.result.name)
       : null;
 
-  // Build link to the created/affected resource
   const resourceId = toolCall.result?.id as string | undefined;
-  const href = resourceId && meta.basePath ? `${meta.basePath}/${resourceId}` : null;
+  const href = !isError && resourceId && meta.basePath ? `${meta.basePath}/${resourceId}` : null;
 
   const chip = (
     <span className={cn(
-      "inline-flex items-center gap-1.5 rounded-full bg-muted/80 border border-border/50 px-2.5 py-1 text-xs transition-colors",
+      "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors",
+      isError
+        ? "bg-destructive/10 border border-destructive/20 text-destructive"
+        : "bg-muted/80 border border-border/50",
       href && "hover:bg-muted hover:border-border cursor-pointer",
     )}>
-      <span className={meta.color}>{meta.icon}</span>
+      <span className={isError ? "text-destructive" : meta.color}>{meta.icon}</span>
       <span className="font-medium capitalize">{action}</span>
       {resultMsg && (
         <>
-          <span className="text-muted-foreground/50">&middot;</span>
-          <span className="text-muted-foreground truncate max-w-[200px]">{resultMsg}</span>
+          <span className={isError ? "text-destructive/40" : "text-muted-foreground/50"}>&middot;</span>
+          <span className={cn("truncate max-w-[180px]", isError ? "text-destructive/70" : "text-muted-foreground")}>
+            {resultMsg}
+          </span>
         </>
       )}
-      {href ? (
+      {isError ? (
+        <AlertCircle className="h-3 w-3 text-destructive/60" />
+      ) : href ? (
         <ExternalLink className="h-3 w-3 text-muted-foreground" />
       ) : (
         <Check className="h-3 w-3 text-emerald-500" />
