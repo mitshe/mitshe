@@ -24,6 +24,7 @@ import {
   Loader2,
   MoreHorizontal,
   Zap,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -100,10 +101,11 @@ const MODES: { key: SidebarMode; label: string; icon: React.ComponentType<{ clas
   { key: "workspace", label: "Workspace", icon: Terminal, defaultHref: "/sessions" },
 ];
 
-function getModeFromPath(pathname: string): SidebarMode {
+function getModeFromPath(pathname: string): SidebarMode | null {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return "chat";
   if (pathname.startsWith("/sessions") || pathname.startsWith("/images") || pathname.startsWith("/skills")) return "workspace";
-  return "workflows";
+  if (pathname.startsWith("/workflows") || pathname.startsWith("/executions") || pathname.startsWith("/tasks") || pathname.startsWith("/projects") || pathname.startsWith("/dashboard")) return "workflows";
+  return null; // settings pages — don't change mode
 }
 
 // ─── Sidebar content ───
@@ -114,7 +116,16 @@ interface SidebarContentProps {
 
 export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const pathname = usePathname();
-  const activeMode = getModeFromPath(pathname);
+  const pathMode = getModeFromPath(pathname);
+  const [stickyMode, setStickyMode] = useState<SidebarMode>("chat");
+  const [settingsOpen, setSettingsOpen] = useState(pathname.startsWith("/settings"));
+
+  // Update sticky mode when path changes to a non-settings page
+  useEffect(() => {
+    if (pathMode) setStickyMode(pathMode);
+  }, [pathMode]);
+
+  const activeMode = pathMode ?? stickyMode;
 
   const isActive = (href: string) => {
     if (href === "/settings") return pathname === "/settings";
@@ -144,12 +155,6 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       </Button>
     ));
 
-  const renderSection = (label: string, items: NavItem[]) => (
-    <div className="mt-6 space-y-1">
-      <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-      {renderNavItems(items)}
-    </div>
-  );
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -186,8 +191,25 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         <div className="space-y-1">{renderNavItems(workspaceNavItems)}</div>
       )}
 
-      {/* Settings — always visible at bottom */}
-      {renderSection("Settings", settingsNavItems)}
+      {/* Settings — collapsible */}
+      <div className="mt-4">
+        <button
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          className="flex items-center gap-2 w-full px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground/60 uppercase tracking-wider hover:text-muted-foreground transition-colors"
+        >
+          <Settings className="h-3.5 w-3.5" />
+          Settings
+          <ChevronDown className={cn(
+            "h-3 w-3 ml-auto transition-transform",
+            settingsOpen ? "rotate-0" : "-rotate-90",
+          )} />
+        </button>
+        {settingsOpen && (
+          <div className="space-y-0.5 mt-1">
+            {renderNavItems(settingsNavItems)}
+          </div>
+        )}
+      </div>
     </TooltipProvider>
   );
 }
