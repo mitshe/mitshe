@@ -7,8 +7,7 @@
 
 Talk to mitshe like you'd talk to a colleague. Connect GitHub, describe what you need, and it handles the rest — creates branches, writes code with Claude Code, runs tests, opens PRs. Each task runs in an isolated Docker container. Self-hosted, bring your own API keys.
 
-<!-- TODO: Add demo GIF here -->
-<!-- ![mitshe demo](docs/demo.gif) -->
+![mitshe overview](docs/tour.gif)
 
 ## What it does
 
@@ -55,15 +54,6 @@ Open **http://localhost:3000**. Create your account. Add an AI provider key. Sta
 - **Multi-provider** — Claude, OpenAI, OpenRouter, Gemini, Groq (BYOK)
 - **Self-hosted** — your data, your keys, your infrastructure
 - **Light mode** — single Docker container with SQLite, no external dependencies
-
-## Screenshots
-
-| | |
-|---|---|
-| ![Chat](docs/dashboard.png) | ![Sessions](docs/session.png) |
-| Chat — AI assistant that manages your dev workflow | Sessions — Claude Code in isolated containers |
-| ![Workflows](docs/workflows.png) | ![Executions](docs/executions.png) |
-| Workflows — automated pipelines with triggers | Executions — real-time terminal output |
 
 ## Update
 
