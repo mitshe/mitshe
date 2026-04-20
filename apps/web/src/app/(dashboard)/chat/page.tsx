@@ -323,7 +323,7 @@ const TOOL_META: Record<string, { icon: React.ReactNode; color: string; basePath
 function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
   const prefix = toolCall.name.split("_")[0];
   const meta = TOOL_META[prefix] || { icon: <Zap className="h-3 w-3" />, color: "text-muted-foreground", basePath: "" };
-  const action = toolCall.name.replace(/^[^_]+_/, "").replace(/_/g, " ");
+  const action = toolCall.name.replace(/_/g, " ");
 
   const isError = toolCall.result?.message
     ? String(toolCall.result.message).toLowerCase().includes("error") ||
