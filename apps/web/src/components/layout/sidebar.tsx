@@ -9,12 +9,7 @@ import {
   MessageSquareCode,
   Workflow,
   History,
-  Plug,
   Bot,
-  GitBranch,
-  Building2,
-  Users,
-  Key,
   Settings,
   MessageCircle,
   Camera,
@@ -24,7 +19,6 @@ import {
   Loader2,
   MoreHorizontal,
   Zap,
-  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -69,28 +63,16 @@ type SidebarMode = "chat" | "workflows" | "workspace";
 // ─── Nav items per mode ───
 
 const workflowsNavItems: NavItem[] = [
-  { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows", description: "Automation pipelines" },
-  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions", description: "Run history" },
-  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks", description: "Work items" },
-  { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects", description: "Organize repos" },
+  { title: "Dashboard", href: "/dashboard", icon: FolderKanban, tourId: "nav-dashboard" },
+  { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows" },
+  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions" },
+  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks" },
 ];
 
 const workspaceNavItems: NavItem[] = [
-  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "AI agent terminals" },
-  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots", description: "Saved environments" },
-  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills", description: "Claude Code instructions" },
-];
-
-// ─── Settings (always visible at bottom, not a mode) ───
-
-const settingsNavItems: NavItem[] = [
-  { title: "Integrations", href: "/settings/integrations", icon: Plug, tourId: "nav-integrations" },
-  { title: "AI Providers", href: "/settings/ai", icon: Bot, tourId: "nav-ai" },
-  { title: "Repositories", href: "/settings/repositories", icon: GitBranch, tourId: "nav-repositories" },
-  { title: "Organization", href: "/settings", icon: Building2, tourId: "nav-organization" },
-  { title: "Team", href: "/settings/team", icon: Users, tourId: "nav-team" },
-  { title: "API Keys", href: "/settings/api-keys", icon: Key, tourId: "nav-api-keys" },
-  { title: "Preferences", href: "/settings/preferences", icon: Settings, tourId: "nav-preferences" },
+  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions" },
+  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots" },
+  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills" },
 ];
 
 // ─── Mode config ───
@@ -105,7 +87,7 @@ function getModeFromPath(pathname: string): SidebarMode | null {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return "chat";
   if (pathname.startsWith("/sessions") || pathname.startsWith("/images") || pathname.startsWith("/skills")) return "workspace";
   if (pathname.startsWith("/workflows") || pathname.startsWith("/executions") || pathname.startsWith("/tasks") || pathname.startsWith("/projects") || pathname.startsWith("/dashboard")) return "workflows";
-  return null; // settings pages — don't change mode
+  return null;
 }
 
 // ─── Sidebar content ───
@@ -118,7 +100,6 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const pathname = usePathname();
   const pathMode = getModeFromPath(pathname);
   const [stickyMode, setStickyMode] = useState<SidebarMode>("chat");
-  const [settingsOpen, setSettingsOpen] = useState(pathname.startsWith("/settings"));
 
   // Update sticky mode when path changes to a non-settings page
   useEffect(() => {
@@ -191,25 +172,6 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         <div className="space-y-1">{renderNavItems(workspaceNavItems)}</div>
       )}
 
-      {/* Settings — collapsible */}
-      <div className="mt-4">
-        <button
-          onClick={() => setSettingsOpen(!settingsOpen)}
-          className="flex items-center gap-2 w-full px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground/60 uppercase tracking-wider hover:text-muted-foreground transition-colors"
-        >
-          <Settings className="h-3.5 w-3.5" />
-          Settings
-          <ChevronDown className={cn(
-            "h-3 w-3 ml-auto transition-transform",
-            settingsOpen ? "rotate-0" : "-rotate-90",
-          )} />
-        </button>
-        {settingsOpen && (
-          <div className="space-y-0.5 mt-1">
-            {renderNavItems(settingsNavItems)}
-          </div>
-        )}
-      </div>
     </TooltipProvider>
   );
 }
@@ -411,6 +373,18 @@ export function Sidebar() {
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-4">
         <SidebarContent />
+      </div>
+      <div className="border-t px-3 py-2 shrink-0">
+        <Link
+          href="/settings"
+          className={cn(
+            "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors",
+            "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+          )}
+        >
+          <Settings className="h-4 w-4" />
+          Settings
+        </Link>
       </div>
     </div>
   );
