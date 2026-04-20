@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   FolderKanban,
@@ -181,6 +181,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 // ─── Chat sidebar (conversations list with polished UX) ───
 
 function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isChatPage = pathname === "/chat" || pathname.startsWith("/chat/");
   const { data: conversations = [], isLoading } = useChatConversations();
   const { data: credentials = [] } = useAICredentials();
   const createConversation = useCreateChatConversation();
@@ -199,11 +202,17 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     if (!defaultCred) return;
     const conv = await createConversation.mutateAsync({ aiCredentialId: defaultCred.id });
     setActiveId(conv.id);
+    if (!isChatPage) {
+      router.push("/chat");
+    }
     window.dispatchEvent(new CustomEvent("chat:select", { detail: { conversationId: conv.id } }));
   };
 
   const handleSelect = (id: string) => {
     setActiveId(id);
+    if (!isChatPage) {
+      router.push("/chat");
+    }
     window.dispatchEvent(new CustomEvent("chat:select", { detail: { conversationId: id } }));
     onNavigate?.();
   };
