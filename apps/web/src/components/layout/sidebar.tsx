@@ -11,6 +11,7 @@ import {
   History,
   Bot,
   Settings,
+  PanelLeftClose,
   MessageCircle,
   Camera,
   MessageSquarePlus,
@@ -67,6 +68,7 @@ const workflowsNavItems: NavItem[] = [
   { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows", description: "Automation pipelines" },
   { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions", description: "Run history" },
   { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks", description: "Work items" },
+  { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects", description: "Organize repos" },
 ];
 
 const workspaceNavItems: NavItem[] = [
@@ -362,14 +364,60 @@ function ConversationItem({
 
 // ─── Sidebar shell ───
 
-export function Sidebar() {
+export function Sidebar({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  if (collapsed) {
+    return (
+      <div className="hidden md:flex h-full w-14 flex-col border-r bg-background items-center">
+        <div className="flex h-14 items-center justify-center border-b w-full shrink-0">
+          <button onClick={onToggle} className="p-1.5 rounded-md hover:bg-muted transition-colors">
+            <img src="/logo.svg" alt="mitshe" className="h-7 w-7" />
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center gap-1 py-3">
+          {MODES.map((mode) => (
+            <Link
+              key={mode.key}
+              href={mode.defaultHref}
+              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              title={mode.label}
+            >
+              <mode.icon className="h-4 w-4" />
+            </Link>
+          ))}
+        </div>
+        <div className="border-t py-2 w-full flex justify-center shrink-0">
+          <Link
+            href="/settings"
+            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title="Settings"
+          >
+            <Settings className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="hidden md:flex h-full w-64 flex-col border-r bg-background">
-      <div className="flex h-14 items-center border-b px-4 shrink-0">
+      <div className="flex h-14 items-center justify-between border-b px-4 shrink-0">
         <Link href="/chat" className="flex items-center gap-2 font-semibold">
-          <img src="/logo.svg" alt="mitshe" className="h-8 w-8" />
-          <span className="font-brand">mitshe</span>
+          <img src="/logo.svg" alt="mitshe" className="h-7 w-7" />
+          <span className="font-brand text-sm">mitshe</span>
         </Link>
+        <button
+          onClick={onToggle}
+          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          title="Collapse sidebar"
+        >
+          <PanelLeftClose className="h-4 w-4" />
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-4">
         <SidebarContent />
