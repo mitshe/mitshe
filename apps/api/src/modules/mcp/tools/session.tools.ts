@@ -74,14 +74,17 @@ export class SessionTools {
       {
         name: 'session_create',
         description:
-          'Create a new agent session with repositories, integrations, and optional Docker-in-Docker support.',
+          'Create a new agent session. Use repository_list first to get valid repository IDs. ' +
+          'If no repositoryIds provided, session starts without repos (Claude Code can clone manually).',
         inputSchema: {
           type: 'object',
           properties: {
             name: { type: 'string', description: 'Session name' },
             repositoryIds: {
               type: 'string',
-              description: 'Comma-separated repository IDs to attach',
+              description:
+                'Comma-separated repository IDs (from repository_list). ' +
+                'Leave empty to create session without repos.',
             },
             projectId: { type: 'string', description: 'Project ID' },
             aiCredentialId: { type: 'string', description: 'AI credential ID' },
@@ -106,30 +109,48 @@ export class SessionTools {
         },
         execute: async (orgId, userId, input): Promise<McpToolResult> => {
           const repoIds = input.repositoryIds
-            ? (input.repositoryIds as string).split(',').map((s) => s.trim())
+            ? (input.repositoryIds as string)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
             : [];
           const integrationIds = input.integrationIds
-            ? (input.integrationIds as string).split(',').map((s) => s.trim())
+            ? (input.integrationIds as string)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
             : undefined;
 
-          const session = await this.sessionsService.create(orgId, userId, {
-            name: input.name as string,
-            repositoryIds: repoIds,
-            projectId: input.projectId as string,
-            aiCredentialId: input.aiCredentialId as string,
-            integrationIds,
-            instructions: input.instructions as string,
-            enableDocker: input.enableDocker === 'true',
-          });
+          try {
+            const session = await this.sessionsService.create(orgId, userId, {
+              name: input.name as string,
+              repositoryIds: repoIds,
+              projectId: input.projectId as string,
+              aiCredentialId: input.aiCredentialId as string,
+              integrationIds,
+              instructions: input.instructions as string,
+              enableDocker: input.enableDocker === 'true',
+            });
 
-          return {
-            content: JSON.stringify({
-              id: session.id,
-              name: session.name,
-              status: session.status,
-              message: `Session "${session.name}" created successfully.`,
-            }),
-          };
+            return {
+              content: JSON.stringify({
+                id: session.id,
+                name: session.name,
+                status: session.status,
+                message: `Session "${session.name}" created successfully.`,
+              }),
+            };
+          } catch (error) {
+            const msg = (error as Error).message;
+            if (msg.includes('Foreign key')) {
+              return {
+                content:
+                  'Invalid repository IDs. Use repository_list first to get valid IDs, then pass them to session_create.',
+                isError: true,
+              };
+            }
+            throw error;
+          }
         },
       },
       {
