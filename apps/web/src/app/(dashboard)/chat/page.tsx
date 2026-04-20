@@ -402,11 +402,11 @@ function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
 /* ─── Credential prompt — inline form when AI asks for token/URL ─── */
 
 const CREDENTIAL_PATTERNS = [
-  { match: /jira/i, fields: [{ key: "url", label: "Jira URL", placeholder: "https://your-domain.atlassian.net" }, { key: "token", label: "API Token", placeholder: "Paste your Jira API token", type: "password" as const }], template: (v: Record<string, string>) => `Here are my Jira credentials:\nURL: ${v.url}\nAPI Token: ${v.token}` },
-  { match: /github/i, fields: [{ key: "token", label: "Personal Access Token", placeholder: "ghp_...", type: "password" as const }], template: (v: Record<string, string>) => `Here is my GitHub token: ${v.token}` },
-  { match: /gitlab/i, fields: [{ key: "token", label: "Personal Access Token", placeholder: "glpat-...", type: "password" as const }], template: (v: Record<string, string>) => `Here is my GitLab token: ${v.token}` },
-  { match: /slack/i, fields: [{ key: "token", label: "Bot Token", placeholder: "xoxb-...", type: "password" as const }], template: (v: Record<string, string>) => `Here is my Slack bot token: ${v.token}` },
-  { match: /openai|openrouter|claude|api.key|ai.provider/i, fields: [{ key: "token", label: "API Key", placeholder: "sk-...", type: "password" as const }], template: (v: Record<string, string>) => `Here is my API key: ${v.token}` },
+  { match: /jira/i, fields: [{ key: "url", label: "Jira URL", placeholder: "https://your-domain.atlassian.net" }, { key: "email", label: "Email", placeholder: "your-email@company.com" }, { key: "token", label: "API Token", placeholder: "Paste your Jira API token", type: "password" as const }], template: (v: Record<string, string>) => `Connect my Jira:\nURL: ${v.url}\nEmail: ${v.email}\nAPI Token: ${v.token}` },
+  { match: /github/i, fields: [{ key: "token", label: "Personal Access Token", placeholder: "ghp_...", type: "password" as const }], template: (v: Record<string, string>) => `Connect my GitHub with token: ${v.token}` },
+  { match: /gitlab/i, fields: [{ key: "token", label: "Personal Access Token", placeholder: "glpat-...", type: "password" as const }], template: (v: Record<string, string>) => `Connect my GitLab with token: ${v.token}` },
+  { match: /slack/i, fields: [{ key: "token", label: "Bot Token", placeholder: "xoxb-...", type: "password" as const }], template: (v: Record<string, string>) => `Connect my Slack with bot token: ${v.token}` },
+  { match: /openai|openrouter|claude|api.key|ai.provider/i, fields: [{ key: "token", label: "API Key", placeholder: "sk-...", type: "password" as const }], template: (v: Record<string, string>) => `Connect AI provider with key: ${v.token}` },
 ];
 
 function CredentialPrompt({

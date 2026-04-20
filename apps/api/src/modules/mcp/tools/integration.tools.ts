@@ -64,6 +64,11 @@ export class IntegrationTools {
                 'Base URL (required for Jira, YouTrack, GitLab self-hosted). ' +
                 'E.g. https://your-domain.atlassian.net for Jira',
             },
+            email: {
+              type: 'string',
+              description:
+                'Email address (required for Jira Cloud authentication)',
+            },
           },
           required: ['type', 'token'],
         },
@@ -71,6 +76,7 @@ export class IntegrationTools {
           const type = input.type as string;
           const token = input.token as string;
           const url = input.url as string | undefined;
+          const email = input.email as string | undefined;
 
           const config: Record<string, string> = {};
           if (type === 'GITHUB' || type === 'GITLAB' || type === 'LINEAR') {
@@ -78,6 +84,7 @@ export class IntegrationTools {
           } else if (type === 'JIRA') {
             config.apiToken = token;
             if (url) config.baseUrl = url;
+            if (email) config.email = email;
           } else if (type === 'SLACK') {
             config.botToken = token;
           } else if (type === 'DISCORD') {
