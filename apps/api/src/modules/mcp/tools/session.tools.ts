@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { SessionsService } from '../../sessions/services/sessions.service';
 import { SessionContainerService } from '../../sessions/services/session-container.service';
+import { EventsGateway } from '../../../infrastructure/websocket/events.gateway';
 import { McpTool, McpToolResult } from '../mcp.types';
 
 @Injectable()
 export class SessionTools {
+  private readonly logger = new Logger(SessionTools.name);
+
   constructor(
     private readonly sessionsService: SessionsService,
     private readonly containerService: SessionContainerService,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   getTools(): McpTool[] {
@@ -132,12 +136,73 @@ export class SessionTools {
               enableDocker: input.enableDocker === 'true',
             });
 
+            // Start container in background (same as sessions controller)
+            const snapshotImage = input.baseImageId
+              ? await this.sessionsService.resolveSnapshotImage(
+                  input.baseImageId as string,
+                  orgId,
+                )
+              : undefined;
+
+            const [repos, integrationConfigs] = await Promise.all([
+              this.sessionsService.buildRepoConfigs(
+                session.repositories,
+                orgId,
+              ),
+              this.sessionsService.resolveIntegrationConfigs(
+                integrationIds,
+                orgId,
+                undefined,
+                session.id,
+              ),
+            ]);
+
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
+            setImmediate(async () => {
+              try {
+                const containerId = await this.containerService.createAndStart({
+                  sessionId: session.id,
+                  organizationId: orgId,
+                  repos,
+                  instructions: session.instructions,
+                  provider: session.aiCredential?.provider,
+                  enableDocker: session.enableDocker,
+                  integrations:
+                    integrationConfigs.length > 0
+                      ? integrationConfigs
+                      : undefined,
+                  image: snapshotImage,
+                });
+                await this.sessionsService.updateStatus(
+                  session.id,
+                  'RUNNING',
+                  containerId,
+                );
+                this.eventsGateway.emitSessionStatus(
+                  orgId,
+                  session.id,
+                  'RUNNING',
+                );
+              } catch (err) {
+                this.logger.error(
+                  `Failed to start session: ${(err as Error).message}`,
+                );
+                await this.sessionsService.updateStatus(session.id, 'FAILED');
+                this.eventsGateway.emitSessionStatus(
+                  orgId,
+                  session.id,
+                  'FAILED',
+                  (err as Error).message,
+                );
+              }
+            });
+
             return {
               content: JSON.stringify({
                 id: session.id,
                 name: session.name,
-                status: session.status,
-                message: `Session "${session.name}" created successfully.`,
+                status: 'CREATING',
+                message: `Session "${session.name}" created. Container is starting...`,
               }),
             };
           } catch (error) {
