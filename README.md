@@ -1,28 +1,36 @@
 # mitshe
 
-> Open-source AI-powered workflow automation platform with interactive agent workspaces
+> Chat-first AI development platform — automate workflows, manage sessions, and ship code through conversation.
 
 [![CI](https://github.com/mitshe/mitshe/actions/workflows/ci.yml/badge.svg)](https://github.com/mitshe/mitshe/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-mitshe automates development workflows using AI agents and provides interactive workspaces for hands-on collaboration with AI. Connect your tools (Jira, GitHub, GitLab, Slack), build visual automation pipelines, and work with AI agents like Claude Code or OpenClaw directly in your browser - complete with a terminal, code editor, and file browser. Each session runs in an isolated Docker container with full access to your repositories.
+Talk to mitshe like you'd talk to a colleague. Connect GitHub, describe what you need, and it handles the rest — creates branches, writes code with Claude Code, runs tests, opens PRs. Each task runs in an isolated Docker container. Self-hosted, bring your own API keys.
 
-![mitshe dashboard](docs/dashboard.png)
+<!-- TODO: Add demo GIF here -->
+<!-- ![mitshe demo](docs/demo.gif) -->
 
-## Screenshots
+## What it does
 
-| | |
-|---|---|
-| ![Dashboard](docs/dashboard.png) | ![Tasks](docs/tasks.png) |
-| Dashboard — tasks, sessions, workflows at a glance | Tasks — AI-processed work items with status tracking |
-| ![Workflows](docs/workflows.png) | ![Sessions](docs/session.png) |
-| Workflows — automated pipelines with triggers | Sessions — interactive AI agent workspaces |
-| ![Projects](docs/projects.png) | ![Executions](docs/executions.png) |
-| Projects — organize repos, tasks, workflows | Executions — workflow run history |
-| ![Integrations](docs/integrations.png) | ![Documentation](docs/documentation.png) |
-| Integrations — GitHub, Jira, Slack, and more | Documentation — built-in guides and API reference |
+**Chat with AI that actually does things:**
+```
+You: "Connect my GitHub, here's my token: ghp_xxx"
+AI:  ✓ GitHub connected. Synced 12 repositories.
 
-## Run it
+You: "Take the login bug from Jira and fix it"
+AI:  → Creates session → Claude Code analyzes the code → fixes bug → creates PR
+```
+
+**Workflows that run on autopilot:**
+- Jira issue created → AI reviews → code changes → PR → Slack notification
+- Manual trigger → clone repo → AI generates code → commit → push
+
+**Interactive AI sessions:**
+- Claude Code in isolated Docker containers
+- Full terminal, file editor, git access
+- Snapshot sessions to reuse later
+
+## Quick start
 
 ```bash
 docker run -d \
@@ -34,18 +42,30 @@ docker run -d \
   ghcr.io/mitshe/mitshe:latest
 ```
 
-Open **http://localhost:3000**. Create your admin account on first visit.
+Open **http://localhost:3000**. Create your account. Add an AI provider key. Start chatting.
 
-Docker socket is mounted so mitshe can run workflow tasks in isolated containers on the host.
+## Features
 
-```bash
-# Stop
-docker stop mitshe && docker rm mitshe
-```
+- **AI Chat** — natural language interface to manage everything (workflows, sessions, tasks, integrations)
+- **40+ MCP tools** — AI can create sessions, run workflows, connect GitHub, manage tasks, all through conversation
+- **Claude Code sessions** — interactive terminals with Claude Code in isolated Docker containers
+- **Workflow engine** — visual builder + 150+ node types (triggers, AI actions, git, notifications)
+- **Snapshots** — freeze a configured session, reuse it for new tasks
+- **Skills** — reusable CLAUDE.md instructions for Claude Code
+- **Multi-provider** — Claude, OpenAI, OpenRouter, Gemini, Groq (BYOK)
+- **Self-hosted** — your data, your keys, your infrastructure
+- **Light mode** — single Docker container with SQLite, no external dependencies
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Chat](docs/dashboard.png) | ![Sessions](docs/session.png) |
+| Chat — AI assistant that manages your dev workflow | Sessions — Claude Code in isolated containers |
+| ![Workflows](docs/workflows.png) | ![Executions](docs/executions.png) |
+| Workflows — automated pipelines with triggers | Executions — real-time terminal output |
 
 ## Update
-
-Your data is stored in the `mitshe-data` volume and persists across updates.
 
 ```bash
 docker stop mitshe && docker rm mitshe
@@ -59,71 +79,39 @@ docker run -d \
   ghcr.io/mitshe/mitshe:latest
 ```
 
+Data persists in the `mitshe-data` volume.
+
 ## Develop
 
 ```bash
 # Prerequisites: Node.js 20+, pnpm 9+, Docker, just
-corepack enable && corepack prepare pnpm@9 --activate
-brew install just  # macOS (or: curl -sSf https://just.systems/install.sh | bash)
-
-# Setup
 git clone https://github.com/mitshe/mitshe.git
 cd mitshe
 just setup
 
-# Configure environment
+# Configure
 cp .env.example .env
 cp apps/api/.env.example apps/api/.env
-# Edit .env files - ENCRYPTION_KEY and JWT_SECRET auto-generate if not set
 
-# Build workflow executor image (one-time, required for sessions and workflows)
+# Build executor image (required for sessions and workflows)
 just executor-build
 
-# Start databases + dev servers
+# Start
 just dev
 ```
 
-Frontend: http://localhost:3000 | API: http://localhost:3001 | API Docs: http://localhost:3001/api
+Frontend: http://localhost:3000 | API: http://localhost:3001
 
-## Commands
+Run `just` to see all commands.
 
-Run `just` to see all commands. Key ones:
-
-| Command | Description |
-|---------|-------------|
-| `just run` | Run mitshe via `docker run` |
-| `just stop` | Stop mitshe container |
-| `just dev` | Dev mode (email/password auth) |
-| `just executor-build` | Build workflow executor image |
-| `just build` | Build all packages |
-| `just check` | Lint + typecheck + test |
-| `just light-build` | Build light Docker image |
-| `just db-migrate` | Run database migrations |
-
-## Project Structure
-
-```
-mitshe/
-├── apps/
-│   ├── web/          # Next.js 16 frontend
-│   └── api/          # NestJS 11 backend
-├── packages/
-│   └── types/        # Shared TypeScript types
-├── docker/
-│   ├── light/        # All-in-one container (SQLite + Redis)
-│   └── dev/          # Dev infrastructure (PostgreSQL + Redis)
-├── justfile          # Task runner
-└── turbo.json        # Build config
-```
-
-## Tech Stack
+## Stack
 
 Next.js 16 + NestJS 11 + TypeScript + Prisma + PostgreSQL/SQLite + Redis + BullMQ + React Flow + shadcn/ui + Tailwind CSS 4
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for architecture, code conventions, and development workflow.
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
-MIT - see [LICENSE](./LICENSE)
+MIT
