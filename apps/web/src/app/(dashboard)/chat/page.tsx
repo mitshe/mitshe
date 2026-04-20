@@ -118,6 +118,22 @@ export default function ChatPage() {
     }
   };
 
+  const sendFromCard = async (msg: string) => {
+    if (sendMessage.isPending || !activeConversationId) return;
+    setErrorMessage(null);
+    setPendingUserMessage(msg);
+    try {
+      await sendMessage.mutateAsync({
+        conversationId: activeConversationId,
+        data: { content: msg },
+      });
+    } catch {
+      setErrorMessage("Failed to send. Try again.");
+    } finally {
+      setPendingUserMessage(null);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -179,12 +195,13 @@ export default function ChatPage() {
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              messages.map((msg) => (
+              messages.map((msg, idx) => (
                 <ChatMessage
                   key={msg.id}
                   role={msg.role}
                   content={msg.content}
                   toolUse={msg.toolUse as ChatToolCall[] | null}
+                  onSendFromCard={idx === messages.length - 1 ? sendFromCard : undefined}
                 />
               ))
             )}
@@ -272,10 +289,12 @@ function ChatMessage({
   role,
   content,
   toolUse,
+  onSendFromCard,
 }: {
   role: string;
   content: string;
   toolUse: ChatToolCall[] | null;
+  onSendFromCard?: (msg: string) => void;
 }) {
   if (role === "user") {
     return (
@@ -303,6 +322,7 @@ function ChatMessage({
             ))}
           </div>
         )}
+        {content && !toolUse?.length && <CredentialPrompt content={content} onSubmit={onSendFromCard} />}
       </div>
     </div>
   );
@@ -377,4 +397,68 @@ function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
   }
 
   return chip;
+}
+
+/* ─── Credential prompt — inline form when AI asks for token/URL ─── */
+
+const CREDENTIAL_PATTERNS = [
+  { match: /jira/i, fields: [{ key: "url", label: "Jira URL", placeholder: "https://your-domain.atlassian.net" }, { key: "token", label: "API Token", placeholder: "Paste your Jira API token", type: "password" as const }], template: (v: Record<string, string>) => `Here are my Jira credentials:\nURL: ${v.url}\nAPI Token: ${v.token}` },
+  { match: /github/i, fields: [{ key: "token", label: "Personal Access Token", placeholder: "ghp_...", type: "password" as const }], template: (v: Record<string, string>) => `Here is my GitHub token: ${v.token}` },
+  { match: /gitlab/i, fields: [{ key: "token", label: "Personal Access Token", placeholder: "glpat-...", type: "password" as const }], template: (v: Record<string, string>) => `Here is my GitLab token: ${v.token}` },
+  { match: /slack/i, fields: [{ key: "token", label: "Bot Token", placeholder: "xoxb-...", type: "password" as const }], template: (v: Record<string, string>) => `Here is my Slack bot token: ${v.token}` },
+  { match: /openai|openrouter|claude|api.key|ai.provider/i, fields: [{ key: "token", label: "API Key", placeholder: "sk-...", type: "password" as const }], template: (v: Record<string, string>) => `Here is my API key: ${v.token}` },
+];
+
+function CredentialPrompt({
+  content,
+  onSubmit,
+}: {
+  content: string;
+  onSubmit?: (msg: string) => void;
+}) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  if (!onSubmit || submitted) return null;
+
+  // Find matching credential pattern
+  const pattern = CREDENTIAL_PATTERNS.find((p) => p.match.test(content));
+  if (!pattern) return null;
+
+  // Check if AI is actually asking for credentials (not just mentioning the service)
+  const isAsking = /token|key|podaj|provide|paste|wklej|credential/i.test(content);
+  if (!isAsking) return null;
+
+  const allFilled = pattern.fields.every((f) => values[f.key]?.trim());
+
+  const handleSubmit = () => {
+    if (!allFilled) return;
+    setSubmitted(true);
+    onSubmit(pattern.template(values));
+  };
+
+  return (
+    <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2 mt-2">
+      {pattern.fields.map((field) => (
+        <div key={field.key}>
+          <label className="text-[11px] text-muted-foreground font-medium">{field.label}</label>
+          <input
+            type={field.type || "text"}
+            placeholder={field.placeholder}
+            value={values[field.key] || ""}
+            onChange={(e) => setValues({ ...values, [field.key]: e.target.value })}
+            className="w-full mt-0.5 px-2.5 py-1.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary/50 transition-colors"
+            onKeyDown={(e) => { if (e.key === "Enter" && allFilled) handleSubmit(); }}
+          />
+        </div>
+      ))}
+      <button
+        onClick={handleSubmit}
+        disabled={!allFilled}
+        className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity"
+      >
+        Connect
+      </button>
+    </div>
+  );
 }
