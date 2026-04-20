@@ -290,17 +290,17 @@ function ChatMessage({
   return (
     <div className="flex gap-4">
       <Sparkles className="h-5 w-5 text-primary shrink-0 mt-1" />
-      <div className="flex-1 min-w-0 space-y-3">
-        {toolUse && toolUse.length > 0 && (
-          <div className="flex flex-col gap-1">
-            {toolUse.map((tool, i) => (
-              <ToolChip key={i} toolCall={tool} />
-            ))}
-          </div>
-        )}
+      <div className="flex-1 min-w-0 space-y-2">
         {content && (
           <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-pre:my-3 prose-code:before:content-none prose-code:after:content-none prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-normal prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+          </div>
+        )}
+        {toolUse && toolUse.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {toolUse.map((tool, i) => (
+              <ToolChip key={i} toolCall={tool} />
+            ))}
           </div>
         )}
       </div>
@@ -341,31 +341,34 @@ function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
   const resourceId = toolCall.result?.id as string | undefined;
   const href = !isError && resourceId && meta.basePath ? `${meta.basePath}/${resourceId}` : null;
 
+  // Short display message
+  const shortMsg = resultMsg
+    ? resultMsg.length > 40
+      ? resultMsg.slice(0, 40) + "..."
+      : resultMsg
+    : null;
+
   const chip = (
     <span className={cn(
-      "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors",
+      "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] transition-colors",
       isError
-        ? "bg-destructive/10 border border-destructive/20 text-destructive"
-        : "bg-muted/80 border border-border/50",
-      href && "hover:bg-muted hover:border-border cursor-pointer",
+        ? "bg-destructive/10 text-destructive"
+        : "bg-muted/60 text-muted-foreground",
+      href && "hover:bg-muted cursor-pointer",
     )}>
-      <span className={isError ? "text-destructive" : meta.color}>{meta.icon}</span>
-      <span className="font-medium capitalize">{action}</span>
-      {resultMsg && (
+      {isError ? (
+        <AlertCircle className="h-2.5 w-2.5 shrink-0" />
+      ) : (
+        <Check className="h-2.5 w-2.5 text-emerald-500 shrink-0" />
+      )}
+      <span className="capitalize font-medium">{action}</span>
+      {shortMsg && (
         <>
-          <span className={isError ? "text-destructive/40" : "text-muted-foreground/50"}>&middot;</span>
-          <span className={cn("truncate max-w-[180px]", isError ? "text-destructive/70" : "text-muted-foreground")}>
-            {resultMsg}
-          </span>
+          <span className="opacity-30">&middot;</span>
+          <span className="truncate max-w-[200px] opacity-70">{shortMsg}</span>
         </>
       )}
-      {isError ? (
-        <AlertCircle className="h-3 w-3 text-destructive/60" />
-      ) : href ? (
-        <ExternalLink className="h-3 w-3 text-muted-foreground" />
-      ) : (
-        <Check className="h-3 w-3 text-emerald-500" />
-      )}
+      {href && <ExternalLink className="h-2.5 w-2.5 opacity-40 shrink-0" />}
     </span>
   );
 
