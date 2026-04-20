@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  LayoutDashboard,
   FolderKanban,
   ListTodo,
   MessageSquareCode,
@@ -17,8 +16,6 @@ import {
   Users,
   Key,
   Settings,
-  BookOpen,
-  ExternalLink,
   MessageCircle,
   Camera,
   MessageSquarePlus,
@@ -30,7 +27,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
@@ -67,49 +63,47 @@ interface NavItem {
   description?: string;
 }
 
-type SidebarMode = "manage" | "chat" | "workspace";
+type SidebarMode = "chat" | "workflows" | "workspace";
 
-// ─── Nav items ───
+// ─── Nav items per mode ───
 
-const manageNavItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, tourId: "nav-dashboard", description: "Overview & stats" },
-  { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects", description: "Code repositories" },
-  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks", description: "AI-processed work items" },
+const workflowsNavItems: NavItem[] = [
   { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows", description: "Automation pipelines" },
-  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions", description: "Workflow run history" },
-];
-
-const connectNavItems: NavItem[] = [
-  { title: "Integrations", href: "/settings/integrations", icon: Plug, tourId: "nav-integrations", description: "Jira, GitHub, Slack..." },
-  { title: "AI Providers", href: "/settings/ai", icon: Bot, tourId: "nav-ai", description: "API keys for AI models" },
-  { title: "Repositories", href: "/settings/repositories", icon: GitBranch, tourId: "nav-repositories", description: "Git repos to work on" },
-];
-
-const settingsNavItems: NavItem[] = [
-  { title: "Organization", href: "/settings", icon: Building2, tourId: "nav-organization", description: "Name & billing" },
-  { title: "Team", href: "/settings/team", icon: Users, tourId: "nav-team", description: "Members & roles" },
-  { title: "API Keys", href: "/settings/api-keys", icon: Key, tourId: "nav-api-keys", description: "External API access" },
-  { title: "Preferences", href: "/settings/preferences", icon: Settings, tourId: "nav-preferences", description: "App settings" },
+  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions", description: "Run history" },
+  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks", description: "Work items" },
+  { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects", description: "Organize repos" },
 ];
 
 const workspaceNavItems: NavItem[] = [
   { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "AI agent terminals" },
-  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots", description: "Reusable container images" },
-  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills", description: "Instructions for Claude Code" },
+  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots", description: "Saved environments" },
+  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills", description: "Claude Code instructions" },
+];
+
+// ─── Settings (always visible at bottom, not a mode) ───
+
+const settingsNavItems: NavItem[] = [
+  { title: "Integrations", href: "/settings/integrations", icon: Plug, tourId: "nav-integrations" },
+  { title: "AI Providers", href: "/settings/ai", icon: Bot, tourId: "nav-ai" },
+  { title: "Repositories", href: "/settings/repositories", icon: GitBranch, tourId: "nav-repositories" },
+  { title: "Organization", href: "/settings", icon: Building2, tourId: "nav-organization" },
+  { title: "Team", href: "/settings/team", icon: Users, tourId: "nav-team" },
+  { title: "API Keys", href: "/settings/api-keys", icon: Key, tourId: "nav-api-keys" },
+  { title: "Preferences", href: "/settings/preferences", icon: Settings, tourId: "nav-preferences" },
 ];
 
 // ─── Mode config ───
 
-const MODES: { key: SidebarMode; label: string; icon: React.ComponentType<{ className?: string }>; defaultHref: string; tooltip: string }[] = [
-  { key: "chat", label: "Chat", icon: MessageCircle, defaultHref: "/chat", tooltip: "AI assistant" },
-  { key: "manage", label: "Manage", icon: LayoutDashboard, defaultHref: "/dashboard", tooltip: "Projects, tasks & workflows" },
-  { key: "workspace", label: "Workspace", icon: Terminal, defaultHref: "/sessions", tooltip: "Sessions & environments" },
+const MODES: { key: SidebarMode; label: string; icon: React.ComponentType<{ className?: string }>; defaultHref: string }[] = [
+  { key: "chat", label: "Chat", icon: MessageCircle, defaultHref: "/chat" },
+  { key: "workflows", label: "Workflows", icon: Workflow, defaultHref: "/workflows" },
+  { key: "workspace", label: "Workspace", icon: Terminal, defaultHref: "/sessions" },
 ];
 
 function getModeFromPath(pathname: string): SidebarMode {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return "chat";
   if (pathname.startsWith("/sessions") || pathname.startsWith("/images") || pathname.startsWith("/skills")) return "workspace";
-  return "manage";
+  return "workflows";
 }
 
 // ─── Sidebar content ───
@@ -182,34 +176,18 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       </div>
 
       {/* Mode content */}
-      {activeMode === "manage" && (
-        <>
-          <div className="space-y-1">{renderNavItems(manageNavItems)}</div>
-          {renderSection("Connect", connectNavItems)}
-          {renderSection("Settings", settingsNavItems)}
-        </>
-      )}
-
       {activeMode === "chat" && <ChatSidebarContent onNavigate={onNavigate} />}
 
-      {activeMode === "workspace" && (
-        <>
-          <div className="space-y-1">{renderNavItems(workspaceNavItems)}</div>
-          {renderSection("Connect", connectNavItems)}
-        </>
+      {activeMode === "workflows" && (
+        <div className="space-y-1">{renderNavItems(workflowsNavItems)}</div>
       )}
 
-      {/* Docs */}
-      <div className="mt-6">
-        <Separator className="mb-4" />
-        <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground" asChild onClick={onNavigate}>
-          <Link href="/docs" target="_blank">
-            <BookOpen className="mr-2 h-4 w-4" />
-            Documentation
-            <ExternalLink className="ml-auto h-3 w-3" />
-          </Link>
-        </Button>
-      </div>
+      {activeMode === "workspace" && (
+        <div className="space-y-1">{renderNavItems(workspaceNavItems)}</div>
+      )}
+
+      {/* Settings — always visible at bottom */}
+      {renderSection("Settings", settingsNavItems)}
     </TooltipProvider>
   );
 }
