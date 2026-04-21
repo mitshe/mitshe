@@ -322,7 +322,7 @@ function ChatMessage({
             ))}
           </div>
         )}
-        {content && !toolUse?.length && <CredentialPrompt content={content} onSubmit={onSendFromCard} />}
+        {content && <CredentialPrompt content={content} onSubmit={onSendFromCard} />}
       </div>
     </div>
   );
