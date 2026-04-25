@@ -25,6 +25,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -45,8 +48,6 @@ import {
   useCreateChatConversation,
   useDeleteChatConversation,
   useAICredentials,
-  useSessions,
-  useWorkflows,
 } from "@/lib/api/hooks";
 
 // ─── Types ───
@@ -103,6 +104,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const pathMode = getModeFromPath(pathname);
   const [stickyMode, setStickyMode] = useState<SidebarMode>("chat");
 
+  // Update sticky mode when path changes to a non-settings page
   useEffect(() => {
     if (pathMode) setStickyMode(pathMode);
   }, [pathMode]);
@@ -115,28 +117,33 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
     return pathname === href || pathname.startsWith(href + "/");
   };
 
-  const renderNavItem = (item: NavItem) => (
-    <Link
-      key={item.href}
-      href={item.href}
-      onClick={onNavigate}
-      data-tour={item.tourId}
-      className={cn(
-        "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-        isActive(item.href)
-          ? "bg-secondary text-foreground font-medium"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-      )}
-    >
-      <item.icon className="h-4 w-4 shrink-0" />
-      {item.title}
-    </Link>
-  );
+  const renderNavItems = (items: NavItem[]) =>
+    items.map((item) => (
+      <Button
+        key={item.href}
+        variant={isActive(item.href) ? "secondary" : "ghost"}
+        className={cn("w-full justify-start h-auto py-1.5", isActive(item.href) && "bg-secondary")}
+        asChild
+        onClick={onNavigate}
+        data-tour={item.tourId}
+      >
+        <Link href={item.href}>
+          <item.icon className="mr-2 h-4 w-4 shrink-0" />
+          <span className="flex flex-col items-start leading-tight">
+            <span>{item.title}</span>
+            {item.description && (
+              <span className="text-[10px] text-muted-foreground font-normal">{item.description}</span>
+            )}
+          </span>
+        </Link>
+      </Button>
+    ));
+
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       {/* Mode tabs */}
-      <div className="flex items-center gap-1 mb-3">
+      <div className="flex items-center gap-1 mb-4">
         {MODES.map((mode) => {
           const isActiveMode = activeMode === mode.key;
           return (
@@ -161,90 +168,14 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       {activeMode === "chat" && <ChatSidebarContent onNavigate={onNavigate} />}
 
       {activeMode === "workflows" && (
-        <>
-          <div className="space-y-0.5">
-            {workflowsNavItems.map(renderNavItem)}
-          </div>
-          <RecentWorkflows />
-        </>
+        <div className="space-y-1">{renderNavItems(workflowsNavItems)}</div>
       )}
 
       {activeMode === "workspace" && (
-        <>
-          <div className="space-y-0.5">
-            {workspaceNavItems.map(renderNavItem)}
-          </div>
-          <RecentSessions />
-        </>
+        <div className="space-y-1">{renderNavItems(workspaceNavItems)}</div>
       )}
-    </>
-  );
-}
 
-/* ─── Recent sessions list for Workspace tab ─── */
-
-function RecentSessions() {
-  const { data: sessions = [] } = useSessions();
-  const recent = sessions.slice(0, 8);
-
-  if (recent.length === 0) return null;
-
-  return (
-    <div className="mt-3">
-      <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-        Recent
-      </p>
-      <div className="space-y-0.5">
-        {recent.map((s: { id: string; name: string; status: string }) => (
-          <Link
-            key={s.id}
-            href={`/sessions/${s.id}`}
-            className="flex items-center gap-2 px-3 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          >
-            <span className={cn(
-              "w-1.5 h-1.5 rounded-full shrink-0",
-              s.status === "RUNNING" ? "bg-emerald-500" :
-              s.status === "CREATING" ? "bg-blue-500 animate-pulse" :
-              "bg-zinc-500",
-            )} />
-            <span className="truncate">{s.name}</span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Recent workflows list for Workflows tab ─── */
-
-function RecentWorkflows() {
-  const { data: workflowsData } = useWorkflows();
-  const workflows = (workflowsData as { workflows?: Array<{ id: string; name: string; isActive: boolean }> })?.workflows || [];
-  const recent = workflows.slice(0, 8);
-
-  if (recent.length === 0) return null;
-
-  return (
-    <div className="mt-3">
-      <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-        Recent
-      </p>
-      <div className="space-y-0.5">
-        {recent.map((w) => (
-          <Link
-            key={w.id}
-            href={`/workflows/${w.id}/edit`}
-            className="flex items-center gap-2 px-3 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          >
-            <span className={cn(
-              "w-1.5 h-1.5 rounded-full shrink-0",
-              w.isActive ? "bg-emerald-500" : "bg-zinc-500",
-            )} />
-            <span className="truncate">{w.name}</span>
-          </Link>
-        ))}
-      </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
