@@ -514,34 +514,26 @@ export default function WorkflowsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 sm:gap-x-6 sm:gap-y-2 text-sm text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <Activity className="h-4 w-4" />
           <span>Total</span>
-          <span className="font-semibold text-foreground">
-            {totalWorkflows}
-          </span>
+          <span className="font-semibold text-foreground">{totalWorkflows}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <CheckCircle2 className="h-4 w-4 text-green-500" />
           <span>Active</span>
-          <span className="font-semibold text-foreground">
-            {activeWorkflows}
-          </span>
+          <span className="font-semibold text-foreground">{activeWorkflows}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <XCircle className="h-4 w-4" />
+          <XCircle className="h-4 w-4 text-red-400" />
           <span>Inactive</span>
-          <span className="font-semibold text-foreground">
-            {inactiveWorkflows}
-          </span>
+          <span className="font-semibold text-foreground">{inactiveWorkflows}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Clock className="h-4 w-4" />
+          <Clock className="h-4 w-4 text-blue-500" />
           <span>Executions</span>
-          <span className="font-semibold text-foreground">
-            {totalExecutions}
-          </span>
+          <span className="font-semibold text-foreground">{totalExecutions}</span>
         </div>
       </div>
 
