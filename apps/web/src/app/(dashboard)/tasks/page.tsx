@@ -457,7 +457,7 @@ export default function TasksPage() {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-1.5">
-                <Badge variant={getTaskStatus(task.status).variant}>
+                <Badge variant="outline" className={getTaskStatus(task.status).color}>
                   {getTaskStatus(task.status).label}
                 </Badge>
                 {task.externalStatus && (
@@ -469,7 +469,7 @@ export default function TasksPage() {
             </TableCell>
             <TableCell>
               {task.priority ? (
-                <Badge variant={getPriority(task.priority).variant}>
+                <Badge variant="outline" className={getPriority(task.priority).color}>
                   {getPriority(task.priority).label}
                 </Badge>
               ) : (
