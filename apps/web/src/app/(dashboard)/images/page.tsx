@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   useSnapshots,
   useCreateSnapshot,
+  useUpdateSnapshot,
   useDeleteSnapshot,
   useSessions,
 } from "@/lib/api/hooks";
@@ -42,6 +43,7 @@ import type { Snapshot } from "@mitshe/types";
 export default function SnapshotsPage() {
   const { data: snapshots = [], isLoading } = useSnapshots();
   const createSnapshot = useCreateSnapshot();
+  const updateSnapshot = useUpdateSnapshot();
   const deleteSnapshot = useDeleteSnapshot();
   const { data: sessions = [] } = useSessions();
   const runningSessions = (sessions as Array<{ id: string; name: string; status: string }>).filter(
@@ -49,9 +51,26 @@ export default function SnapshotsPage() {
   );
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingSnap, setEditingSnap] = useState<{ id: string; name: string; description: string } | null>(null);
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formSessionId, setFormSessionId] = useState("");
+
+  const openEdit = (snap: { id: string; name: string; description?: string | null }) => {
+    setEditingSnap({ id: snap.id, name: snap.name, description: snap.description || "" });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingSnap) return;
+    await updateSnapshot.mutateAsync({
+      id: editingSnap.id,
+      data: { name: editingSnap.name, description: editingSnap.description || undefined },
+    });
+    setEditDialogOpen(false);
+    setEditingSnap(null);
+  };
 
   const handleCreate = async () => {
     if (!formName || !formSessionId) return;
@@ -195,7 +214,8 @@ export default function SnapshotsPage() {
           {snapshots.map((snap: Snapshot) => (
             <div
               key={snap.id}
-              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+              onClick={() => openEdit(snap)}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -218,7 +238,7 @@ export default function SnapshotsPage() {
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 {snap.status === "READY" && (
                   <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
                     <Link href={`/sessions?snapshot=${snap.id}`}>
@@ -239,6 +259,37 @@ export default function SnapshotsPage() {
           ))}
         </div>
       )}
+      {/* Edit dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Snapshot</DialogTitle>
+            <DialogDescription>Update snapshot name and description.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Name</label>
+              <Input
+                value={editingSnap?.name || ""}
+                onChange={(e) => setEditingSnap((prev) => prev ? { ...prev, name: e.target.value } : null)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={editingSnap?.description || ""}
+                onChange={(e) => setEditingSnap((prev) => prev ? { ...prev, description: e.target.value } : null)}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleUpdate} disabled={!editingSnap?.name || updateSnapshot.isPending}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

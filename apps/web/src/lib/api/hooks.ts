@@ -1379,6 +1379,22 @@ export function useCreateSnapshot() {
   });
 }
 
+export function useUpdateSnapshot() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { name?: string; description?: string } }) => {
+      const token = await getToken();
+      const { snapshot } = await api.snapshots.update(id, data, token);
+      return snapshot;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.snapshots.all });
+    },
+  });
+}
+
 export function useDeleteSnapshot() {
   const getToken = useAuthToken();
   const queryClient = useQueryClient();
