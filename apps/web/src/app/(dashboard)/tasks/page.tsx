@@ -438,9 +438,12 @@ export default function TasksPage() {
       <TableBody>
         {taskList.map((task) => (
           <TableRow key={task.id}>
-            <TableCell className="font-medium">
+            <TableCell>
               <Link href={`/tasks/${task.id}`} className="hover:underline">
-                {task.title}
+                <span className="font-medium">{task.title}</span>
+                {task.description && (
+                  <p className="text-xs text-muted-foreground truncate max-w-md">{task.description}</p>
+                )}
               </Link>
             </TableCell>
             <TableCell>
