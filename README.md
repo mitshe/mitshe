@@ -10,26 +10,6 @@ Talk to mitshe like you'd talk to a colleague. Connect GitHub, describe what you
 
 ![mitshe overview](docs/tour.gif)
 
-## What it does
-
-**Chat with AI that actually does things:**
-```
-You: "Connect my GitHub, here's my token: ghp_xxx"
-AI:  ✓ GitHub connected. Synced 12 repositories.
-
-You: "Take the login bug from Jira and fix it"
-AI:  → Creates session → Claude Code analyzes the code → fixes bug → creates PR
-```
-
-**Workflows that run on autopilot:**
-- Jira issue created → AI reviews → code changes → PR → Slack notification
-- Manual trigger → clone repo → AI generates code → commit → push
-
-**Interactive AI sessions:**
-- Claude Code in isolated Docker containers
-- Full terminal, file editor, git access
-- Snapshot sessions to reuse later
-
 ## Quick start
 
 ```bash
@@ -91,17 +71,7 @@ just executor-build
 just dev
 ```
 
-Frontend: http://localhost:3000 | API: http://localhost:3001
-
-Run `just` to see all commands.
-
-## Stack
-
-Next.js 16 + NestJS 11 + TypeScript + Prisma + PostgreSQL/SQLite + Redis + BullMQ + React Flow + shadcn/ui + Tailwind CSS 4
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+App: http://localhost:3000 — API: http://localhost:3001 — run `just` to see all commands.
 
 ## License
 
