@@ -229,7 +229,7 @@ export default function ChatPage() {
       {isEmptyState ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-2xl px-4 space-y-4">
-            <h2 className="text-3xl font-semibold text-center">
+            <h2 className="text-4xl font-light tracking-tight text-center text-foreground/80">
               {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
             </h2>
 
