@@ -237,10 +237,10 @@ export default function ChatPage() {
 
             <div className="flex flex-wrap justify-center gap-2 text-sm">
               {[
-                { text: "Connect GitHub", icon: "🔗" },
-                { text: "Create a session", icon: "💻" },
-                { text: "Build a workflow", icon: "⚡" },
-                { text: "Show my repos", icon: "📦" },
+                { text: "Connect GitHub", icon: <Plug className="h-3.5 w-3.5" /> },
+                { text: "Create a session", icon: <Terminal className="h-3.5 w-3.5" /> },
+                { text: "Build a workflow", icon: <Workflow className="h-3.5 w-3.5" /> },
+                { text: "Show my repos", icon: <GitBranch className="h-3.5 w-3.5" /> },
               ].map((prompt) => (
                 <button
                   key={prompt.text}
@@ -250,7 +250,7 @@ export default function ChatPage() {
                   }}
                   className="flex items-center gap-2 px-3 py-2 rounded-full border border-border hover:bg-muted/50 transition-all text-muted-foreground hover:text-foreground hover:border-primary/20"
                 >
-                  <span>{prompt.icon}</span>
+                  {prompt.icon}
                   <span>{prompt.text}</span>
                 </button>
               ))}
