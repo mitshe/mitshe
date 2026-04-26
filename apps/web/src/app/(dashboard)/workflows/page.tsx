@@ -172,7 +172,7 @@ export default function WorkflowsPage() {
     }
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => {
+  const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
       return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />;
     }
@@ -758,31 +758,31 @@ export default function WorkflowsPage() {
                       <TableHead>
                         <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("name")}>
                           Name
-                          <SortIcon field="name" />
+                          {getSortIcon("name")}
                         </Button>
                       </TableHead>
                       <TableHead>
                         <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("triggerType")}>
                           Trigger
-                          <SortIcon field="triggerType" />
+                          {getSortIcon("triggerType")}
                         </Button>
                       </TableHead>
                       <TableHead>
                         <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("isActive")}>
                           Status
-                          <SortIcon field="isActive" />
+                          {getSortIcon("isActive")}
                         </Button>
                       </TableHead>
                       <TableHead>
                         <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("executions")}>
                           Executions
-                          <SortIcon field="executions" />
+                          {getSortIcon("executions")}
                         </Button>
                       </TableHead>
                       <TableHead>
                         <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("updatedAt")}>
                           Last Updated
-                          <SortIcon field="updatedAt" />
+                          {getSortIcon("updatedAt")}
                         </Button>
                       </TableHead>
                       <TableHead className="w-[50px]"></TableHead>
