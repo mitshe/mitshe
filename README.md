@@ -1,6 +1,6 @@
 # mitshe
 
-> Chat-first AI development platform — automate workflows, manage sessions, and ship code through conversation.
+> Workspace manager for AI coding agents.
 
 [![CI](https://github.com/mitshe/mitshe/actions/workflows/ci.yml/badge.svg)](https://github.com/mitshe/mitshe/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -71,8 +71,8 @@ just executor-build
 just dev
 ```
 
-App: http://localhost:3000 — API: http://localhost:3001 — run `just` to see all commands.
+App: http://localhost:3000 <br />
+API: http://localhost:3001 
 
-## License
+run `just` to see all commands.
 
-MIT
