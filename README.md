@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/KE2zm6njBf)
 
-Talk to mitshe like you'd talk to a colleague. Connect GitHub, describe what you need, and it handles the rest — creates branches, writes code with Claude Code, runs tests, opens PRs. Each task runs in an isolated Docker container. Self-hosted, bring your own API keys.
+Manage Claude Code sessions, automate workflows, and orchestrate AI coding agents — all from a single self-hosted dashboard. Each session runs in an isolated Docker container with full terminal and git access. Self-hosted, bring your own API keys.
 
 ![mitshe overview](docs/tour.gif)
 
@@ -22,19 +22,17 @@ docker run -d \
   ghcr.io/mitshe/mitshe:latest
 ```
 
-Open **http://localhost:3000**. Create your account. Add an AI provider key. Start chatting.
+Open **http://localhost:3000**, create an account, add your AI provider key.
 
 ## Features
 
-- **AI Chat** — natural language interface to manage everything (workflows, sessions, tasks, integrations)
-- **40+ MCP tools** — AI can create sessions, run workflows, connect GitHub, manage tasks, all through conversation
-- **Claude Code sessions** — interactive terminals with Claude Code in isolated Docker containers
-- **Workflow engine** — visual builder + 150+ node types (triggers, AI actions, git, notifications)
-- **Snapshots** — freeze a configured session, reuse it for new tasks
-- **Skills** — reusable CLAUDE.md instructions for Claude Code
+- **Claude Code sessions** — isolated Docker containers with terminal, file editor, git access
+- **Workflow engine** — visual builder with triggers, AI actions, git operations, notifications
+- **Snapshots** — save a configured session state, spin up new sessions from it
+- **Skills** — reusable instructions injected as Claude Code slash commands
+- **Integrations** — GitHub, GitLab, Jira, Slack
 - **Multi-provider** — Claude, OpenAI, OpenRouter, Gemini, Groq (BYOK)
-- **Self-hosted** — your data, your keys, your infrastructure
-- **Light mode** — single Docker container with SQLite, no external dependencies
+- **Self-hosted** — your data, your keys, single Docker container with SQLite
 
 ## Update
 
