@@ -29,8 +29,14 @@ echo "Database ready"
 chown -R mitshe:mitshe /build/data
 
 if [ -z "$ENCRYPTION_KEY" ]; then
-    export ENCRYPTION_KEY=$(openssl rand -hex 32)
-    echo "Generated encryption key (will change on restart if not set via env)"
+    KEY_FILE="/build/data/.encryption_key"
+    if [ -f "$KEY_FILE" ]; then
+        export ENCRYPTION_KEY=$(cat "$KEY_FILE")
+    else
+        export ENCRYPTION_KEY=$(openssl rand -hex 32)
+        echo "$ENCRYPTION_KEY" > "$KEY_FILE"
+        chmod 600 "$KEY_FILE"
+    fi
 fi
 
 if [ -S /var/run/docker.sock ]; then
