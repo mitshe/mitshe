@@ -53,20 +53,6 @@ export default function ExecutionsPage() {
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <History className="h-4 w-4" />
-          <span>Total Executions</span>
-          <span className="font-semibold text-foreground">{totalExecutions}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Workflow className="h-4 w-4" />
-          <span>Workflows</span>
-          <span className="font-semibold text-foreground">{workflows.length}</span>
-        </div>
-      </div>
-
       {/* Filter */}
       <div className="flex flex-wrap gap-3">
         <Select value={workflowFilter} onValueChange={setWorkflowFilter}>
@@ -93,6 +79,20 @@ export default function ExecutionsPage() {
             Clear filter
           </Button>
         )}
+      </div>
+
+      {/* Stats */}
+      <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <History className="h-4 w-4" />
+          <span>Total Executions</span>
+          <span className="font-semibold text-foreground">{totalExecutions}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Workflow className="h-4 w-4" />
+          <span>Workflows</span>
+          <span className="font-semibold text-foreground">{workflows.length}</span>
+        </div>
       </div>
 
       {/* Workflows with executions */}

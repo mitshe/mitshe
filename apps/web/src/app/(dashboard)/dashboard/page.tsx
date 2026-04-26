@@ -291,12 +291,16 @@ export default function DashboardPage() {
                   </TableHeader>
                   <TableBody>
                     {recentTasks.map((task) => (
-                      <TableRow key={task.id}>
+                      <TableRow
+                        key={task.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => (window.location.href = `/tasks/${task.id}`)}
+                      >
                         <TableCell className="font-medium">
                           {task.title}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getTaskStatus(task.status).variant}>
+                          <Badge variant="outline" className={getTaskStatus(task.status).color}>
                             {getTaskStatus(task.status).label}
                           </Badge>
                         </TableCell>
