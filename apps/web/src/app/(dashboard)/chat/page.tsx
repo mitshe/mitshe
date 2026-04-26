@@ -170,20 +170,72 @@ export default function ChatPage() {
     );
   }
 
+  const isEmptyState = (!activeConversationId || (messages.length === 0 && !loadingConversation)) && !pendingUserMessage;
+
+  const inputBox = (
+    <div className="rounded-2xl border border-border bg-muted/30 focus-within:border-primary/50 transition-colors overflow-hidden">
+      <textarea
+        ref={textareaRef}
+        value={inputValue}
+        onChange={(e) => {
+          setInputValue(e.target.value);
+          const el = e.target;
+          el.style.height = "0";
+          el.style.height = Math.min(el.scrollHeight, 200) + "px";
+        }}
+        onKeyDown={handleKeyDown}
+        placeholder={isEmptyState ? "Ask anything..." : "Reply..."}
+        className="w-full min-h-[48px] max-h-[200px] resize-none text-sm bg-transparent px-4 pt-3.5 pb-1 outline-none placeholder:text-muted-foreground overflow-y-auto"
+        rows={1}
+        disabled={sendMessage.isPending}
+      />
+      <div className="flex items-center justify-between px-3 pb-2.5">
+        <Select value={selectedCredentialId} onValueChange={setSelectedCredentialId}>
+          <SelectTrigger className="h-7 w-auto gap-1.5 border-0 bg-transparent text-xs text-muted-foreground hover:text-foreground px-1.5 shadow-none focus:ring-0">
+            <SelectValue placeholder="Provider" />
+          </SelectTrigger>
+          <SelectContent>
+            {credentials.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.provider}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={handleSend}
+              disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
+              className="h-7 w-7 rounded-lg"
+            >
+              {sendMessage.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            Send <kbd className="ml-1 font-mono text-[10px] opacity-70">⌘↵</kbd>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-full">
-      {(!activeConversationId || (messages.length === 0 && !loadingConversation)) && !pendingUserMessage ? (
+      {isEmptyState ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-6 max-w-lg px-4">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold">
-                {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                How can I help you today?
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm max-w-md mx-auto">
+          <div className="w-full max-w-2xl px-4 space-y-4">
+            <h2 className="text-3xl font-semibold text-center">
+              {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
+            </h2>
+
+            {inputBox}
+
+            <div className="flex flex-wrap justify-center gap-2 text-sm">
               {[
                 { text: "Connect GitHub", icon: "🔗" },
                 { text: "Create a session", icon: "💻" },
@@ -192,8 +244,11 @@ export default function ChatPage() {
               ].map((prompt) => (
                 <button
                   key={prompt.text}
-                  onClick={() => setInputValue(prompt.text)}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-muted/50 transition-all text-muted-foreground hover:text-foreground hover:border-primary/20"
+                  onClick={() => {
+                    setInputValue(prompt.text);
+                    textareaRef.current?.focus();
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-full border border-border hover:bg-muted/50 transition-all text-muted-foreground hover:text-foreground hover:border-primary/20"
                 >
                   <span>{prompt.icon}</span>
                   <span>{prompt.text}</span>
@@ -203,104 +258,56 @@ export default function ChatPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-            {loadingConversation ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              messages.map((msg, idx) => (
-                <ChatMessage
-                  key={msg.id}
-                  role={msg.role}
-                  content={msg.content}
-                  toolUse={msg.toolUse as ChatToolCall[] | null}
-                  onSendFromCard={idx === messages.length - 1 ? sendFromCard : undefined}
-                />
-              ))
-            )}
-
-            {pendingUserMessage && (
-              <ChatMessage role="user" content={pendingUserMessage} toolUse={null} />
-            )}
-
-            {sendMessage.isPending && (
-              <div className="flex gap-4">
-                <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5 animate-pulse" />
-                <span className="text-sm text-muted-foreground">Thinking...</span>
-              </div>
-            )}
-
-            {errorMessage && (
-              <div className="flex gap-4">
-                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                <div className="rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-                  {errorMessage}
+        <>
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+              {loadingConversation ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-              </div>
-            )}
+              ) : (
+                messages.map((msg, idx) => (
+                  <ChatMessage
+                    key={msg.id}
+                    role={msg.role}
+                    content={msg.content}
+                    toolUse={msg.toolUse as ChatToolCall[] | null}
+                    onSendFromCard={idx === messages.length - 1 ? sendFromCard : undefined}
+                  />
+                ))
+              )}
 
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-      )}
+              {pendingUserMessage && (
+                <ChatMessage role="user" content={pendingUserMessage} toolUse={null} />
+              )}
 
-      {/* Input area */}
-      <div className="p-4 pb-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="rounded-2xl border border-border bg-muted/30 focus-within:border-primary/50 transition-colors overflow-hidden">
-            <textarea
-              ref={textareaRef}
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                // Auto-resize
-                const el = e.target;
-                el.style.height = "0";
-                el.style.height = Math.min(el.scrollHeight, 200) + "px";
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Reply..."
-              className="w-full min-h-[48px] max-h-[200px] resize-none text-sm bg-transparent px-4 pt-3.5 pb-1 outline-none placeholder:text-muted-foreground overflow-y-auto"
-              rows={1}
-              disabled={sendMessage.isPending}
-            />
-            <div className="flex items-center justify-between px-3 pb-2.5">
-              <Select value={selectedCredentialId} onValueChange={setSelectedCredentialId}>
-                <SelectTrigger className="h-7 w-auto gap-1.5 border-0 bg-transparent text-xs text-muted-foreground hover:text-foreground px-1.5 shadow-none focus:ring-0">
-                  <SelectValue placeholder="Provider" />
-                </SelectTrigger>
-                <SelectContent>
-                  {credentials.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.provider}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={handleSend}
-                    disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
-                    className="h-7 w-7 rounded-lg"
-                  >
-                    {sendMessage.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  Send <kbd className="ml-1 font-mono text-[10px] opacity-70">⌘↵</kbd>
-                </TooltipContent>
-              </Tooltip>
+              {sendMessage.isPending && (
+                <div className="flex gap-4">
+                  <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5 animate-pulse" />
+                  <span className="text-sm text-muted-foreground">Thinking...</span>
+                </div>
+              )}
+
+              {errorMessage && (
+                <div className="flex gap-4">
+                  <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+                    {errorMessage}
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
             </div>
           </div>
-        </div>
-      </div>
+
+          <div className="p-4 pb-6">
+            <div className="max-w-3xl mx-auto">
+              {inputBox}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
