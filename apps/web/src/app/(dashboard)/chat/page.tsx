@@ -272,24 +272,20 @@ export default function ChatPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="flex items-center gap-2">
-                <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/50 font-mono">
-                  <span className="text-xs">⌘</span>↵
-                </kbd>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={handleSend}
-                  disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
-                  className="h-7 w-7 rounded-lg"
-                >
-                  {sendMessage.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleSend}
+                disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
+                className="h-7 w-7 rounded-lg"
+                title="Send (⌘↵)"
+              >
+                {sendMessage.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
         </div>
