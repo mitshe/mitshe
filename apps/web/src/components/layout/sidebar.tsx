@@ -9,7 +9,6 @@ import {
   MessageSquareCode,
   Workflow,
   History,
-  Bot,
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
@@ -23,7 +22,6 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
@@ -297,20 +295,19 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      {/* New chat button */}
-      <Button
-        variant="ghost"
-        className="w-full justify-start h-auto py-1.5 mb-1"
+      {/* New chat — same style as nav items */}
+      <button
         onClick={handleNew}
         disabled={createConversation.isPending || credentials.length === 0}
+        className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50"
       >
         {createConversation.isPending ? (
-          <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
         ) : (
-          <MessageSquarePlus className="mr-2 h-4 w-4 shrink-0" />
+          <MessageSquarePlus className="h-4 w-4 shrink-0" />
         )}
         New chat
-      </Button>
+      </button>
 
       {credentials.length === 0 && (
         <p className="px-3 py-2 text-xs text-muted-foreground">
@@ -321,40 +318,29 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </p>
       )}
 
-      {/* Quick links */}
-      <div className="mt-3 mb-3">
-        <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Quick links</p>
-        <Button variant="ghost" className="w-full justify-start h-auto py-1.5 text-muted-foreground" asChild>
-          <Link href="/settings/ai">
-            <Bot className="mr-2 h-4 w-4 shrink-0" />
-            <span className="text-sm">AI Providers</span>
-          </Link>
-        </Button>
-      </div>
-
-      {/* Conversations */}
+      {/* Conversations — same style as Recent sections */}
       {hasConversations && (
-        <div>
-          <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent</p>
-          <div className="space-y-0.5">
-            {isLoading ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              conversations.map((c) => (
-                <ConversationItem
-                  key={c.id}
-                  title={c.title || "New conversation"}
-                  isActive={activeId === c.id}
-                  onSelect={() => handleSelect(c.id)}
-                  onDelete={() =>
-                    setDeleteTarget({ id: c.id, title: c.title || "New conversation" })
-                  }
-                />
-              ))
-            )}
-          </div>
+        <div className="mt-4 space-y-0.5">
+          <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+            Recent
+          </p>
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            conversations.map((c) => (
+              <ConversationItem
+                key={c.id}
+                title={c.title || "New conversation"}
+                isActive={activeId === c.id}
+                onSelect={() => handleSelect(c.id)}
+                onDelete={() =>
+                  setDeleteTarget({ id: c.id, title: c.title || "New conversation" })
+                }
+              />
+            ))
+          )}
         </div>
       )}
 
@@ -399,17 +385,16 @@ function ConversationItem({
   return (
     <div
       className={cn(
-        "group relative flex items-center rounded-md cursor-pointer transition-colors",
+        "group relative flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-colors",
         isActive
           ? "bg-secondary text-foreground"
           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
       )}
       onClick={onSelect}
     >
-      <span className="flex-1 truncate text-sm py-1.5 pl-3 pr-8">{title}</span>
+      <span className="flex-1 truncate pr-6">{title}</span>
 
-      {/* Hover actions — context menu */}
-      <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
