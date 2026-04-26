@@ -230,7 +230,7 @@ export default function ChatPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-2xl px-4 space-y-4">
             <div className="flex items-center justify-center gap-3">
-              <img src="/logo.svg" alt="mitshe" className="h-9 w-9" />
+              <img src="/logo.svg" alt="mitshe" className="h-12 w-12" />
               <h2 className="text-4xl font-light tracking-tight text-foreground/80">
                 {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
               </h2>
