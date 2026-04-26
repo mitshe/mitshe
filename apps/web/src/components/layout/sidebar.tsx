@@ -200,11 +200,6 @@ function RecentSessions() {
           href={`/sessions/${s.id}`}
           className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
         >
-          <span className={cn(
-            "w-1.5 h-1.5 rounded-full shrink-0",
-            s.status === "RUNNING" ? "bg-emerald-500" :
-            s.status === "CREATING" ? "bg-blue-500" : "bg-zinc-500",
-          )} />
           <span className="truncate">{s.name}</span>
         </Link>
       ))}
@@ -231,10 +226,6 @@ function RecentWorkflows() {
           href={`/workflows/${w.id}/edit`}
           className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
         >
-          <span className={cn(
-            "w-1.5 h-1.5 rounded-full shrink-0",
-            w.isActive ? "bg-emerald-500" : "bg-zinc-500",
-          )} />
           <span className="truncate">{w.name}</span>
         </Link>
       ))}
