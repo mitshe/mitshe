@@ -36,6 +36,11 @@ import {
   HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ChatToolCall } from "@mitshe/types";
 
 export default function ChatPage() {
@@ -272,20 +277,26 @@ export default function ChatPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleSend}
-                disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
-                className="h-7 w-7 rounded-lg"
-                title="Send (⌘↵)"
-              >
-                {sendMessage.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleSend}
+                    disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
+                    className="h-7 w-7 rounded-lg"
+                  >
+                    {sendMessage.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Send <kbd className="ml-1 font-mono text-[10px] opacity-70">⌘↵</kbd>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>
