@@ -142,6 +142,8 @@ export default function WorkflowsPage() {
   const runWorkflow = useRunWorkflow();
 
   const [search, setSearch] = useState("");
+  const [filterTrigger, setFilterTrigger] = useState("all");
+  const [filterActive, setFilterActive] = useState("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createMode, setCreateMode] = useState<"blank" | "template">("blank");
   const [selectedTemplate, setSelectedTemplate] =
@@ -153,16 +155,17 @@ export default function WorkflowsPage() {
     projectId: "",
   });
 
-  // Filter workflows by search
-  const filteredWorkflows = search
-    ? workflows.filter((w) => {
-        const s = search.toLowerCase();
-        return (
-          String(w.name || "").toLowerCase().includes(s) ||
-          String(w.description || "").toLowerCase().includes(s)
-        );
-      })
-    : workflows;
+  // Filter workflows by search + trigger + status
+  const filteredWorkflows = workflows.filter((w) => {
+    if (search) {
+      const s = search.toLowerCase();
+      if (!String(w.name || "").toLowerCase().includes(s) && !String(w.description || "").toLowerCase().includes(s)) return false;
+    }
+    if (filterTrigger !== "all" && w.triggerType !== filterTrigger) return false;
+    if (filterActive === "active" && !w.isActive) return false;
+    if (filterActive === "inactive" && w.isActive) return false;
+    return true;
+  });
 
   const totalPages = Math.ceil(filteredWorkflows.length / ITEMS_PER_PAGE);
   const paginatedWorkflows = filteredWorkflows.slice(
@@ -476,17 +479,41 @@ export default function WorkflowsPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search workflows..."
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-          className="pl-9 max-w-md"
-        />
+      {/* Search + Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search workflows..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+            className="pl-9"
+          />
+        </div>
+        <Select value={filterTrigger} onValueChange={(v) => { setFilterTrigger(v); setCurrentPage(1); }}>
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="All Triggers" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Triggers</SelectItem>
+            <SelectItem value="manual">Manual</SelectItem>
+            <SelectItem value="webhook">Webhook</SelectItem>
+            <SelectItem value="schedule">Schedule</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterActive} onValueChange={(v) => { setFilterActive(v); setCurrentPage(1); }}>
+          <SelectTrigger className="w-full sm:w-[140px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <Activity className="h-4 w-4" />
