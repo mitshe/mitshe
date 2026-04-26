@@ -227,9 +227,9 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full">
       {isEmptyState ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-2xl px-4 space-y-4">
-            <div className="flex items-center justify-center gap-3">
+        <div className="flex-1 flex items-start justify-center pt-[18vh]">
+          <div className="w-full max-w-2xl px-4 space-y-6">
+            <div className="flex items-center justify-center gap-4">
               <img src="/logo.svg" alt="mitshe" className="h-12 w-12" />
               <h2 className="text-4xl font-light tracking-tight text-foreground/80">
                 {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
