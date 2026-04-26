@@ -19,6 +19,10 @@ export interface SessionContainerConfig {
     type: string;
     config: Record<string, string>;
   }>;
+  skills?: Array<{
+    name: string;
+    instructions: string;
+  }>;
   /**
    * Override the base image. Used when recreating a session from a
    * committed snapshot so /workspace contents are preserved.
@@ -61,6 +65,7 @@ export class SessionContainerService implements OnModuleInit {
         instructions: config.instructions,
         provider: config.provider,
         integrations: config.integrations,
+        skills: config.skills,
       }),
     ).toString('base64');
 

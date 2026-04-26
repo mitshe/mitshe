@@ -92,6 +92,25 @@ async function setup() {
     }
   }
 
+  // Write skills as ~/.claude/commands/ files (slash commands for Claude Code)
+  if (config.skills && config.skills.length > 0) {
+    const homeDir = process.env.HOME || '/home/executor';
+    const commandsDir = path.join(homeDir, '.claude', 'commands');
+    fs.mkdirSync(commandsDir, { recursive: true });
+
+    for (const skill of config.skills) {
+      const slug = skill.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      const filePath = path.join(commandsDir, `${slug}.md`);
+      fs.writeFileSync(filePath, skill.instructions, 'utf-8');
+      log(`Written skill command: ${filePath}`);
+    }
+
+    log(`Installed ${config.skills.length} skill(s) as slash commands`);
+  }
+
   // Set up integrations (write config file + env vars)
   if (config.integrations && config.integrations.length > 0) {
     const homeDir = process.env.HOME || '/home/executor';

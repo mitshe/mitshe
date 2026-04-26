@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SessionsService } from '../../sessions/services/sessions.service';
 import { SessionContainerService } from '../../sessions/services/session-container.service';
+import { SkillsService } from '../../skills/services/skills.service';
 import { EventsGateway } from '../../../infrastructure/websocket/events.gateway';
 import { McpTool, McpToolResult } from '../mcp.types';
 
@@ -11,6 +12,7 @@ export class SessionTools {
   constructor(
     private readonly sessionsService: SessionsService,
     private readonly containerService: SessionContainerService,
+    private readonly skillsService: SkillsService,
     private readonly eventsGateway: EventsGateway,
   ) {}
 
@@ -108,6 +110,11 @@ export class SessionTools {
               type: 'string',
               description: 'Base image ID to start from',
             },
+            skillIds: {
+              type: 'string',
+              description:
+                'Comma-separated skill IDs to install as slash commands',
+            },
           },
           required: ['name'],
         },
@@ -124,6 +131,12 @@ export class SessionTools {
                 .map((s) => s.trim())
                 .filter(Boolean)
             : undefined;
+          const skillIdList = input.skillIds
+            ? (input.skillIds as string)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [];
 
           try {
             const session = await this.sessionsService.create(orgId, userId, {
@@ -144,7 +157,7 @@ export class SessionTools {
                 )
               : undefined;
 
-            const [repos, integrationConfigs] = await Promise.all([
+            const [repos, integrationConfigs, skills] = await Promise.all([
               this.sessionsService.buildRepoConfigs(
                 session.repositories,
                 orgId,
@@ -155,6 +168,7 @@ export class SessionTools {
                 undefined,
                 session.id,
               ),
+              this.skillsService.getSkillsForSession(orgId, skillIdList),
             ]);
 
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -171,6 +185,7 @@ export class SessionTools {
                     integrationConfigs.length > 0
                       ? integrationConfigs
                       : undefined,
+                  skills: skills.length > 0 ? skills : undefined,
                   image: snapshotImage,
                 });
                 await this.sessionsService.updateStatus(

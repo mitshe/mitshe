@@ -93,20 +93,14 @@ export class SessionsController {
       dto,
     );
 
-    // Resolve skill instructions and append to session
-    if (dto.skillIds && dto.skillIds.length > 0) {
-      const skillInstructions = await this.skillsService.buildInstructions(
-        organizationId,
-        dto.skillIds,
-      );
-      if (skillInstructions) {
-        const combined = session.instructions
-          ? `${session.instructions}\n\n---\n\n${skillInstructions}`
-          : skillInstructions;
-        await this.sessionsService.updateInstructions(session.id, combined);
-        session.instructions = combined;
-      }
-    }
+    // Resolve skills as separate command files
+    const skills =
+      dto.skillIds && dto.skillIds.length > 0
+        ? await this.skillsService.getSkillsForSession(
+            organizationId,
+            dto.skillIds,
+          )
+        : undefined;
 
     // Resolve snapshot image if baseImageId is provided
     const snapshotImage = dto.baseImageId
@@ -148,6 +142,7 @@ export class SessionsController {
           environment: envConfig,
           integrations:
             integrationConfigs.length > 0 ? integrationConfigs : undefined,
+          skills,
           image: snapshotImage,
         });
 

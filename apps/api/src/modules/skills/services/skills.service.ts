@@ -76,4 +76,20 @@ export class SkillsService {
       .map((s) => `## Skill: ${s.name}\n\n${s.instructions}`)
       .join('\n\n---\n\n');
   }
+
+  async getSkillsForSession(
+    organizationId: string,
+    skillIds: string[],
+  ): Promise<Array<{ name: string; instructions: string }>> {
+    if (skillIds.length === 0) return [];
+
+    const skills = await this.prisma.skill.findMany({
+      where: {
+        id: { in: skillIds },
+        organizationId,
+      },
+    });
+
+    return skills.map((s) => ({ name: s.name, instructions: s.instructions }));
+  }
 }
