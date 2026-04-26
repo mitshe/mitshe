@@ -518,14 +518,7 @@ export default function WorkflowsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Workflows</CardTitle>
-          <CardDescription>
-            A list of all your automated workflows
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div>
           {workflows.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
@@ -842,8 +835,7 @@ export default function WorkflowsPage() {
               />
             </>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

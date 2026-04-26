@@ -121,12 +121,12 @@ export default function DashboardPage() {
   const successRate =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const activeWorkflows = workflows.filter((w) => w.isActive).length;
-  const activeSessions = sessions.filter(
+  const _activeSessions = sessions.filter(
     (s) => s.status === "RUNNING" || s.status === "PAUSED",
   ).length;
 
   const recentTasks = tasks.slice(0, 5);
-  const recentSessions = sessions.slice(0, 5);
+  const _recentSessions = sessions.slice(0, 5);
 
   if (isLoading) {
     return (
@@ -258,21 +258,16 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
-          <div>
-            <CardTitle className="text-xl sm:text-2xl">Recent Tasks</CardTitle>
-            <CardDescription>
-              Latest tasks processed by AI agents
-            </CardDescription>
-          </div>
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Recent Tasks</h2>
           <Link href="/tasks">
             <Button variant="outline" size="sm">
               View all <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div>
           {recentTasks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <ListTodo className="w-12 h-12 mx-auto mb-4" />
@@ -315,8 +310,8 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
     </div>
   );

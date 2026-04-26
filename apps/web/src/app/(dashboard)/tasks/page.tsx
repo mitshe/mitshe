@@ -1131,18 +1131,12 @@ export default function TasksPage() {
           : renderMobileTaskList(paginatedTasks)}
       </div>
 
-      {/* Desktop: Table in card */}
-      <Card className="hidden md:block">
-        <CardHeader>
-          <CardTitle>Tasks</CardTitle>
-          <CardDescription>All your tasks in one place</CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* Desktop: Table */}
+      <div className="hidden md:block">
           {filteredTasks.length === 0
             ? renderEmptyState()
             : renderTaskTable(paginatedTasks)}
-        </CardContent>
-      </Card>
+      </div>
 
       {totalPages > 1 && (
         <Pagination

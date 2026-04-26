@@ -240,12 +240,7 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Projects</CardTitle>
-          <CardDescription>A list of all your projects</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div>
           {projects.length === 0 ? (
             <div className="text-center py-8">
               <FolderKanban className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -446,8 +441,7 @@ export default function ProjectsPage() {
               />
             </>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
