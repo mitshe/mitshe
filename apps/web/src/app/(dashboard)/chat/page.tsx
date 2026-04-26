@@ -74,6 +74,7 @@ export default function ChatPage() {
     const handler = (e: CustomEvent) => {
       setActiveConversationId(e.detail.conversationId);
       setErrorMessage(null);
+      setTimeout(() => textareaRef.current?.focus(), 50);
     };
     window.addEventListener("chat:select", handler as EventListener);
     return () => window.removeEventListener("chat:select", handler as EventListener);
@@ -82,6 +83,10 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, sendMessage.isPending, pendingUserMessage]);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
 
   const handleSend = async () => {
     if (!inputValue.trim() || sendMessage.isPending) return;
@@ -267,19 +272,24 @@ export default function ChatPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleSend}
-                disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
-                className="h-7 w-7 rounded-lg"
-              >
-                {sendMessage.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/50 font-mono">
+                  <span className="text-xs">⌘</span>↵
+                </kbd>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || sendMessage.isPending || !selectedCredentialId}
+                  className="h-7 w-7 rounded-lg"
+                >
+                  {sendMessage.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
