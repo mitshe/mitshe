@@ -48,6 +48,8 @@ import {
   useCreateChatConversation,
   useDeleteChatConversation,
   useAICredentials,
+  useSessions,
+  useWorkflows,
 } from "@/lib/api/hooks";
 
 // ─── Types ───
@@ -65,17 +67,17 @@ type SidebarMode = "chat" | "workflows" | "workspace";
 // ─── Nav items per mode ───
 
 const workflowsNavItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: FolderKanban, tourId: "nav-dashboard", description: "Overview & stats" },
-  { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows", description: "Automation pipelines" },
-  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions", description: "Run history" },
-  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks", description: "Work items" },
-  { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects", description: "Organize repos" },
+  { title: "Dashboard", href: "/dashboard", icon: FolderKanban, tourId: "nav-dashboard" },
+  { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows" },
+  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions" },
+  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks" },
+  { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects" },
 ];
 
 const workspaceNavItems: NavItem[] = [
-  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "AI agent terminals" },
-  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots", description: "Saved environments" },
-  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills", description: "Claude Code instructions" },
+  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions" },
+  { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots" },
+  { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills" },
 ];
 
 // ─── Mode config ───
@@ -119,24 +121,21 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 
   const renderNavItems = (items: NavItem[]) =>
     items.map((item) => (
-      <Button
+      <Link
         key={item.href}
-        variant={isActive(item.href) ? "secondary" : "ghost"}
-        className={cn("w-full justify-start h-auto py-1.5", isActive(item.href) && "bg-secondary")}
-        asChild
+        href={item.href}
         onClick={onNavigate}
         data-tour={item.tourId}
+        className={cn(
+          "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors",
+          isActive(item.href)
+            ? "bg-secondary text-foreground font-medium"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+        )}
       >
-        <Link href={item.href}>
-          <item.icon className="mr-2 h-4 w-4 shrink-0" />
-          <span className="flex flex-col items-start leading-tight">
-            <span>{item.title}</span>
-            {item.description && (
-              <span className="text-[10px] text-muted-foreground font-normal">{item.description}</span>
-            )}
-          </span>
-        </Link>
-      </Button>
+        <item.icon className="h-4 w-4 shrink-0" />
+        {item.title}
+      </Link>
     ));
 
 
@@ -168,14 +167,80 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       {activeMode === "chat" && <ChatSidebarContent onNavigate={onNavigate} />}
 
       {activeMode === "workflows" && (
-        <div className="space-y-1">{renderNavItems(workflowsNavItems)}</div>
+        <>
+          <div className="space-y-0.5">{renderNavItems(workflowsNavItems)}</div>
+          <RecentWorkflows />
+        </>
       )}
 
       {activeMode === "workspace" && (
-        <div className="space-y-1">{renderNavItems(workspaceNavItems)}</div>
+        <>
+          <div className="space-y-0.5">{renderNavItems(workspaceNavItems)}</div>
+          <RecentSessions />
+        </>
       )}
 
     </TooltipProvider>
+  );
+}
+
+/* ─── Recent sessions ─── */
+
+function RecentSessions() {
+  const { data: sessions = [] } = useSessions();
+  const recent = sessions.slice(0, 8);
+  if (recent.length === 0) return null;
+
+  return (
+    <div className="mt-4 space-y-0.5">
+      <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+        Recent
+      </p>
+      {recent.map((s: { id: string; name: string; status: string }) => (
+        <Link
+          key={s.id}
+          href={`/sessions/${s.id}`}
+          className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+        >
+          <span className={cn(
+            "w-1.5 h-1.5 rounded-full shrink-0",
+            s.status === "RUNNING" ? "bg-emerald-500" :
+            s.status === "CREATING" ? "bg-blue-500" : "bg-zinc-500",
+          )} />
+          <span className="truncate">{s.name}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Recent workflows ─── */
+
+function RecentWorkflows() {
+  const { data: workflowsData } = useWorkflows();
+  const workflows = (workflowsData as { workflows?: Array<{ id: string; name: string; isActive: boolean }> })?.workflows || [];
+  const recent = workflows.slice(0, 8);
+  if (recent.length === 0) return null;
+
+  return (
+    <div className="mt-4 space-y-0.5">
+      <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+        Recent
+      </p>
+      {recent.map((w) => (
+        <Link
+          key={w.id}
+          href={`/workflows/${w.id}/edit`}
+          className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+        >
+          <span className={cn(
+            "w-1.5 h-1.5 rounded-full shrink-0",
+            w.isActive ? "bg-emerald-500" : "bg-zinc-500",
+          )} />
+          <span className="truncate">{w.name}</span>
+        </Link>
+      ))}
+    </div>
   );
 }
 
