@@ -113,9 +113,10 @@ export default function ExecutionsPage() {
       ) : (
         <div className="space-y-2">
           {filteredWorkflows.map((workflow) => (
-            <div
+            <Link
               key={workflow.id}
-              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+              href={`/workflows/${workflow.id}/executions`}
+              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -131,13 +132,8 @@ export default function ExecutionsPage() {
                   <span>Trigger: {workflow.triggerType}</span>
                 </div>
               </div>
-              <Link href={`/workflows/${workflow.id}/executions`}>
-                <Button variant="outline" size="sm">
-                  View History
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </Link>
-            </div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
           ))}
         </div>
       )}

@@ -164,24 +164,29 @@ export default function ChatPage() {
     <div className="flex flex-col h-full">
       {(!activeConversationId || (messages.length === 0 && !loadingConversation)) && !pendingUserMessage ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-8 max-w-xl px-4">
-            <div>
-              <Sparkles className="h-8 w-8 mx-auto mb-4 text-primary" />
-              <h2 className="text-2xl font-semibold">What can I help with?</h2>
+          <div className="text-center space-y-6 max-w-lg px-4">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold">
+                {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                How can I help you today?
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="grid grid-cols-2 gap-2 text-sm max-w-md mx-auto">
               {[
-                "List my repositories",
-                "Create a workflow",
-                "Show running sessions",
-                "Create a new task",
+                { text: "Connect GitHub", icon: "🔗" },
+                { text: "Create a session", icon: "💻" },
+                { text: "Build a workflow", icon: "⚡" },
+                { text: "Show my repos", icon: "📦" },
               ].map((prompt) => (
                 <button
-                  key={prompt}
-                  onClick={() => setInputValue(prompt)}
-                  className="text-left px-4 py-3 rounded-xl border border-border hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                  key={prompt.text}
+                  onClick={() => setInputValue(prompt.text)}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-muted/50 transition-all text-muted-foreground hover:text-foreground hover:border-primary/20"
                 >
-                  {prompt}
+                  <span>{prompt.icon}</span>
+                  <span>{prompt.text}</span>
                 </button>
               ))}
             </div>
