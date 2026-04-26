@@ -209,7 +209,7 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2 text-sm">
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-2 text-sm">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <ListTodo className="h-4 w-4" />
           <span>Tasks</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus,
-  MoreVertical,
+  MoreHorizontal,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   Play,
   Pause,
   Edit,
@@ -155,6 +158,31 @@ export default function WorkflowsPage() {
     projectId: "",
   });
 
+  type SortField = "name" | "triggerType" | "isActive" | "executions" | "updatedAt";
+  type SortDirection = "asc" | "desc";
+  const [sortField, setSortField] = useState<SortField>("updatedAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-3 w-3" />
+    ) : (
+      <ArrowDown className="ml-1 h-3 w-3" />
+    );
+  };
+
   // Filter workflows by search + trigger + status
   const filteredWorkflows = workflows.filter((w) => {
     if (search) {
@@ -167,8 +195,32 @@ export default function WorkflowsPage() {
     return true;
   });
 
-  const totalPages = Math.ceil(filteredWorkflows.length / ITEMS_PER_PAGE);
-  const paginatedWorkflows = filteredWorkflows.slice(
+  const sortedWorkflows = useMemo(() => {
+    return [...filteredWorkflows].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "name":
+          comparison = (a.name || "").localeCompare(b.name || "");
+          break;
+        case "triggerType":
+          comparison = (a.triggerType || "").localeCompare(b.triggerType || "");
+          break;
+        case "isActive":
+          comparison = (a.isActive ? 1 : 0) - (b.isActive ? 1 : 0);
+          break;
+        case "executions":
+          comparison = (a._count?.executions || 0) - (b._count?.executions || 0);
+          break;
+        case "updatedAt":
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [filteredWorkflows, sortField, sortDirection]);
+
+  const totalPages = Math.ceil(sortedWorkflows.length / ITEMS_PER_PAGE);
+  const paginatedWorkflows = sortedWorkflows.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
@@ -585,7 +637,7 @@ export default function WorkflowsPage() {
                             size="icon"
                             className="h-8 w-8 shrink-0"
                           >
-                            <MoreVertical className="w-4 h-4" />
+                            <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -703,11 +755,36 @@ export default function WorkflowsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Trigger</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Executions</TableHead>
-                      <TableHead>Last Updated</TableHead>
+                      <TableHead>
+                        <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("name")}>
+                          Name
+                          <SortIcon field="name" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("triggerType")}>
+                          Trigger
+                          <SortIcon field="triggerType" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("isActive")}>
+                          Status
+                          <SortIcon field="isActive" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("executions")}>
+                          Executions
+                          <SortIcon field="executions" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" onClick={() => handleSort("updatedAt")}>
+                          Last Updated
+                          <SortIcon field="updatedAt" />
+                        </Button>
+                      </TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -723,13 +800,8 @@ export default function WorkflowsPage() {
                               {workflow.name}
                             </Link>
                             {workflow.description && (
-                              <p
-                                className="text-sm text-muted-foreground"
-                                title={workflow.description}
-                              >
-                                {workflow.description.length > 30
-                                  ? `${workflow.description.slice(0, 30)}...`
-                                  : workflow.description}
+                              <p className="text-xs text-muted-foreground truncate max-w-md">
+                                {workflow.description}
                               </p>
                             )}
                           </div>
@@ -778,7 +850,7 @@ export default function WorkflowsPage() {
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
-                                <MoreVertical className="w-4 h-4" />
+                                <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -849,7 +921,7 @@ export default function WorkflowsPage() {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
-                totalItems={workflows.length}
+                totalItems={sortedWorkflows.length}
                 itemsPerPage={ITEMS_PER_PAGE}
               />
             </>

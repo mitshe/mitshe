@@ -138,13 +138,15 @@ export class ImagesService {
   async update(organizationId: string, id: string, dto: UpdateImageDto) {
     await this.findOne(organizationId, id);
 
-    return this.prisma.baseImage.update({
+    const updated = await this.prisma.baseImage.update({
       where: { id },
       data: {
         ...(dto.name && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
       },
     });
+
+    return this.serializeBigInt(updated);
   }
 
   async remove(organizationId: string, id: string) {
@@ -160,6 +162,7 @@ export class ImagesService {
       }
     }
 
-    return this.prisma.baseImage.delete({ where: { id } });
+    const deleted = await this.prisma.baseImage.delete({ where: { id } });
+    return this.serializeBigInt(deleted);
   }
 }

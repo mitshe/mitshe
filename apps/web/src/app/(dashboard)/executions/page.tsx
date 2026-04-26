@@ -123,6 +123,7 @@ export default function ExecutionsPage() {
                   <span className="font-medium text-sm">{workflow.name}</span>
                   <Badge
                     variant={workflow.isActive ? "default" : "secondary"}
+                    className={workflow.isActive ? "bg-green-500/10 text-green-600 hover:bg-green-500/20" : ""}
                   >
                     {workflow.isActive ? "Active" : "Inactive"}
                   </Badge>
@@ -132,7 +133,6 @@ export default function ExecutionsPage() {
                   <span>Trigger: {workflow.triggerType}</span>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-muted-foreground" />
             </Link>
           ))}
         </div>
