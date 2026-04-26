@@ -851,14 +851,7 @@ export default function SessionsPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Sessions</CardTitle>
-          <CardDescription>
-            Click on a session to open the interactive terminal
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div>
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -1015,8 +1008,7 @@ export default function SessionsPage() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
