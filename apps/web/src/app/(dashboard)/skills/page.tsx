@@ -226,7 +226,7 @@ export default function SkillsPage() {
 
       {/* Create / Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl w-[90vw] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingSkill ? "Edit Skill" : "Create Skill"}
