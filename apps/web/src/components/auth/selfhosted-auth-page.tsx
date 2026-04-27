@@ -6,13 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 /**
@@ -82,128 +76,110 @@ function SetupForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <img src="/logo.svg" alt="mitshe" className="mx-auto mb-4 h-16 w-16" />
-          <CardTitle className="text-2xl">Welcome to <span className="font-brand">mitshe</span></CardTitle>
-          <CardDescription>
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <img src="/logo.svg" alt="mitshe" className="mx-auto mb-5 h-12 w-12" />
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome to <span className="font-brand">mitshe</span></h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
             Create your admin account to get started
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First name</Label>
-                <Input
-                  id="firstName"
-                  value={form.firstName}
-                  onChange={(e) =>
-                    setForm({ ...form, firstName: e.target.value })
-                  }
-                  placeholder="John"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last name</Label>
-                <Input
-                  id="lastName"
-                  value={form.lastName}
-                  onChange={(e) =>
-                    setForm({ ...form, lastName: e.target.value })
-                  }
-                  placeholder="Doe"
-                />
-              </div>
-            </div>
-
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="firstName">First name</Label>
               <Input
-                id="email"
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="admin@example.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Min. 8 characters"
-              />
-              {form.password && (
-                <div className="space-y-1 text-xs">
-                  <p
-                    className={
-                      passwordValid ? "text-green-600" : "text-muted-foreground"
-                    }
-                  >
-                    {passwordValid ? "\u2713" : "\u2022"} At least 8 characters
-                  </p>
-                  <p
-                    className={
-                      passwordHasLetter
-                        ? "text-green-600"
-                        : "text-muted-foreground"
-                    }
-                  >
-                    {passwordHasLetter ? "\u2713" : "\u2022"} Contains a letter
-                  </p>
-                  <p
-                    className={
-                      passwordHasNumber
-                        ? "text-green-600"
-                        : "text-muted-foreground"
-                    }
-                  >
-                    {passwordHasNumber ? "\u2713" : "\u2022"} Contains a number
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                required
-                value={form.confirmPassword}
+                id="firstName"
+                value={form.firstName}
                 onChange={(e) =>
-                  setForm({ ...form, confirmPassword: e.target.value })
+                  setForm({ ...form, firstName: e.target.value })
                 }
+                placeholder="John"
               />
-              {form.confirmPassword && !passwordsMatch && (
-                <p className="text-xs text-destructive">
-                  Passwords do not match
-                </p>
-              )}
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last name</Label>
+              <Input
+                id="lastName"
+                value={form.lastName}
+                onChange={(e) =>
+                  setForm({ ...form, lastName: e.target.value })
+                }
+                placeholder="Doe"
+              />
+            </div>
+          </div>
 
-            <Button type="submit" className="w-full" disabled={!canSubmit}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Create account"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="Min. 8 characters"
+            />
+            {form.password && (
+              <div className="space-y-1 text-xs">
+                <p className={passwordValid ? "text-green-600" : "text-muted-foreground"}>
+                  {passwordValid ? "\u2713" : "\u2022"} At least 8 characters
+                </p>
+                <p className={passwordHasLetter ? "text-green-600" : "text-muted-foreground"}>
+                  {passwordHasLetter ? "\u2713" : "\u2022"} Contains a letter
+                </p>
+                <p className={passwordHasNumber ? "text-green-600" : "text-muted-foreground"}>
+                  {passwordHasNumber ? "\u2713" : "\u2022"} Contains a number
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              required
+              value={form.confirmPassword}
+              onChange={(e) =>
+                setForm({ ...form, confirmPassword: e.target.value })
+              }
+            />
+            {form.confirmPassword && !passwordsMatch && (
+              <p className="text-xs text-destructive">
+                Passwords do not match
+              </p>
+            )}
+          </div>
+
+          <Button type="submit" className="w-full" disabled={!canSubmit}>
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Create account"
+            )}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -233,56 +209,54 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <img src="/logo.svg" alt="mitshe" className="mx-auto mb-4 h-16 w-16" />
-          <CardTitle className="text-2xl">Sign in to <span className="font-brand">mitshe</span></CardTitle>
-          <CardDescription>
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <img src="/logo.svg" alt="mitshe" className="mx-auto mb-5 h-12 w-12" />
+          <h1 className="text-2xl font-semibold tracking-tight">Sign in to <span className="font-brand">mitshe</span></h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
             Enter your credentials to continue
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="you@example.com"
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Sign in"
             )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="admin@example.com"
-                autoFocus
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Sign in"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
