@@ -75,12 +75,14 @@ function SetupForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
+      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12rem] md:text-[18rem] font-brand font-bold text-foreground/[0.03] select-none pointer-events-none tracking-tight whitespace-nowrap">
+        mitshe
+      </span>
+      <img src="/logo.svg" alt="" className="absolute bottom-6 right-8 h-16 w-16 opacity-15 select-none pointer-events-none" />
+
+      <div className="w-full max-w-sm relative">
         <div className="text-center mb-8">
-          <div className="mx-auto mb-6 h-20 w-20 rounded-2xl bg-primary/[0.07] flex items-center justify-center">
-            <img src="/logo.svg" alt="mitshe" className="h-12 w-12" />
-          </div>
           <h1 className="text-2xl font-semibold tracking-tight">Welcome to <span className="font-brand">mitshe</span></h1>
           <p className="text-sm text-muted-foreground mt-1.5">
             Create your admin account to get started
@@ -210,13 +212,15 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
+      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12rem] md:text-[18rem] font-brand font-bold text-foreground/[0.03] select-none pointer-events-none tracking-tight whitespace-nowrap">
+        mitshe
+      </span>
+      <img src="/logo.svg" alt="" className="absolute bottom-6 right-8 h-16 w-16 opacity-15 select-none pointer-events-none" />
+
+      <div className="w-full max-w-sm relative">
         <div className="text-center mb-8">
-          <div className="mx-auto mb-6 h-20 w-20 rounded-2xl bg-primary/[0.07] flex items-center justify-center">
-            <img src="/logo.svg" alt="mitshe" className="h-12 w-12" />
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Sign in to <span className="font-brand">mitshe</span></h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
           <p className="text-sm text-muted-foreground mt-1.5">
             Enter your credentials to continue
           </p>
