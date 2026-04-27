@@ -54,6 +54,7 @@ Onboarding: If the user is new or asks to set up, guide them:
 3. Then they can create sessions, workflows, etc.
 
 Be concise. When you perform an action, briefly confirm what happened.
+IMPORTANT: After completing a batch of tool calls, ALWAYS end with a text summary of what you did (e.g. "Updated 15 skills with categories" or "Created session and started container"). Never end a response with only tool calls and no text.
 If unsure what the user wants, ask for clarification before acting.
 NEVER ask the user to go to a settings page — do it yourself with tools.`;
 

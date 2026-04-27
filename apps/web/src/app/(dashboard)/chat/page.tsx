@@ -376,14 +376,42 @@ function ChatMessage({
           </div>
         )}
         {toolUse && toolUse.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {toolUse.map((tool, i) => (
-              <ToolChip key={i} toolCall={tool} />
-            ))}
-          </div>
+          <CollapsibleToolChips toolCalls={toolUse} />
         )}
         {content && <CredentialPrompt content={content} onSubmit={onSendFromCard} />}
       </div>
+    </div>
+  );
+}
+
+const MAX_VISIBLE_CHIPS = 4;
+
+function CollapsibleToolChips({ toolCalls }: { toolCalls: ChatToolCall[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? toolCalls : toolCalls.slice(0, MAX_VISIBLE_CHIPS);
+  const hiddenCount = toolCalls.length - MAX_VISIBLE_CHIPS;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 pt-1">
+      {visible.map((tool, i) => (
+        <ToolChip key={i} toolCall={tool} />
+      ))}
+      {hiddenCount > 0 && !expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] bg-muted/40 text-muted-foreground hover:bg-muted transition-colors"
+        >
+          +{hiddenCount} more
+        </button>
+      )}
+      {expanded && hiddenCount > 0 && (
+        <button
+          onClick={() => setExpanded(false)}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] bg-muted/40 text-muted-foreground hover:bg-muted transition-colors"
+        >
+          Show less
+        </button>
+      )}
     </div>
   );
 }
