@@ -286,12 +286,7 @@ export default function ChatPage() {
                 <ChatMessage role="user" content={pendingUserMessage} toolUse={null} />
               )}
 
-              {sendMessage.isPending && (
-                <div className="flex gap-4">
-                  <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5 animate-pulse" />
-                  <span className="text-sm text-muted-foreground">Thinking...</span>
-                </div>
-              )}
+              {sendMessage.isPending && <ThinkingIndicator />}
 
               {errorMessage && (
                 <div className="flex gap-4">
@@ -313,6 +308,37 @@ export default function ChatPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+const THINKING_PHRASES = [
+  "Thinking...",
+  "Working on it...",
+  "Processing...",
+  "Analyzing...",
+  "On it...",
+  "Almost there...",
+  "Figuring it out...",
+  "Crunching...",
+];
+
+function ThinkingIndicator() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % THINKING_PHRASES.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex gap-4">
+      <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5 animate-pulse" />
+      <span className="text-sm text-muted-foreground transition-opacity duration-300">
+        {THINKING_PHRASES[index]}
+      </span>
     </div>
   );
 }
