@@ -13,8 +13,7 @@ const fadeUp = {
   }),
 };
 
-/* ── Workflow preview - simple animated flow ── */
-function WorkflowPreview() {
+function SessionPreview() {
   return (
     <div className="bg-[#0f0f1a] rounded-xl overflow-hidden border border-white/[0.06] shadow-2xl">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5">
@@ -23,30 +22,21 @@ function WorkflowPreview() {
           <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
           <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
         </div>
-        <span className="text-[10px] text-white/15 ml-2">Workflow</span>
+        <div className="flex gap-1 ml-3">
+          <div className="px-3 py-1 rounded-md bg-white/10 text-[10px] text-white/60">Terminal</div>
+          <div className="px-3 py-1 rounded-md text-[10px] text-white/25 hover:text-white/40">Browser</div>
+          <div className="px-3 py-1 rounded-md text-[10px] text-white/25 hover:text-white/40">Files</div>
+        </div>
       </div>
-      <div className="p-6 md:p-8 flex items-center justify-center gap-3 md:gap-5">
-        {[
-          { label: "Jira Issue", color: "#3b82f6" },
-          { label: "AI Review", color: "#8b5cf6" },
-          { label: "Git PR", color: "#22c55e" },
-          { label: "Slack", color: "#f59e0b" },
-        ].map((node, i) => (
-          <motion.div key={i} className="flex items-center gap-3 md:gap-5"
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5 + i * 0.2, duration: 0.4 }}
-          >
-            <div className="flex flex-col items-center gap-1.5">
-              <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: node.color }} />
-              </div>
-              <span className="text-[10px] text-white/30">{node.label}</span>
-            </div>
-            {i < 3 && <div className="w-6 md:w-10 h-px bg-white/10 mb-5" />}
-          </motion.div>
-        ))}
+      <div className="p-5 font-mono text-[12px] space-y-1.5 min-h-[160px]">
+        <div className="text-white/25">executor@session-a7f3:/workspace$</div>
+        <div className="text-emerald-400/70">claude -p &quot;Fix the auth bug in login.ts&quot;</div>
+        <div className="text-white/30 mt-2">Analyzing login.ts...</div>
+        <div className="text-white/30">Found issue: missing null check on line 47</div>
+        <div className="text-white/30">Applying fix...</div>
+        <div className="text-emerald-400/50 mt-1">$ git commit -m &quot;fix: null check in auth flow&quot;</div>
+        <div className="text-emerald-400/50">$ gh pr create --base main</div>
+        <div className="text-emerald-400 mt-1">PR #142 created successfully</div>
       </div>
     </div>
   );
@@ -59,36 +49,34 @@ export default function Hero() {
 
   return (
     <section className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
-      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--primary)]/[0.04] via-transparent to-transparent pointer-events-none" />
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[var(--primary)]/[0.06] rounded-full blur-[150px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-6 relative">
-        {/* Text */}
         <div className="text-center mb-14">
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--primary)]/8 border border-[var(--primary)]/15 mb-6">
             <span className="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse" />
-            <span className="text-xs font-medium">Open Source &middot; Self-hosted &middot; AI-powered</span>
+            <span className="text-xs font-medium">Open Source &middot; Self-hosted</span>
           </motion.div>
 
           <motion.h1 variants={fadeUp} initial="hidden" animate="visible" custom={1}
             className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
-            <span className="block">From issue to merged PR.</span>
-            <span className="block bg-gradient-to-r from-[var(--primary)] to-[#a78bfa] bg-clip-text text-transparent">Fully automated.</span>
+            <span className="block">Workspace manager</span>
+            <span className="block bg-gradient-to-r from-[var(--primary)] to-[#a78bfa] bg-clip-text text-transparent">for AI coding agents.</span>
           </motion.h1>
 
           <motion.p variants={fadeUp} initial="hidden" animate="visible" custom={2}
             className="mt-5 text-lg md:text-xl text-[var(--text-muted)] max-w-2xl mx-auto leading-relaxed">
-            Connect your tools, build workflows visually, let AI agents handle
-            code reviews, branches, and notifications. Self-hosted with one command.
+            Give Claude Code an isolated Docker environment with terminal, browser, and git.
+            Observe what it does, snapshot the state, automate with workflows.
           </motion.p>
 
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={3}
             className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="https://github.com/mitshe/mitshe#run-it"
+            <a href="https://github.com/mitshe/mitshe#quick-start"
               className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white font-semibold transition-all shadow-lg shadow-[var(--primary)]/20 hover:shadow-xl hover:-translate-y-0.5 text-sm">
-              Self-host in 30 seconds
+              Get started
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </a>
             <a href="https://github.com/mitshe/mitshe" target="_blank" rel="noopener"
@@ -99,10 +87,14 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        {/* Docker command */}
+        <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={4}
+          className="max-w-3xl mx-auto">
+          <SessionPreview />
+        </motion.div>
+
         <motion.div
-          variants={fadeUp} initial="hidden" animate="visible" custom={4}
-          className="max-w-xl mx-auto mt-2"
+          variants={fadeUp} initial="hidden" animate="visible" custom={5}
+          className="max-w-xl mx-auto mt-6"
         >
           <div
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#1a1a2e] border border-white/5 cursor-pointer group"

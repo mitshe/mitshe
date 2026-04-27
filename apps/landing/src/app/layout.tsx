@@ -6,22 +6,22 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-brand" });
 
 export const metadata: Metadata = {
-  title: "mitshe - AI Workflow Automation",
+  title: "mitshe - Workspace Manager for AI Coding Agents",
   description:
-    "Open-source AI-powered workflow automation. Connect Jira, GitHub, Slack and let AI handle repetitive development tasks.",
+    "Self-hosted workspace manager for AI coding agents. Isolated Docker sessions with terminal, browser, and git for Claude Code.",
   openGraph: {
-    title: "mitshe - AI Workflow Automation",
+    title: "mitshe - Workspace Manager for AI Coding Agents",
     description:
-      "Open-source AI-powered workflow automation. Connect your tools, build workflows visually, let AI do the work.",
+      "Give Claude Code an isolated workspace with terminal, browser, and git. Snapshot environments, automate with workflows. Self-hosted.",
     url: "https://mitshe.com",
     siteName: "mitshe",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "mitshe - AI Workflow Automation",
+    title: "mitshe - Workspace Manager for AI Coding Agents",
     description:
-      "Open-source AI-powered workflow automation platform. Self-host with one command.",
+      "Self-hosted workspace manager for AI coding agents. One Docker command to start.",
   },
 };
 
