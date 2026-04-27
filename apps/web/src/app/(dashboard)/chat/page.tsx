@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -44,8 +45,9 @@ import {
 import type { ChatToolCall } from "@mitshe/types";
 
 export default function ChatPage() {
+  const searchParams = useSearchParams();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(searchParams.get("prompt") || "");
   const [selectedCredentialId, setSelectedCredentialId] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);

@@ -38,8 +38,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Loader2, Zap, Pencil, Github, Download } from "lucide-react";
+import { Plus, Trash2, Loader2, Zap, Pencil, Github, Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 import type { Skill } from "@mitshe/types";
 
 const CATEGORIES = [
@@ -151,6 +152,12 @@ export default function SkillsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/chat?prompt=Create a new skill for Claude Code that...">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Ask AI
+            </Link>
+          </Button>
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Github className="h-4 w-4 mr-2" />
             Import from GitHub
