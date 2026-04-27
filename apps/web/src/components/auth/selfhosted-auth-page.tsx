@@ -76,10 +76,10 @@ function SetupForm() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
-      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12rem] md:text-[18rem] font-brand font-bold text-foreground/[0.03] select-none pointer-events-none tracking-tight whitespace-nowrap">
+      <span className="absolute bottom-0 left-0 right-0 text-center text-[28vw] font-brand font-bold text-foreground/[0.04] select-none pointer-events-none tracking-tighter leading-[0.7] translate-y-[55%]">
         mitshe
       </span>
-      <img src="/logo.svg" alt="" className="absolute bottom-6 right-8 h-16 w-16 opacity-15 select-none pointer-events-none" />
+      <img src="/logo.svg" alt="" className="absolute bottom-8 right-10 h-32 w-32 md:h-40 md:w-40 select-none pointer-events-none" />
 
       <div className="w-full max-w-sm relative">
         <div className="text-center mb-8">
@@ -213,10 +213,10 @@ function LoginForm() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
-      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12rem] md:text-[18rem] font-brand font-bold text-foreground/[0.03] select-none pointer-events-none tracking-tight whitespace-nowrap">
+      <span className="absolute bottom-0 left-0 right-0 text-center text-[28vw] font-brand font-bold text-foreground/[0.04] select-none pointer-events-none tracking-tighter leading-[0.7] translate-y-[55%]">
         mitshe
       </span>
-      <img src="/logo.svg" alt="" className="absolute bottom-6 right-8 h-16 w-16 opacity-15 select-none pointer-events-none" />
+      <img src="/logo.svg" alt="" className="absolute bottom-8 right-10 h-32 w-32 md:h-40 md:w-40 select-none pointer-events-none" />
 
       <div className="w-full max-w-sm relative">
         <div className="text-center mb-8">
