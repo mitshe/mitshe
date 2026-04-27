@@ -72,5 +72,6 @@ just dev
 App: http://localhost:3000 <br />
 API: http://localhost:3001 
 
-run `just` to see all commands.
+## License
 
+MIT
