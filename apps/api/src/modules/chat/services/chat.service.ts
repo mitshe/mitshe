@@ -57,7 +57,7 @@ Be concise. When you perform an action, briefly confirm what happened.
 If unsure what the user wants, ask for clarification before acting.
 NEVER ask the user to go to a settings page — do it yourself with tools.`;
 
-const MAX_TOOL_ITERATIONS = 5;
+const MAX_TOOL_ITERATIONS = 15;
 
 @Injectable()
 export class ChatService {

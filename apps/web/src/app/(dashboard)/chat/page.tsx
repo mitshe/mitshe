@@ -366,12 +366,12 @@ function ChatMessage({
 
 const TOOL_META: Record<string, { icon: React.ReactNode; color: string; basePath: string }> = {
   session: { icon: <Terminal className="h-3 w-3" />, color: "text-emerald-500", basePath: "/sessions" },
-  workflow: { icon: <Workflow className="h-3 w-3" />, color: "text-blue-500", basePath: "/workflows" },
+  workflow: { icon: <Workflow className="h-3 w-3" />, color: "text-blue-500", basePath: "" },
   task: { icon: <ListTodo className="h-3 w-3" />, color: "text-amber-500", basePath: "/tasks" },
-  repository: { icon: <GitBranch className="h-3 w-3" />, color: "text-purple-500", basePath: "/settings/repositories" },
-  integration: { icon: <Plug className="h-3 w-3" />, color: "text-cyan-500", basePath: "/settings/integrations" },
-  snapshot: { icon: <HardDrive className="h-3 w-3" />, color: "text-orange-500", basePath: "/images" },
-  skill: { icon: <Zap className="h-3 w-3" />, color: "text-yellow-500", basePath: "/skills" },
+  repository: { icon: <GitBranch className="h-3 w-3" />, color: "text-purple-500", basePath: "" },
+  integration: { icon: <Plug className="h-3 w-3" />, color: "text-cyan-500", basePath: "" },
+  snapshot: { icon: <HardDrive className="h-3 w-3" />, color: "text-orange-500", basePath: "" },
+  skill: { icon: <Zap className="h-3 w-3" />, color: "text-yellow-500", basePath: "" },
 };
 
 function ToolChip({ toolCall }: { toolCall: ChatToolCall }) {
