@@ -17,7 +17,11 @@ import {
 } from '../../../shared/decorators/organization.decorator';
 import { ApiRateLimit } from '../../../shared/decorators/throttle.decorator';
 import { SkillsService } from '../services/skills.service';
-import { CreateSkillDto, UpdateSkillDto } from '../dto/skill.dto';
+import {
+  CreateSkillDto,
+  UpdateSkillDto,
+  ImportGitHubSkillsDto,
+} from '../dto/skill.dto';
 
 @ApiTags('Skills')
 @ApiBearerAuth('bearer')
@@ -35,6 +39,21 @@ export class SkillsController {
   ) {
     const skill = await this.skillsService.create(organizationId, userId, dto);
     return { skill };
+  }
+
+  @Post('import-github')
+  async importFromGitHub(
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+    @Body() dto: ImportGitHubSkillsDto,
+  ) {
+    return this.skillsService.importFromGitHub(
+      organizationId,
+      userId,
+      dto.repo,
+      dto.path,
+      dto.branch,
+    );
   }
 
   @Get()

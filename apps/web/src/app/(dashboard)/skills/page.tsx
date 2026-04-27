@@ -6,6 +6,7 @@ import {
   useCreateSkill,
   useUpdateSkill,
   useDeleteSkill,
+  useImportGitHubSkills,
 } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Loader2, Zap, Pencil } from "lucide-react";
+import { Plus, Trash2, Loader2, Zap, Pencil, Github, Download } from "lucide-react";
+import { toast } from "sonner";
 import type { Skill } from "@mitshe/types";
 
 const CATEGORIES = [
@@ -54,8 +56,10 @@ export default function SkillsPage() {
   const createSkill = useCreateSkill();
   const updateSkill = useUpdateSkill();
   const deleteSkill = useDeleteSkill();
+  const importSkills = useImportGitHubSkills();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
 
@@ -63,6 +67,10 @@ export default function SkillsPage() {
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState("");
   const [formInstructions, setFormInstructions] = useState("");
+
+  const [importRepo, setImportRepo] = useState("");
+  const [importPath, setImportPath] = useState("");
+  const [importBranch, setImportBranch] = useState("main");
 
   const openCreate = () => {
     setEditingSkill(null);
@@ -113,19 +121,45 @@ export default function SkillsPage() {
     setDeleteTarget(null);
   };
 
+  const handleImport = async () => {
+    if (!importRepo.trim()) return;
+    try {
+      const result = await importSkills.mutateAsync({
+        repo: importRepo.trim(),
+        path: importPath.trim() || undefined,
+        branch: importBranch.trim() || "main",
+      });
+      toast.success(`Imported ${result.imported} skill(s)`, {
+        description: result.skills.join(", "),
+      });
+      setImportDialogOpen(false);
+      setImportRepo("");
+      setImportPath("");
+      setImportBranch("main");
+    } catch (err) {
+      toast.error((err as Error).message || "Import failed");
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Skills</h1>
           <p className="text-sm text-muted-foreground">
-            Reusable instructions appended to CLAUDE.md when creating sessions.
+            Reusable instructions installed as Claude Code slash commands in sessions.
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Skill
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+            <Github className="h-4 w-4 mr-2" />
+            Import from GitHub
+          </Button>
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Skill
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -261,6 +295,76 @@ export default function SkillsPage() {
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
               {editingSkill ? "Save Changes" : "Create Skill"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import from GitHub dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Skills from GitHub</DialogTitle>
+            <DialogDescription>
+              Import .md files from a public GitHub repository as skills. Each markdown file becomes a slash command in Claude Code.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Repository</Label>
+              <Input
+                value={importRepo}
+                onChange={(e) => setImportRepo(e.target.value)}
+                placeholder="owner/repo (e.g. forrestchang/andrej-karpathy-skills)"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Subdirectory (optional)</Label>
+                <Input
+                  value={importPath}
+                  onChange={(e) => setImportPath(e.target.value)}
+                  placeholder="e.g. skills/ or .claude/commands"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Branch</Label>
+                <Input
+                  value={importBranch}
+                  onChange={(e) => setImportBranch(e.target.value)}
+                  placeholder="main"
+                />
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted/50 border p-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Popular repositories:</p>
+              <button
+                type="button"
+                className="block hover:text-foreground transition-colors text-left"
+                onClick={() => setImportRepo("anthropics/claude-code")}
+              >
+                anthropics/claude-code — official Claude Code commands
+              </button>
+              <button
+                type="button"
+                className="block hover:text-foreground transition-colors text-left"
+                onClick={() => setImportRepo("forrestchang/andrej-karpathy-skills")}
+              >
+                forrestchang/andrej-karpathy-skills — Karpathy coding guidelines
+              </button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleImport}
+              disabled={!importRepo.trim() || importSkills.isPending}
+            >
+              {importSkills.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Import Skills
             </Button>
           </DialogFooter>
         </DialogContent>

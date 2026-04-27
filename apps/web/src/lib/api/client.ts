@@ -803,5 +803,12 @@ export const api = {
         method: "DELETE",
         token,
       }),
+
+    importGitHub: (data: { repo: string; path?: string; branch?: string }, token: string) =>
+      request<{ imported: number; skills: string[] }>("/skills/import-github", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
   },
 };

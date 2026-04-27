@@ -1565,3 +1565,17 @@ export function useDeleteSkill() {
     },
   });
 }
+
+export function useImportGitHubSkills() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { repo: string; path?: string; branch?: string }) => {
+      const token = await getToken();
+      return api.skills.importGitHub(data, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.skills.all });
+    },
+  });
+}
