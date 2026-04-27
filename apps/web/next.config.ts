@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.env.TURBO_ROOT || undefined,
   },
+  httpAgentOptions: {
+    keepAlive: true,
+  },
+  experimental: {
+    proxyTimeout: 300000,
+  },
   async headers() {
     return [
       {
