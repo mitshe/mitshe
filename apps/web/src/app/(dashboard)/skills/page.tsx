@@ -226,7 +226,7 @@ export default function SkillsPage() {
 
       {/* Create / Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingSkill ? "Edit Skill" : "Create Skill"}
@@ -276,7 +276,7 @@ export default function SkillsPage() {
                 value={formInstructions}
                 onChange={(e) => setFormInstructions(e.target.value)}
                 placeholder="Write instructions for Claude Code..."
-                className="min-h-[250px] font-mono text-sm"
+                className="min-h-[200px] max-h-[40vh] font-mono text-sm"
                 rows={12}
               />
             </div>
