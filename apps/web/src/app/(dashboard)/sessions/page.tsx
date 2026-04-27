@@ -48,7 +48,20 @@ import {
   Trash2,
   Pencil,
   ChevronDown,
+  Search,
+  MoreHorizontal,
+  CheckSquare,
+  Activity,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Collapsible,
   CollapsibleContent,
@@ -125,10 +138,27 @@ export default function SessionsPage() {
   const { socket } = useSocket();
   const { data: sessions = [], isLoading } = useSessions();
 
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
   const filteredSessions = useMemo(() => {
-    if (!urlProjectId) return sessions;
-    return sessions.filter((s) => s.projectId === urlProjectId);
-  }, [sessions, urlProjectId]);
+    let result = sessions;
+    if (urlProjectId) {
+      result = result.filter((s) => s.projectId === urlProjectId);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter((s) => s.name.toLowerCase().includes(q));
+    }
+    if (filterStatus !== "all") {
+      result = result.filter((s) => s.status === filterStatus);
+    }
+    return result;
+  }, [sessions, urlProjectId, search, filterStatus]);
   const { data: projects = [] } = useProjects();
   const { data: repositories = [] } = useRepositories();
   const { data: aiCredentials = [] } = useAICredentials();
@@ -431,21 +461,84 @@ export default function SessionsPage() {
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredSessions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredSessions.map((s) => s.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    const count = selectedIds.size;
+    for (const id of selectedIds) {
+      try { await deleteSession.mutateAsync(id); } catch { /* continue */ }
+    }
+    toast.success(`Deleted ${count} session(s)`);
+    setSelectedIds(new Set());
+    setBulkDeleting(false);
+    setBulkDeleteConfirm(false);
+    setSelectMode(false);
+  };
+
+  const totalSessions = sessions.length;
+  const runningSessions = sessions.filter((s) => s.status === "RUNNING").length;
+  const completedSessions = sessions.filter((s) => s.status === "COMPLETED").length;
+  const failedSessions = sessions.filter((s) => s.status === "FAILED").length;
+
   const sessionProviders = aiCredentials.filter((c) =>
     ["CLAUDE_CODE_LOCAL", "OPENCLAW"].includes(c.provider),
   );
   const activeRepos = repositories.filter((r) => r.isActive);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Sessions</h1>
           <p className="text-sm text-muted-foreground">
-            Interactive AI agent sessions with isolated environments
+            Isolated environments for AI coding agents
           </p>
         </div>
-        <Dialog
+        <div className="flex items-center gap-2">
+          {selectMode ? (
+            <>
+              <Button variant="outline" size="sm" onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}>
+                Cancel
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => setBulkDeleteConfirm(true)} disabled={selectedIds.size === 0}>
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                Delete{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+              </Button>
+            </>
+          ) : (
+            <>
+              {sessions.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setSelectMode(true)}>
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      Select sessions
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <Dialog
           open={isDialogOpen}
           onOpenChange={(open) => {
             setIsDialogOpen(open);
@@ -842,6 +935,59 @@ export default function SessionsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Search + Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search sessions..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="RUNNING">Running</SelectItem>
+            <SelectItem value="PAUSED">Paused</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="FAILED">Failed</SelectItem>
+            <SelectItem value="CREATING">Creating</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 sm:gap-x-6 sm:gap-y-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <Activity className="h-4 w-4" />
+          <span>Total</span>
+          <span className="font-semibold text-foreground">{totalSessions}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Play className="h-4 w-4 text-green-500" />
+          <span>Running</span>
+          <span className="font-semibold text-foreground">{runningSessions}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <CheckCircle2 className="h-4 w-4 text-blue-500" />
+          <span>Completed</span>
+          <span className="font-semibold text-foreground">{completedSessions}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <XCircle className="h-4 w-4 text-red-400" />
+          <span>Failed</span>
+          <span className="font-semibold text-foreground">{failedSessions}</span>
+        </div>
       </div>
 
       <div>
@@ -864,40 +1010,40 @@ export default function SessionsPage() {
             </div>
           ) : (
             <div className="space-y-2">
+              {selectMode && (
+                <div className="flex items-center gap-3 px-4 py-1">
+                  <input type="checkbox" checked={selectedIds.size === filteredSessions.length && filteredSessions.length > 0} onChange={toggleSelectAll} className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer" />
+                  <span className="text-xs text-muted-foreground">{selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}</span>
+                </div>
+              )}
               {filteredSessions.map((session) => {
                 const config = statusConfig[session.status as SessionStatus];
                 return (
                   <div
                     key={session.id}
                     className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => router.push(`/sessions/${session.id}`)}
+                    onClick={() => selectMode ? toggleSelect(session.id) : router.push(`/sessions/${session.id}`)}
                   >
+                    {selectMode ? (
+                      <input type="checkbox" checked={selectedIds.has(session.id)} onChange={() => toggleSelect(session.id)} onClick={(e) => e.stopPropagation()} className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer shrink-0" />
+                    ) : (
+                      <MessageSquareCode className="h-4 w-4 text-primary shrink-0" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">
-                          {session.name}
-                        </span>
+                        <span className="font-medium text-sm">{session.name}</span>
                         <Badge variant={config.variant} className="gap-1">
                           {config.icon}
                           {config.label}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                        {session.project && (
-                          <span>{session.project.name}</span>
-                        )}
-                        {session.aiCredential && (
-                          <span>{providerLabels[session.aiCredential.provider] || session.aiCredential.provider}</span>
-                        )}
-                        {session.enableDocker && (
-                          <span>Docker</span>
-                        )}
+                        {session.project && <span>{session.project.name}</span>}
+                        {session.aiCredential && <span>{providerLabels[session.aiCredential.provider] || session.aiCredential.provider}</span>}
+                        {session.enableDocker && <span>Docker</span>}
                         {session.repositories && session.repositories.length > 0 && (
                           <span className="truncate max-w-[200px]">
-                            {session.repositories
-                              .map((r) => r.repository?.name || "")
-                              .filter(Boolean)
-                              .join(", ")}
+                            {session.repositories.map((r) => r.repository?.name || "").filter(Boolean).join(", ")}
                           </span>
                         )}
                         <span className="flex items-center gap-1">
@@ -907,101 +1053,75 @@ export default function SessionsPage() {
                       </div>
                     </div>
 
-                    <div
-                      className="flex items-center gap-1 shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {session.status === "RUNNING" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={(e) => handlePause(e, session.id)}
-                            title="Pause"
-                          >
-                            <Pause className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={(e) => handleStop(e, session.id)}
-                            title="Stop"
-                          >
-                            <Square className="w-3.5 h-3.5" />
-                          </Button>
-                        </>
-                      )}
-                      {(session.status === "COMPLETED" ||
-                        session.status === "FAILED" ||
-                        session.status === "PAUSED") && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            router.push(`/sessions/${session.id}`)
-                          }
-                        >
-                          <Play className="w-3.5 h-3.5 mr-1" />
-                          Open
-                        </Button>
-                      )}
-                      {session.status !== "CREATING" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={(e) => handleEdit(e, session)}
-                          title={
-                            session.status === "COMPLETED" ||
-                            session.status === "FAILED"
-                              ? "Edit"
-                              : "Edit metadata (stop to reconfigure)"
-                          }
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                      )}
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Delete Session
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete &quot;
-                              {session.name}&quot;? The container and all
-                              data will be permanently removed.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={(e) => handleDelete(e, session.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
+                    {!selectMode && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/sessions/${session.id}`)}>
+                              <Play className="w-4 h-4 mr-2" />
+                              Open
+                            </DropdownMenuItem>
+                            {session.status === "RUNNING" && (
+                              <>
+                                <DropdownMenuItem onClick={(e) => handlePause(e as unknown as React.MouseEvent, session.id)}>
+                                  <Pause className="w-4 h-4 mr-2" />
+                                  Pause
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => handleStop(e as unknown as React.MouseEvent, session.id)}>
+                                  <Square className="w-4 h-4 mr-2" />
+                                  Stop
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {session.status !== "CREATING" && (
+                              <DropdownMenuItem onClick={(e) => handleEdit(e as unknown as React.MouseEvent, session)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={(e) => handleDelete(e as unknown as React.MouseEvent, session.id)}>
+                              <Trash2 className="w-4 h-4 mr-2" />
                               Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
       </div>
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} session(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected sessions and their containers. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
