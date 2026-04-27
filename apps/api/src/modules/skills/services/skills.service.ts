@@ -96,8 +96,10 @@ export class SkillsService {
 
     for (const file of mdFiles) {
       const content = await this.fetchFileContent(file.url);
-      const { name, description, instructions } =
-        this.parseSkillFile(file.path, content);
+      const { name, description, instructions } = this.parseSkillFile(
+        file.path,
+        content,
+      );
 
       await this.prisma.skill.create({
         data: {
@@ -197,7 +199,8 @@ export class SkillsService {
     content: string,
   ): { name: string; description: string | undefined; instructions: string } {
     // Extract filename without extension as name
-    const fileName = filePath.split('/').pop()?.replace(/\.md$/, '') || filePath;
+    const fileName =
+      filePath.split('/').pop()?.replace(/\.md$/, '') || filePath;
     const name = fileName
       .replace(/[-_]/g, ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase());

@@ -16,7 +16,6 @@ import {
   History,
   Filter,
   Workflow,
-  ArrowRight,
 } from "lucide-react";
 import { useWorkflows } from "@/lib/api/hooks";
 

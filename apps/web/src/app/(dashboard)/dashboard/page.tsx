@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -31,7 +30,6 @@ import {
   Workflow,
   Play,
   Sparkles,
-  MessageSquareCode,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "@/lib/utils";
@@ -47,7 +45,7 @@ import { getTaskStatus } from "@/lib/status-config";
 
 export default function DashboardPage() {
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
-  const { data: sessions = [], isLoading: sessionsLoading } = useSessions();
+  const { isLoading: sessionsLoading } = useSessions();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: workflows = [], isLoading: workflowsLoading } = useWorkflows();
   const { data: integrations = [], isLoading: integrationsLoading } =
@@ -121,12 +119,8 @@ export default function DashboardPage() {
   const successRate =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const activeWorkflows = workflows.filter((w) => w.isActive).length;
-  const _activeSessions = sessions.filter(
-    (s) => s.status === "RUNNING" || s.status === "PAUSED",
-  ).length;
 
   const recentTasks = tasks.slice(0, 5);
-  const _recentSessions = sessions.slice(0, 5);
 
   if (isLoading) {
     return (
