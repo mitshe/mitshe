@@ -424,7 +424,7 @@ export function Sidebar({
 }) {
   if (collapsed) {
     return (
-      <div className="hidden md:flex h-full w-12 flex-col border-r bg-background items-center">
+      <div className="hidden md:flex h-full w-12 flex-col border-r bg-sidebar items-center">
         <div className="flex h-14 items-center justify-center border-b w-full shrink-0">
           <button
             onClick={onToggle}
@@ -460,7 +460,7 @@ export function Sidebar({
   }
 
   return (
-    <div className="hidden md:flex h-full w-64 flex-col border-r bg-background">
+    <div className="hidden md:flex h-full w-64 flex-col border-r bg-sidebar">
       <div className="flex h-14 items-center justify-between border-b px-4 shrink-0">
         <Link href="/chat" className="flex items-center gap-2 font-semibold">
           <img src="/logo.svg" alt="mitshe" className="h-7 w-7" />
