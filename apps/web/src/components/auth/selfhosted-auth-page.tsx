@@ -78,7 +78,9 @@ function SetupForm() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src="/logo.svg" alt="mitshe" className="mx-auto mb-5 h-12 w-12" />
+          <div className="mx-auto mb-6 h-20 w-20 rounded-2xl bg-primary/[0.07] flex items-center justify-center">
+            <img src="/logo.svg" alt="mitshe" className="h-12 w-12" />
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight">Welcome to <span className="font-brand">mitshe</span></h1>
           <p className="text-sm text-muted-foreground mt-1.5">
             Create your admin account to get started
@@ -211,7 +213,9 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src="/logo.svg" alt="mitshe" className="mx-auto mb-5 h-12 w-12" />
+          <div className="mx-auto mb-6 h-20 w-20 rounded-2xl bg-primary/[0.07] flex items-center justify-center">
+            <img src="/logo.svg" alt="mitshe" className="h-12 w-12" />
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight">Sign in to <span className="font-brand">mitshe</span></h1>
           <p className="text-sm text-muted-foreground mt-1.5">
             Enter your credentials to continue
