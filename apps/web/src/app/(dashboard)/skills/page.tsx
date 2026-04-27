@@ -32,13 +32,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Loader2, Zap, Pencil, Github, Download, Sparkles } from "lucide-react";
+import { Plus, Trash2, Loader2, Zap, Pencil, Github, Download, Sparkles, MoreHorizontal, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import type { Skill } from "@mitshe/types";
@@ -63,6 +70,9 @@ export default function SkillsPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
@@ -122,6 +132,38 @@ export default function SkillsPage() {
     setDeleteTarget(null);
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === skills.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(skills.map((s) => s.id)));
+    }
+  };
+
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    const count = selectedIds.size;
+    for (const id of selectedIds) {
+      await deleteSkill.mutateAsync(id);
+    }
+    toast.success(`Deleted ${count} skill(s)`);
+    setSelectedIds(new Set());
+    setBulkDeleting(false);
+    setBulkDeleteConfirm(false);
+    setSelectMode(false);
+  };
+
   const handleImport = async () => {
     if (!importRepo.trim()) return;
     try {
@@ -152,20 +194,61 @@ export default function SkillsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/chat?prompt=Create a new skill for Claude Code that...">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Ask AI
-            </Link>
-          </Button>
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
-            <Github className="h-4 w-4 mr-2" />
-            Import from GitHub
-          </Button>
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Skill
-          </Button>
+          {selectMode ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setBulkDeleteConfirm(true)}
+                disabled={selectedIds.size === 0}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                Delete{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+              </Button>
+            </>
+          ) : (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/chat?prompt=Create a new skill for Claude Code that...">
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Ask AI to create
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
+                    <Github className="h-4 w-4 mr-2" />
+                    Import from GitHub
+                  </DropdownMenuItem>
+                  {skills.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setSelectMode(true)}>
+                        <CheckSquare className="h-4 w-4 mr-2" />
+                        Select skills
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button onClick={openCreate}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Skill
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -183,13 +266,36 @@ export default function SkillsPage() {
         </div>
       ) : (
         <div className="space-y-2">
+          {selectMode && (
+            <div className="flex items-center gap-3 px-4 py-1">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === skills.length && skills.length > 0}
+                onChange={toggleSelectAll}
+                className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
+              />
+              <span className="text-xs text-muted-foreground">
+                {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+              </span>
+            </div>
+          )}
           {skills.map((skill) => (
             <div
               key={skill.id}
               className="group flex items-center gap-3 px-4 py-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => openEdit(skill)}
+              onClick={() => selectMode ? toggleSelect(skill.id) : openEdit(skill)}
             >
-              <Zap className="h-4 w-4 text-primary shrink-0" />
+              {selectMode ? (
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(skill.id)}
+                  onChange={() => toggleSelect(skill.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer shrink-0"
+                />
+              ) : (
+                <Zap className="h-4 w-4 text-primary shrink-0" />
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">{skill.name}</span>
@@ -395,6 +501,29 @@ export default function SkillsPage() {
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} skill(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected skills. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
