@@ -140,6 +140,7 @@ export class SessionsController {
           instructions: session.instructions,
           provider: session.aiCredential?.provider,
           enableDocker: session.enableDocker,
+          enableBrowser: session.enableBrowser,
           environment: envConfig,
           integrations:
             integrationConfigs.length > 0 ? integrationConfigs : undefined,
@@ -208,6 +209,37 @@ export class SessionsController {
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
     return { session };
+  }
+
+  @Get(':id/browser')
+  @ApiOperation({ summary: 'Get browser (noVNC) connection info for session' })
+  async getBrowserInfo(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
+    const session = await this.sessionsService.findOne(organizationId, id);
+
+    if (!session.enableBrowser) {
+      throw new BadRequestException('Browser is not enabled for this session');
+    }
+
+    if (session.status !== 'RUNNING' || !session.containerId) {
+      throw new BadRequestException('Session is not running');
+    }
+
+    const containerIp = await this.containerService.getContainerIp(
+      session.containerId,
+    );
+
+    if (!containerIp) {
+      throw new BadRequestException('Could not resolve container address');
+    }
+
+    return {
+      wsUrl: `ws://${containerIp}:6080/websockify`,
+      httpUrl: `http://${containerIp}:6080`,
+      status: 'ready',
+    };
   }
 
   @Patch(':id')
@@ -304,6 +336,7 @@ export class SessionsController {
           instructions: session.instructions,
           provider: session.aiCredential?.provider,
           enableDocker: session.enableDocker,
+          enableBrowser: session.enableBrowser,
           environment: envConfig,
           integrations:
             integrationConfigs.length > 0 ? integrationConfigs : undefined,

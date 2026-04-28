@@ -55,6 +55,7 @@ import type { SessionStatus } from "@/lib/api/types";
 import { FileTree } from "./components/file-tree";
 import { TerminalView } from "./components/terminal-view";
 import { FileEditor } from "./components/file-editor";
+import BrowserView from "./components/browser-view";
 import { TabBar, type Tab } from "./components/tab-bar";
 
 const providerLabels: Record<string, string> = {
@@ -117,7 +118,7 @@ export default function SessionDetailPage() {
   useEffect(() => {
     if (!session || tabs.length > 0) return;
     const hasAgent = !!session.aiCredentialId;
-    setTabs([
+    const initialTabs: Tab[] = [
       {
         id: agentTerminalId,
         title: hasAgent ? "Agent" : "Terminal",
@@ -126,7 +127,16 @@ export default function SessionDetailPage() {
         terminalId: agentTerminalId,
         cmd: buildAgentCmd(),
       },
-    ]);
+    ];
+    if (session.enableBrowser) {
+      initialTabs.push({
+        id: "browser",
+        title: "Browser",
+        type: "browser",
+        closeable: false,
+      });
+    }
+    setTabs(initialTabs);
   }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
   const [activeTabId, setActiveTabId] = useState(agentTerminalId);
   const [fileContents, setFileContents] = useState<
@@ -877,6 +887,28 @@ export default function SessionDetailPage() {
                     onSave={(content) => handleSaveFile(tab.id, content)}
                     onContentRefresh={() => handleRefreshFile(tab.id)}
                   />
+                </div>
+              ))}
+
+            {/* Browser tab */}
+            {tabs
+              .filter((t) => t.type === "browser")
+              .map((tab) => (
+                <div
+                  key={tab.id}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: activeTabId === tab.id ? "block" : "none",
+                  }}
+                >
+                  {isRunning ? (
+                    <BrowserView sessionId={sessionId} />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <p className="text-sm">Session must be running to use browser</p>
+                    </div>
+                  )}
                 </div>
               ))}
           </div>

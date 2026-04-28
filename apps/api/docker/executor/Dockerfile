@@ -100,6 +100,18 @@ RUN ARCH=$(dpkg --print-architecture) && \
 # Install Playwright dependencies (Chromium system libs)
 RUN npx playwright install-deps chromium
 
+# Install display server + VNC for browser streaming
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    x11vnc \
+    fluxbox \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install noVNC (WebSocket VNC client)
+RUN git clone --depth 1 https://github.com/novnc/noVNC.git /opt/novnc \
+    && git clone --depth 1 https://github.com/novnc/websockify.git /opt/novnc/utils/websockify \
+    && ln -s /opt/novnc/vnc.html /opt/novnc/index.html
+
 # Install Docker CE for DinD support
 RUN curl -fsSL https://get.docker.com | sh
 

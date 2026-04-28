@@ -721,6 +721,12 @@ export const api = {
           token,
         },
       ),
+
+    getBrowserInfo: (id: string, token: string) =>
+      request<{ wsUrl: string; httpUrl: string; status: string }>(
+        `/sessions/${id}/browser`,
+        { token },
+      ),
   },
 
   snapshots: {

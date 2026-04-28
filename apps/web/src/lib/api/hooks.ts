@@ -1194,6 +1194,21 @@ export function useDeleteSession() {
   });
 }
 
+export function useSessionBrowserInfo(sessionId: string, enabled: boolean) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: ["session-browser", sessionId],
+    queryFn: async () => {
+      const token = await getToken();
+      return api.sessions.getBrowserInfo(sessionId, token);
+    },
+    enabled,
+    retry: 3,
+    retryDelay: 2000,
+  });
+}
+
 export function useStartTerminal() {
   const getToken = useAuthToken();
 
