@@ -133,6 +133,9 @@ export default function SessionsPage() {
   const searchParams = useSearchParams();
   const urlProjectId = searchParams.get("projectId") || "";
   const urlSnapshotId = searchParams.get("snapshot") || "";
+  const urlNewSession = searchParams.get("newSession") === "1";
+  const urlTaskName = searchParams.get("taskName") || "";
+  const urlTaskInstructions = searchParams.get("taskInstructions") || "";
   const queryClient = useQueryClient();
   const { socket } = useSocket();
   const { data: sessions = [], isLoading } = useSessions();
@@ -250,6 +253,21 @@ export default function SessionsPage() {
       setSnapshotHandled(true);
     }
   }, [urlSnapshotId, snapshotsList, snapshotHandled]);
+
+  // Auto-open dialog when navigating with ?newSession=1&taskName=...
+  const [taskHandled, setTaskHandled] = useState(false);
+  useEffect(() => {
+    if (taskHandled || !urlNewSession) return;
+    setForm((prev) => ({
+      ...prev,
+      name: urlTaskName || prev.name,
+      instructions: urlTaskInstructions || prev.instructions,
+      projectId: urlProjectId || prev.projectId,
+      integrationIds: defaultGithubId ? [defaultGithubId] : prev.integrationIds,
+    }));
+    setIsDialogOpen(true);
+    setTaskHandled(true);
+  }, [urlNewSession, urlTaskName, urlTaskInstructions, urlProjectId, defaultGithubId, taskHandled]);
 
   const openCreate = () => {
     setEditingId(null);

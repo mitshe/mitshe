@@ -51,6 +51,7 @@ import {
   Sparkles,
   RefreshCw,
   AlertCircle,
+  Terminal,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import {
@@ -284,6 +285,19 @@ export default function TaskDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const params = new URLSearchParams();
+              params.set("taskName", task.title);
+              if (task.description) params.set("taskInstructions", task.description);
+              if (task.projectId) params.set("projectId", task.projectId);
+              router.push(`/sessions?newSession=1&${params.toString()}`);
+            }}
+          >
+            <Terminal className="w-4 h-4 mr-2" />
+            Open in Session
+          </Button>
           <Dialog open={isEditOpen} onOpenChange={handleEditOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
