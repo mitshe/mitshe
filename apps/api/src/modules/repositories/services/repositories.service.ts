@@ -118,6 +118,32 @@ export class RepositoriesService {
   }
 
   /**
+   * List branches for a repository from the git provider
+   */
+  async listBranches(
+    organizationId: string,
+    repositoryId: string,
+    search?: string,
+  ) {
+    const repo = await this.findOne(organizationId, repositoryId);
+
+    if (!repo.integration) {
+      throw new BadRequestException('Repository has no linked integration');
+    }
+
+    const gitProvider =
+      await this.adapterFactory.createGitProviderFromIntegration(
+        organizationId,
+        repo.integration.id,
+      );
+
+    return gitProvider.listBranches(repo.externalId, {
+      search,
+      limit: 100,
+    });
+  }
+
+  /**
    * Delete a repository
    */
   async remove(organizationId: string, id: string) {

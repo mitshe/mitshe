@@ -80,6 +80,7 @@ export interface CreateSessionDto {
   baseImageId?: string;
   skillIds?: string[];
   instructions?: string;
+  branch?: string;
 }
 
 export interface UpdateSessionMetadataDto {

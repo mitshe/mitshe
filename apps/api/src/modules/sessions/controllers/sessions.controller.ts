@@ -114,6 +114,7 @@ export class SessionsController {
       this.sessionsService.buildRepoConfigs(
         session.repositories,
         organizationId,
+        dto.branch,
       ),
       this.sessionsService.resolveIntegrationConfigs(
         dto.integrationIds,

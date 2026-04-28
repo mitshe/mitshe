@@ -78,6 +78,11 @@ export class CreateSessionDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Skill IDs to apply' })
   skillIds?: string[];
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Branch to checkout (overrides repo default)' })
+  branch?: string;
 }
 
 export class UpdateSessionMetadataDto {

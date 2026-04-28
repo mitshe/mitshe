@@ -77,6 +77,7 @@ import {
   useStopSession,
   useProjects,
   useRepositories,
+  useRepoBranches,
   useAICredentials,
   useIntegrations,
   useSnapshots,
@@ -196,6 +197,7 @@ export default function SessionsPage() {
     name: "",
     projectId: "",
     repositoryIds: [] as string[],
+    branch: "",
     integrationIds: [] as string[],
     aiCredentialId: "",
     startArguments: "",
@@ -286,6 +288,7 @@ export default function SessionsPage() {
       projectId: session.projectId || "",
       repositoryIds:
         session.repositories?.map((r) => r.repositoryId) || [],
+      branch: "",
       integrationIds:
         session.integrations?.map((i) => i.integrationId) || [],
       aiCredentialId: session.aiCredentialId || "",
@@ -376,6 +379,7 @@ export default function SessionsPage() {
           baseImageId: form.baseImageId || undefined,
           skillIds: form.skillIds.length > 0 ? form.skillIds : undefined,
           instructions: form.instructions || undefined,
+          branch: form.branch || undefined,
         });
         toast.success("Session created");
         setIsDialogOpen(false);
@@ -517,6 +521,8 @@ export default function SessionsPage() {
     ["CLAUDE_CODE_LOCAL", "OPENCLAW"].includes(c.provider),
   );
   const activeRepos = repositories.filter((r) => r.isActive);
+  const firstSelectedRepoId = form.repositoryIds[0] || undefined;
+  const { data: branches = [] } = useRepoBranches(firstSelectedRepoId);
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -704,6 +710,32 @@ export default function SessionsPage() {
                       )}
                     </div>
                   </div>
+
+                  {form.repositoryIds.length > 0 && branches.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Branch</Label>
+                      <Select
+                        value={form.branch}
+                        onValueChange={(v) => setForm({ ...form, branch: v === "_default" ? "" : v })}
+                        disabled={configLocked}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Default branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_default">Default branch</SelectItem>
+                          {branches.map((b: { name: string; isDefault: boolean }) => (
+                            <SelectItem key={b.name} value={b.name}>
+                              {b.name}{b.isDefault ? " (default)" : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Branch to checkout when cloning the repository
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label>Integrations</Label>

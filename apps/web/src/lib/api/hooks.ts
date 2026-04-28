@@ -898,6 +898,21 @@ export function useRepositories(active?: boolean) {
   });
 }
 
+export function useRepoBranches(repoId: string | undefined) {
+  const getToken = useAuthToken();
+
+  return useQuery({
+    queryKey: ["repo-branches", repoId],
+    queryFn: async () => {
+      if (!repoId) return [];
+      const token = await getToken();
+      const { branches } = await api.repositories.listBranches(repoId, token);
+      return branches;
+    },
+    enabled: !!repoId,
+  });
+}
+
 export function useAvailableRepositories() {
   const getToken = useAuthToken();
 

@@ -590,6 +590,12 @@ export const api = {
         method: "POST",
         token,
       }),
+
+    listBranches: (id: string, token: string, search?: string) =>
+      request<{ branches: Array<{ name: string; sha: string; isDefault: boolean; isProtected?: boolean }> }>(
+        `/repositories/${id}/branches${search ? `?search=${encodeURIComponent(search)}` : ""}`,
+        { token },
+      ),
   },
 
   sessions: {

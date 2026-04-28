@@ -379,6 +379,7 @@ export class SessionsService {
       };
     }>,
     organizationId: string,
+    branchOverride?: string,
   ): Promise<RepoConfig[]> {
     const integrationIds = [
       ...new Set(repositories.map((sr) => sr.repository.integrationId)),
@@ -422,7 +423,7 @@ export class SessionsService {
       return {
         name: sr.repository.name,
         cloneUrl,
-        branch: sr.repository.defaultBranch,
+        branch: branchOverride || sr.repository.defaultBranch,
       };
     });
   }

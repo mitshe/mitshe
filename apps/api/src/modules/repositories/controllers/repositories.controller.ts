@@ -208,6 +208,21 @@ export class RepositoriesController {
     return { repository };
   }
 
+  @Get(':id/branches')
+  @ApiOperation({ summary: 'List branches for a repository' })
+  async listBranches(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Query('search') search?: string,
+  ) {
+    const branches = await this.repositoriesService.listBranches(
+      organizationId,
+      id,
+      search,
+    );
+    return { branches };
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update repository settings' })
   @ApiResponse({
