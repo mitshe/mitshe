@@ -47,31 +47,31 @@ Przylaczasz sie miedzy sesjami jak miedzy tabami. Kazda sesja ma swoj stan. Nic 
 
 ## Zadania do implementacji
 
-### Faza 1: Quick session from task/issue
+### Faza 1: Sesja z kontekstem taska
 
-**1.1 "Open in session" button na task detail page**
+**1.1 "Open in Session" na task detail page**
 - Task detail (`/tasks/:id`) — przycisk "Open in Session"
-- Automatycznie tworzy sesje z:
-  - Nazwa: task title
-  - Repo: z projektu taska
-  - Branch: nowy branch `feat/{task-key}-{slug}` lub istniejacy jesli podany
-  - Instructions: task description + acceptance criteria
-- Claude Code dostaje kontekst taska i wie co robic
-- Po ukonczeniu pracy sesja moze stworzyc PR bezposrednio
+- Otwiera **standardowy dialog tworzenia sesji** ale z pre-filled polami:
+  - Nazwa: task title (edytowalna)
+  - Instructions: task description + acceptance criteria (edytowalne)
+  - Projekt: z taska (jesli ma) — **sugestia**, nie wymuszenie
+  - Repo/snapshot/skills: user wybiera sam, nic nie jest automatyczne
+- User moze tez wybrac **"Add to existing session"** — dropdown z aktywnymi sesjami,
+  task instructions dopisuja sie do sesji (np. jako nowy CLAUDE.md section)
+- Logika: task moze wymagac 1 repo, 3 repo, albo sesje z snapshota — to user decyduje
 
 **1.2 "Open in session" z Jira/GitHub issue**
 - Gdy task jest zsynchronizowany z Jira/GitHub
-- Branch name generowany z issue key (np. `PROJ-42-auth-refactor`)
-- Jira status update po ukonczeniu (IN_PROGRESS -> IN_REVIEW)
+- Pre-fill: branch name hint z issue key (np. `PROJ-42-auth-refactor`) — edytowalny
+- Po ukonczeniu pracy user moze recznie update'owac status w Jira (lub workflow to zrobi)
 
 ### Faza 2: Code Review w sesji
 
 **2.1 "Review in session" na task/PR**
-- Przycisk "Review" tworzy sesje z:
-  - Branch: checkout PR branch
-  - Read-only mode sugerowany (ale nie wymuszony)
-  - Instructions: "Review this PR, check for bugs, security issues, performance"
-  - Claude Code robi review automatycznie
+- Przycisk "Review" otwiera dialog tworzenia sesji z:
+  - Branch: sugestia PR branch (z dropdownu branchy)
+  - Instructions: pre-filled "Review this PR, check for bugs, security issues, performance"
+  - User decyduje o reszcie konfiguracji
 - Przeglądarka pokazuje diff lub uruchomiona aplikacja do manualnego review
 
 **2.2 Review result → PR comment**
