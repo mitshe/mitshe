@@ -17,6 +17,7 @@ import {
   PanelLeft,
   X,
   Trash2,
+  GitPullRequest,
 } from "lucide-react";
 import {
   Tooltip,
@@ -47,6 +48,7 @@ import {
   useReadSessionFile,
   useDeleteSessionFile,
   useWriteSessionFile,
+  usePushAndCreatePR,
 } from "@/lib/api/hooks";
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
@@ -569,6 +571,26 @@ export default function SessionDetailPage() {
     }
   };
 
+  const pushAndPR = usePushAndCreatePR();
+
+  const handleCreatePR = async () => {
+    try {
+      const result = await pushAndPR.mutateAsync({
+        sessionId,
+        data: { title: session?.name },
+      });
+      toast.success("PR created", {
+        description: result.pr.title,
+        action: {
+          label: "Open",
+          onClick: () => window.open(result.pr.webUrl, "_blank"),
+        },
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create PR");
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await deleteSession.mutateAsync(sessionId);
@@ -684,6 +706,21 @@ export default function SessionDetailPage() {
                 </Tooltip>
               </TooltipProvider>
             </>
+          )}
+          {isRunning && session?.repositories && session.repositories.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCreatePR}
+              disabled={pushAndPR.isPending}
+            >
+              {pushAndPR.isPending ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <GitPullRequest className="w-4 h-4 mr-1" />
+              )}
+              Create PR
+            </Button>
           )}
           {isRunning && (
             <Button variant="outline" size="sm" onClick={handlePause}>

@@ -727,6 +727,21 @@ export const api = {
         `/sessions/${id}/browser`,
         { token },
       ),
+
+    pushAndCreatePR: (
+      id: string,
+      data: { title?: string; description?: string; targetBranch?: string },
+      token: string,
+    ) =>
+      request<{
+        branch: string;
+        pushResult: string;
+        pr: { id: number; title: string; webUrl: string; status: string };
+      }>(`/sessions/${id}/push-and-pr`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
   },
 
   snapshots: {

@@ -44,6 +44,7 @@ import {
   UserId,
 } from '../../../shared/decorators/organization.decorator';
 import { ApiRateLimit } from '../../../shared/decorators/throttle.decorator';
+import { AdapterFactoryService } from '../../../infrastructure/adapters/adapter-factory.service';
 
 @ApiTags('Sessions')
 @ApiBearerAuth('bearer')
@@ -57,6 +58,7 @@ export class SessionsController {
     private readonly terminalManager: TerminalManagerService,
     private readonly eventsGateway: EventsGateway,
     private readonly skillsService: SkillsService,
+    private readonly adapterFactory: AdapterFactoryService,
   ) {}
 
   /**
@@ -693,6 +695,73 @@ export class SessionsController {
       session.containerId,
     );
     return { statuses };
+  }
+
+  @Post(':id/push-and-pr')
+  @ApiOperation({ summary: 'Push changes and create a pull request from session' })
+  async pushAndCreatePR(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() body: { title?: string; description?: string; targetBranch?: string },
+  ) {
+    const session = await this.sessionsService.findOne(organizationId, id);
+
+    if (!session.containerId || session.status !== 'RUNNING') {
+      throw new BadRequestException('Session must be running');
+    }
+
+    if (!session.repositories || session.repositories.length === 0) {
+      throw new BadRequestException('Session has no repositories');
+    }
+
+    const repo = session.repositories[0];
+    const repoDir = `/workspace/${repo.repository.name}`;
+
+    // Get current branch name
+    const branchName = (
+      await this.containerService.execCommand(
+        session.containerId,
+        ['git', 'branch', '--show-current'],
+        repoDir,
+      )
+    ).trim();
+
+    if (!branchName) {
+      throw new BadRequestException('Could not determine current branch');
+    }
+
+    // Push the branch
+    const pushResult = await this.containerService.execCommand(
+      session.containerId,
+      ['git', 'push', '-u', 'origin', branchName],
+      repoDir,
+      30000,
+    );
+
+    // Create PR via git provider
+    const gitProvider =
+      await this.adapterFactory.createGitProviderFromIntegration(
+        organizationId,
+        repo.repository.integrationId,
+      );
+
+    const pr = await gitProvider.createMergeRequest(repo.repository.externalId, {
+      title: body.title || session.name,
+      description: body.description || `Created from mitshe session "${session.name}"`,
+      sourceBranch: branchName,
+      targetBranch: body.targetBranch || repo.repository.defaultBranch,
+    });
+
+    return {
+      branch: branchName,
+      pushResult: pushResult.trim(),
+      pr: {
+        id: pr.id,
+        title: pr.title,
+        webUrl: pr.webUrl,
+        status: pr.status,
+      },
+    };
   }
 
   @Get(':id/file')

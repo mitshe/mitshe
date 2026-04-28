@@ -1194,6 +1194,22 @@ export function useDeleteSession() {
   });
 }
 
+export function usePushAndCreatePR() {
+  const getToken = useAuthToken();
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      data,
+    }: {
+      sessionId: string;
+      data: { title?: string; description?: string; targetBranch?: string };
+    }) => {
+      const token = await getToken();
+      return api.sessions.pushAndCreatePR(sessionId, data, token);
+    },
+  });
+}
+
 export function useSessionBrowserInfo(sessionId: string, enabled: boolean) {
   const getToken = useAuthToken();
 
