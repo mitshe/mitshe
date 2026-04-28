@@ -232,15 +232,15 @@ export default function ChatPage() {
         <div className="flex-1 flex items-start justify-center pt-[18vh]">
           <div className="w-full max-w-2xl px-4 space-y-6">
             <div className="flex items-center justify-center gap-4">
-              <img src="/logo.svg" alt="mitshe" className="h-12 w-12" />
-              <h2 className="text-4xl font-light tracking-tight text-foreground/80">
+              <img src="/logo.svg" alt="mitshe" className="h-8 w-8 sm:h-12 sm:w-12" />
+              <h2 className="text-2xl sm:text-4xl font-light tracking-tight text-foreground/80">
                 {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
               </h2>
             </div>
 
             {inputBox}
 
-            <div className="flex flex-wrap justify-center gap-2 text-sm">
+            <div className="flex flex-wrap justify-center gap-2 text-xs sm:text-sm">
               {[
                 { text: "Connect GitHub", icon: <Plug className="h-3.5 w-3.5" /> },
                 { text: "Create a session", icon: <Terminal className="h-3.5 w-3.5" /> },
@@ -253,7 +253,7 @@ export default function ChatPage() {
                     setInputValue(prompt.text);
                     textareaRef.current?.focus();
                   }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-full border border-border hover:bg-muted/50 transition-all text-muted-foreground hover:text-foreground hover:border-primary/20"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border border-border hover:bg-muted/50 transition-all text-muted-foreground hover:text-foreground hover:border-primary/20"
                 >
                   {prompt.icon}
                   <span>{prompt.text}</span>
