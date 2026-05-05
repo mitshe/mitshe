@@ -18,6 +18,7 @@ import {
   X,
   Trash2,
   GitPullRequest,
+  Globe,
 } from "lucide-react";
 import {
   Tooltip,
@@ -130,14 +131,12 @@ export default function SessionDetailPage() {
         cmd: buildAgentCmd(),
       },
     ];
-    if (session.enableBrowser) {
-      initialTabs.push({
-        id: "browser",
-        title: "Browser",
-        type: "browser",
-        closeable: false,
-      });
-    }
+    initialTabs.push({
+      id: "browser",
+      title: "Browser",
+      type: "browser",
+      closeable: false,
+    });
     setTabs(initialTabs);
   }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
   const [activeTabId, setActiveTabId] = useState(agentTerminalId);
@@ -932,11 +931,23 @@ export default function SessionDetailPage() {
                     display: activeTabId === tab.id ? "block" : "none",
                   }}
                 >
-                  {isRunning ? (
+                  {isRunning && session?.enableBrowser ? (
                     <BrowserView sessionId={sessionId} />
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
-                      <p className="text-sm">Session must be running to use browser</p>
+                      <div className="text-center space-y-2">
+                        <Globe className="w-10 h-10 mx-auto opacity-30" />
+                        <p className="text-sm">
+                          {!isRunning
+                            ? "Session must be running to use browser"
+                            : "Browser not enabled for this session"}
+                        </p>
+                        {isRunning && !session?.enableBrowser && (
+                          <p className="text-xs opacity-60">
+                            Enable browser when creating a session to use Chromium
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
