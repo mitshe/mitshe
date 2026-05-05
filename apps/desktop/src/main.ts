@@ -54,6 +54,12 @@ function createMainWindow(url: string) {
     backgroundColor: '#2a2a35',
   });
 
+  const appIcon = nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.png'));
+  if (!appIcon.isEmpty()) {
+    mainWindow.setIcon(appIcon);
+    if (process.platform === 'darwin') app.dock.setIcon(appIcon);
+  }
+
   mainWindow.loadURL(url);
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   mainWindow.on('closed', () => { mainWindow = null; });
@@ -92,7 +98,7 @@ function showConnectScreen() {
 function createTray() {
   if (tray || !serverUrl) return;
 
-  const iconPath = path.join(__dirname, '..', 'assets', 'tray-icon.png');
+  const iconPath = path.join(__dirname, '..', 'assets', 'icon.png');
   let icon: Electron.NativeImage;
   try { icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 }); }
   catch { icon = nativeImage.createEmpty(); }
