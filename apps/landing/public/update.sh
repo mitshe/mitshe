@@ -7,40 +7,39 @@ YELLOW='\033[0;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo ""
-echo -e "${BOLD}  mitshe updater${NC}"
-echo ""
+printf "\n"
+printf "  ${BOLD}mitshe updater${NC}\n\n"
 
 if ! command -v docker &> /dev/null; then
-    echo -e "${RED}Docker is not installed.${NC}"
+    printf "  ${RED}Docker is not installed.${NC}\n"
     exit 1
 fi
 
 if ! docker info &> /dev/null; then
-    echo -e "${RED}Docker is not running.${NC} Start Docker Desktop and try again."
+    printf "  ${RED}Docker is not running.${NC} Start Docker Desktop and try again.\n"
     exit 1
 fi
 
-echo -e "${GREEN}✓${NC} Docker is running"
+printf "  ${GREEN}✓${NC} Docker is running\n"
 
 # Pull latest image
-echo "  Pulling latest image..."
+printf "  Pulling latest image...\n"
 docker pull ghcr.io/mitshe/mitshe:latest
 
 # Check if container exists
 if ! docker ps -a --filter name=^mitshe$ --format '{{.Names}}' | grep -q mitshe; then
-    echo -e "${YELLOW}No mitshe container found.${NC} Run the installer first:"
-    echo "  curl -fsSL https://mitshe.com/install.sh | sh"
+    printf "  ${YELLOW}No mitshe container found.${NC} Run the installer first:\n"
+    printf "  curl -fsSL https://mitshe.com/install.sh | sh\n"
     exit 1
 fi
 
 # Stop and remove old container
-echo "  Stopping old container..."
+printf "  Stopping old container...\n"
 docker stop mitshe 2>/dev/null || true
 docker rm mitshe 2>/dev/null || true
 
-# Get data volume info
-echo "  Starting updated container..."
+# Start updated container
+printf "  Starting updated container...\n"
 docker run -d \
     --name mitshe \
     -p 3000:3000 \
@@ -51,7 +50,7 @@ docker run -d \
     ghcr.io/mitshe/mitshe:latest > /dev/null
 
 # Wait for health
-echo "  Waiting for mitshe to start..."
+printf "  Waiting for mitshe to start...\n"
 for i in $(seq 1 30); do
     if curl -s http://localhost:3001/health > /dev/null 2>&1; then
         break
@@ -60,15 +59,10 @@ for i in $(seq 1 30); do
 done
 
 if curl -s http://localhost:3001/health > /dev/null 2>&1; then
-    echo ""
-    echo -e "${GREEN}✓ mitshe updated successfully!${NC}"
-    echo ""
-    echo -e "  Open: ${BOLD}http://localhost:3000${NC}"
-    echo "  Your data has been preserved."
-    echo ""
+    printf "\n  ${GREEN}✓ mitshe updated successfully!${NC}\n\n"
+    printf "  Open: ${BOLD}http://localhost:3000${NC}\n"
+    printf "  Your data has been preserved.\n\n"
 else
-    echo ""
-    echo -e "${YELLOW}mitshe is starting...${NC}"
-    echo "  Check logs: docker logs -f mitshe"
-    echo ""
+    printf "\n  ${YELLOW}mitshe is starting...${NC}\n"
+    printf "  Check logs: docker logs -f mitshe\n\n"
 fi
