@@ -6,6 +6,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 RED='\033[0;31m'
 NC='\033[0m'
+REPO="mitshe/mitshe"
 
 printf "\n"
 printf "  ${BOLD}mitshe updater${NC}\n\n"
@@ -59,10 +60,57 @@ for i in $(seq 1 30); do
 done
 
 if curl -s http://localhost:3001/health > /dev/null 2>&1; then
-    printf "\n  ${GREEN}✓ mitshe updated successfully!${NC}\n\n"
-    printf "  Open: ${BOLD}http://localhost:3000${NC}\n"
-    printf "  Your data has been preserved.\n\n"
+    printf "\n  ${GREEN}✓ mitshe server updated!${NC}\n\n"
 else
     printf "\n  ${YELLOW}mitshe is starting...${NC}\n"
     printf "  Check logs: docker logs -f mitshe\n\n"
 fi
+
+# Update desktop app
+printf "  Update desktop app? [y/N] "
+read -r UPDATE_DESKTOP < /dev/tty
+
+if [[ "$UPDATE_DESKTOP" =~ ^[Yy]$ ]]; then
+    printf "\n  Downloading latest desktop app...\n"
+
+    LATEST=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null)
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*\.dmg"' | head -1 | cut -d'"' -f4)
+        if [ -n "$URL" ]; then
+            TMPFILE="/tmp/mitshe-desktop.dmg"
+            curl -fsSL "$URL" -o "$TMPFILE"
+            # Close running app
+            osascript -e 'quit app "mitshe"' 2>/dev/null || true
+            sleep 1
+            printf "  Installing...\n"
+            hdiutil attach "$TMPFILE" -quiet
+            VOLUME=$(ls /Volumes | grep -i mitshe | head -1)
+            if [ -n "$VOLUME" ]; then
+                rm -rf /Applications/mitshe.app 2>/dev/null || true
+                cp -R "/Volumes/$VOLUME/mitshe.app" /Applications/ 2>/dev/null || cp -R "/Volumes/$VOLUME/"*.app /Applications/ 2>/dev/null
+                hdiutil detach "/Volumes/$VOLUME" -quiet 2>/dev/null
+                rm -f "$TMPFILE"
+                printf "  ${GREEN}✓${NC} Desktop app updated!\n"
+            else
+                printf "  ${YELLOW}DMG downloaded to $TMPFILE — open it manually.${NC}\n"
+            fi
+        else
+            printf "  ${YELLOW}No macOS build found.${NC} Download: https://github.com/${REPO}/releases\n"
+        fi
+
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        URL=$(echo "$LATEST" | grep -o '"browser_download_url": *"[^"]*\.AppImage"' | head -1 | cut -d'"' -f4)
+        if [ -n "$URL" ]; then
+            DEST="$HOME/.local/bin/mitshe"
+            curl -fsSL "$URL" -o "$DEST"
+            chmod +x "$DEST"
+            printf "  ${GREEN}✓${NC} Desktop app updated!\n"
+        else
+            printf "  ${YELLOW}No Linux build found.${NC} Download: https://github.com/${REPO}/releases\n"
+        fi
+    fi
+fi
+
+printf "\n  ${GREEN}✓ All done!${NC}\n"
+printf "  Open: ${BOLD}http://localhost:3000${NC}\n\n"
