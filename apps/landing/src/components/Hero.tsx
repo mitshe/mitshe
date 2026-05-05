@@ -45,7 +45,7 @@ function SessionPreview() {
 export default function Hero() {
   const [copied, setCopied] = useState(false);
 
-  const dockerCmd = "docker run -d --name mitshe -p 3000:3000 -p 3001:3001 -v mitshe-data:/build/data -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/mitshe/mitshe:latest";
+  const installCmd = "curl -fsSL https://mitshe.com/install.sh | sh";
 
   return (
     <section className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
@@ -99,14 +99,14 @@ export default function Hero() {
           <div
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#1a1a2e] border border-white/5 cursor-pointer group"
             onClick={() => {
-              navigator.clipboard.writeText(dockerCmd);
+              navigator.clipboard.writeText(installCmd);
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
           >
             <span className="text-white/20 text-xs">$</span>
             <code className="text-[11px] text-white/40 truncate flex-1 font-mono">
-              docker run -d --name mitshe -p 3000:3000 ... ghcr.io/mitshe/mitshe:latest
+              curl -fsSL https://mitshe.com/install.sh | sh
             </code>
             <span className="text-[10px] text-white/30 group-hover:text-white/60 transition-colors flex-shrink-0 px-2 py-1 rounded bg-white/5">
               {copied ? "Copied!" : "Copy"}

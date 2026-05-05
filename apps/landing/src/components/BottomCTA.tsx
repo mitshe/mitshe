@@ -5,6 +5,8 @@ import AnimateOnScroll from "./AnimateOnScroll";
 
 export default function BottomCTA() {
   const [copied, setCopied] = useState(false);
+  const [copiedInstall, setCopiedInstall] = useState(false);
+  const installCmd = "curl -fsSL https://mitshe.com/install.sh | sh";
   const dockerCmd = "docker run -d --name mitshe -p 3000:3000 -p 3001:3001 -v mitshe-data:/build/data -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/mitshe/mitshe:latest";
 
   const steps = [
@@ -30,21 +32,39 @@ export default function BottomCTA() {
         </AnimateOnScroll>
 
         <AnimateOnScroll delay={0.1}>
-          <div
-            className="flex items-center gap-3 px-5 py-4 rounded-xl bg-white/5 border border-white/10 cursor-pointer group mb-12 max-w-2xl mx-auto hover:border-white/20 transition-colors"
-            onClick={() => {
-              navigator.clipboard.writeText(dockerCmd);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
-          >
-            <span className="text-white/20 text-sm">$</span>
-            <code className="text-[12px] text-white/50 truncate flex-1 font-mono">
-              docker run -d --name mitshe -p 3000:3000 -p 3001:3001 ... ghcr.io/mitshe/mitshe:latest
-            </code>
-            <span className="text-[11px] text-white/30 group-hover:text-white/60 transition-colors flex-shrink-0 px-3 py-1.5 rounded-lg bg-white/5">
-              {copied ? "Copied!" : "Copy"}
-            </span>
+          <div className="max-w-2xl mx-auto mb-12 space-y-3">
+            <div
+              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-white/5 border border-white/10 cursor-pointer group hover:border-white/20 transition-colors"
+              onClick={() => {
+                navigator.clipboard.writeText(installCmd);
+                setCopiedInstall(true);
+                setTimeout(() => setCopiedInstall(false), 2000);
+              }}
+            >
+              <span className="text-white/20 text-sm">$</span>
+              <code className="text-[13px] text-white/60 truncate flex-1 font-mono">
+                curl -fsSL https://mitshe.com/install.sh | sh
+              </code>
+              <span className="text-[11px] text-white/30 group-hover:text-white/60 transition-colors flex-shrink-0 px-3 py-1.5 rounded-lg bg-white/5">
+                {copiedInstall ? "Copied!" : "Copy"}
+              </span>
+            </div>
+            <div
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer group hover:border-white/10 transition-colors"
+              onClick={() => {
+                navigator.clipboard.writeText(dockerCmd);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              <span className="text-white/15 text-xs">or</span>
+              <code className="text-[11px] text-white/30 truncate flex-1 font-mono">
+                docker run -d --name mitshe ... ghcr.io/mitshe/mitshe:latest
+              </code>
+              <span className="text-[10px] text-white/20 group-hover:text-white/40 transition-colors flex-shrink-0 px-2 py-1 rounded bg-white/5">
+                {copied ? "Copied!" : "Copy"}
+              </span>
+            </div>
           </div>
         </AnimateOnScroll>
 
