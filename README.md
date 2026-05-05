@@ -6,11 +6,20 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/KE2zm6njBf)
 
-Manage Claude Code sessions, automate workflows, and orchestrate AI coding agents — all from a single self-hosted dashboard. Each session runs in an isolated Docker container with full terminal and git access. Self-hosted, bring your own API keys.
+Manage Claude Code sessions, automate workflows, and orchestrate AI coding agents — all from a single self-hosted dashboard. Each session runs in an isolated Docker container with full terminal, browser, and git access. Self-hosted, bring your own API keys.
 
 ![mitshe overview](docs/tour.gif)
 
-## Quick start
+## Install
+
+```bash
+curl -fsSL https://mitshe.com/install.sh | sh
+```
+
+That's it. Opens **http://localhost:3000** when ready.
+
+<details>
+<summary>Manual install</summary>
 
 ```bash
 docker run -d \
@@ -19,58 +28,71 @@ docker run -d \
   -p 3001:3001 \
   -v mitshe-data:/build/data \
   -v /var/run/docker.sock:/var/run/docker.sock \
+  --restart unless-stopped \
   ghcr.io/mitshe/mitshe:latest
 ```
-
-Open **http://localhost:3000**, create an account, add your AI provider key.
-
-## Features
-
-- **Claude Code sessions** — isolated Docker containers with terminal, file editor, git access
-- **Workflow engine** — visual builder with triggers, AI actions, git operations, notifications
-- **Snapshots** — save a configured session state, spin up new sessions from it
-- **Skills** — reusable instructions injected as Claude Code slash commands
-- **Integrations** — GitHub, GitLab, Jira, Slack
-- **Multi-provider** — Claude, OpenAI, OpenRouter, Gemini, Groq (BYOK)
-- **Self-hosted** — your data, your keys, single Docker container with SQLite
+</details>
 
 ## Update
 
 ```bash
-docker stop mitshe && docker rm mitshe
+curl -fsSL https://mitshe.com/update.sh | sh
+```
+
+Your data is preserved in the `mitshe-data` Docker volume.
+
+<details>
+<summary>Manual update</summary>
+
+```bash
 docker pull ghcr.io/mitshe/mitshe:latest
+docker stop mitshe && docker rm mitshe
 docker run -d \
   --name mitshe \
   -p 3000:3000 \
   -p 3001:3001 \
   -v mitshe-data:/build/data \
   -v /var/run/docker.sock:/var/run/docker.sock \
+  --restart unless-stopped \
   ghcr.io/mitshe/mitshe:latest
 ```
+</details>
 
-Data persists in the `mitshe-data` volume.
+## Desktop App
+
+Native desktop app for macOS, Windows, and Linux. Download from [Releases](https://github.com/mitshe/mitshe/releases).
+
+Connect to your local or remote mitshe instance. Adds native file picker for mounting local projects into sessions, tray icon, and keyboard shortcuts.
+
+Requires a running mitshe instance (see Install above).
+
+## Features
+
+- **Claude Code sessions** — isolated Docker containers with terminal, browser, file editor, git
+- **Browser streaming** — live Chromium preview in sessions via noVNC (Playwright E2E testing)
+- **Branch management** — select branch when creating sessions, push & create PRs from session
+- **Workflow engine** — visual builder with triggers, AI actions, git operations, notifications
+- **Snapshots** — save a configured session state, spin up new sessions from it
+- **Skills** — reusable instructions as Claude Code slash commands, import from GitHub repos
+- **Integrations** — GitHub, GitLab, Jira, Slack
+- **Multi-provider** — Claude, OpenAI, OpenRouter, Gemini, Groq (BYOK)
+- **Self-hosted** — your data, your keys, single Docker container with SQLite
 
 ## Develop
 
 ```bash
-# Prerequisites: Node.js 20+, pnpm 9+, Docker, just
 git clone https://github.com/mitshe/mitshe.git
 cd mitshe
 just setup
 
-# Configure
 cp .env.example .env
 cp apps/api/.env.example apps/api/.env
 
-# Build executor image (required for sessions and workflows)
 just executor-build
-
-# Start
 just dev
 ```
 
-App: http://localhost:3000 <br />
-API: http://localhost:3001 
+App: http://localhost:3000 | API: http://localhost:3001 | Run `just` for all commands.
 
 ## License
 
