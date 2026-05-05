@@ -186,7 +186,7 @@ export default function SessionsPage() {
   const pauseSession = usePauseSession();
   const stopSession = useStopSession();
 
-  // Auto-refresh list when session status changes
+  // Auto-refresh list when session status changes (WebSocket)
   useEffect(() => {
     if (!socket) return;
     const handler = () => {
@@ -195,6 +195,16 @@ export default function SessionsPage() {
     socket.on("session:status", handler);
     return () => { socket.off("session:status", handler); };
   }, [socket, queryClient]);
+
+  // Fallback polling when sessions are CREATING (WebSocket may miss it)
+  const hasCreatingSessions = sessions.some((s) => s.status === "CREATING");
+  useEffect(() => {
+    if (!hasCreatingSessions) return;
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [hasCreatingSessions, queryClient]);
 
   const emptyForm = {
     name: "",

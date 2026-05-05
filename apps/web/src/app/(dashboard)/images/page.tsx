@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   useSnapshots,
@@ -42,6 +43,16 @@ import type { Snapshot } from "@mitshe/types";
 
 export default function SnapshotsPage() {
   const { data: snapshots = [], isLoading } = useSnapshots();
+  const hasCreating = snapshots.some((s: { status: string }) => s.status === "CREATING");
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!hasCreating) return;
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["snapshots"] });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [hasCreating, queryClient]);
   const createSnapshot = useCreateSnapshot();
   const updateSnapshot = useUpdateSnapshot();
   const deleteSnapshot = useDeleteSnapshot();
@@ -101,10 +112,13 @@ export default function SnapshotsPage() {
     return `${val.toFixed(1)} ${units[i]}`;
   }
 
-  function statusBadge(status: string) {
+  function statusBadge(status: string, createdAt?: string) {
     switch (status) {
-      case "CREATING":
-        return <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />Creating</Badge>;
+      case "CREATING": {
+        const elapsed = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000) : 0;
+        const elapsedStr = elapsed > 60 ? `${Math.floor(elapsed / 60)}m ${elapsed % 60}s` : `${elapsed}s`;
+        return <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />Creating ({elapsedStr})</Badge>;
+      }
       case "READY":
         return <Badge variant="default">Ready</Badge>;
       case "FAILED":
@@ -220,7 +234,7 @@ export default function SnapshotsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">{snap.name}</span>
-                  {statusBadge(snap.status)}
+                  {statusBadge(snap.status, snap.createdAt)}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                   {(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession && (
