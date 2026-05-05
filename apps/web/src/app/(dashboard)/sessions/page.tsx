@@ -121,7 +121,7 @@ const statusConfig: Record<
     icon: <Pause className="w-3 h-3" />,
   },
   COMPLETED: {
-    label: "Completed",
+    label: "Stopped",
     variant: "outline",
     icon: <Square className="w-3 h-3" />,
   },
@@ -1071,7 +1071,7 @@ export default function SessionsPage() {
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="RUNNING">Running</SelectItem>
             <SelectItem value="PAUSED">Paused</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="COMPLETED">Stopped</SelectItem>
             <SelectItem value="FAILED">Failed</SelectItem>
             <SelectItem value="CREATING">Creating</SelectItem>
           </SelectContent>
@@ -1092,7 +1092,7 @@ export default function SessionsPage() {
         </div>
         <div className="flex items-center gap-1.5">
           <CheckCircle2 className="h-4 w-4 text-blue-500" />
-          <span>Completed</span>
+          <span>Stopped</span>
           <span className="font-semibold text-foreground">{completedSessions}</span>
         </div>
         <div className="flex items-center gap-1.5">

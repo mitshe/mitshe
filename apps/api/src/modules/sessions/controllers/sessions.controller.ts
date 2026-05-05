@@ -173,6 +173,22 @@ export class SessionsController {
       }
     });
 
+    // Timeout: if session is still CREATING after 5 minutes, mark as FAILED
+    setTimeout(async () => {
+      try {
+        const s = await this.sessionsService.findOneById(session.id);
+        if (s && s.status === 'CREATING') {
+          await this.sessionsService.updateStatus(session.id, 'FAILED');
+          this.eventsGateway.emitSessionStatus(
+            organizationId,
+            session.id,
+            'FAILED',
+            'Session creation timed out after 5 minutes',
+          );
+        }
+      } catch { /* session may have been deleted */ }
+    }, 300000);
+
     return { session };
   }
 
@@ -227,12 +243,17 @@ export class SessionsController {
       throw new BadRequestException('Session is not running');
     }
 
-    const containerIp = await this.containerService.getContainerIp(
-      session.containerId,
-    );
+    let containerIp: string | null = null;
+    for (let i = 0; i < 3; i++) {
+      containerIp = await this.containerService.getContainerIp(
+        session.containerId,
+      );
+      if (containerIp) break;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
 
     if (!containerIp) {
-      throw new BadRequestException('Could not resolve container address');
+      throw new BadRequestException('Could not resolve container address. Container may still be starting.');
     }
 
     return {
@@ -515,7 +536,7 @@ export class SessionsController {
 
   @Post(':id/stop')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Stop all terminals (container stays for resume)' })
+  @ApiOperation({ summary: 'Stop session and its container' })
   async stop(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
@@ -526,6 +547,10 @@ export class SessionsController {
     }
 
     this.terminalManager.closeByPrefix(`${id}:`);
+
+    if (session.containerId) {
+      await this.containerService.stopContainer(session.containerId);
+    }
 
     await this.sessionsService.updateStatus(id, 'COMPLETED');
     this.eventsGateway.emitSessionStatus(organizationId, id, 'COMPLETED');

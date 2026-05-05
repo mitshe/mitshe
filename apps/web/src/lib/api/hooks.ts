@@ -1220,8 +1220,8 @@ export function useSessionBrowserInfo(sessionId: string, enabled: boolean) {
       return api.sessions.getBrowserInfo(sessionId, token);
     },
     enabled,
-    retry: 3,
-    retryDelay: 2000,
+    retry: 10,
+    retryDelay: (attempt) => Math.min(2000 * Math.pow(1.5, attempt), 15000),
   });
 }
 

@@ -184,6 +184,13 @@ export class SessionsService {
     });
   }
 
+  async findOneById(id: string) {
+    return this.prisma.agentSession.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+  }
+
   async findOne(organizationId: string, id: string) {
     const session = await this.prisma.agentSession.findFirst({
       where: { id, organizationId },

@@ -152,6 +152,19 @@ export class ImagesService {
   async remove(organizationId: string, id: string) {
     const snapshot = await this.findOne(organizationId, id);
 
+    const activeSessions = await this.prisma.agentSession.count({
+      where: {
+        baseImageId: id,
+        status: { in: ['CREATING', 'RUNNING', 'PAUSED'] },
+      },
+    });
+
+    if (activeSessions > 0) {
+      throw new BadRequestException(
+        `Cannot delete snapshot — ${activeSessions} active session(s) are using it. Stop them first.`,
+      );
+    }
+
     if (snapshot.dockerImage) {
       try {
         await this.containerService.removeImage(snapshot.dockerImage as string);
