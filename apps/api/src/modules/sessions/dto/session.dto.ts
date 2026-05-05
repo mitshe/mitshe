@@ -95,7 +95,9 @@ export class CreateSessionDto {
 
   @IsBoolean()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Mount host SSH keys into session (read-only)' })
+  @ApiPropertyOptional({
+    description: 'Mount host SSH keys into session (read-only)',
+  })
   mountSsh?: boolean;
 }
 

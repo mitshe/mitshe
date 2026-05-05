@@ -254,13 +254,19 @@ export class SessionContainerService implements OnModuleInit {
     try {
       await this.execCommand(
         containerId,
-        ['bash', '-c', `mkdir -p /workspace/project && if [ -d /workspace/local ]; then rsync -a --exclude='node_modules' --exclude='.git' --exclude='vendor' --exclude='.next' --exclude='dist' --exclude='build' --exclude='__pycache__' --exclude='.cache' --exclude='.venv' --exclude='target' /workspace/local/ /workspace/project/ && chown -R executor:executor /workspace/project; fi`],
+        [
+          'bash',
+          '-c',
+          `mkdir -p /workspace/project && if [ -d /workspace/local ]; then rsync -a --exclude='node_modules' --exclude='.git' --exclude='vendor' --exclude='.next' --exclude='dist' --exclude='build' --exclude='__pycache__' --exclude='.cache' --exclude='.venv' --exclude='target' /workspace/local/ /workspace/project/ && chown -R executor:executor /workspace/project; fi`,
+        ],
         '/workspace',
         600000, // 10 min timeout for large projects
       );
       this.logger.log('Copied local mount to /workspace/project for snapshot');
     } catch (err) {
-      this.logger.warn(`Could not copy local mount for snapshot: ${(err as Error).message}`);
+      this.logger.warn(
+        `Could not copy local mount for snapshot: ${(err as Error).message}`,
+      );
     }
 
     await container.commit({

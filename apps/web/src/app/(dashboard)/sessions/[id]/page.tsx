@@ -11,7 +11,6 @@ import {
   Square,
   ArrowLeft,
   Radio,
-  Plus,
   Info,
   Terminal as TerminalIcon,
   PanelLeft,

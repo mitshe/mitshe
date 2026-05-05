@@ -41,6 +41,28 @@ import {
 } from "lucide-react";
 import type { Snapshot } from "@mitshe/types";
 
+function CreatingBadge({ createdAt }: { createdAt?: string }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!createdAt) return;
+    const start = new Date(createdAt).getTime();
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  const elapsedStr = elapsed > 60 ? `${Math.floor(elapsed / 60)}m ${elapsed % 60}s` : `${elapsed}s`;
+
+  return (
+    <Badge variant="secondary">
+      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+      Creating ({elapsedStr})
+    </Badge>
+  );
+}
+
 export default function SnapshotsPage() {
   const { data: snapshots = [], isLoading } = useSnapshots();
   const hasCreating = snapshots.some((s: { status: string }) => s.status === "CREATING");
@@ -114,11 +136,8 @@ export default function SnapshotsPage() {
 
   function statusBadge(status: string, createdAt?: string) {
     switch (status) {
-      case "CREATING": {
-        const elapsed = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000) : 0;
-        const elapsedStr = elapsed > 60 ? `${Math.floor(elapsed / 60)}m ${elapsed % 60}s` : `${elapsed}s`;
-        return <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />Creating ({elapsedStr})</Badge>;
-      }
+      case "CREATING":
+        return <CreatingBadge createdAt={createdAt} />;
       case "READY":
         return <Badge variant="default">Ready</Badge>;
       case "FAILED":
