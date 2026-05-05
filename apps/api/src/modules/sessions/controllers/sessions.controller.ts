@@ -143,6 +143,7 @@ export class SessionsController {
           provider: session.aiCredential?.provider,
           enableDocker: session.enableDocker,
           enableBrowser: session.enableBrowser,
+          localPath: dto.localPath,
           environment: envConfig,
           integrations:
             integrationConfigs.length > 0 ? integrationConfigs : undefined,

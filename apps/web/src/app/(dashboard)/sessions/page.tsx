@@ -209,6 +209,7 @@ export default function SessionsPage() {
     baseImageId: "",
     skillIds: [] as string[],
     instructions: "",
+    localPath: "",
   };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -301,6 +302,7 @@ export default function SessionsPage() {
       baseImageId: session.baseImageId || "",
       skillIds: [] as string[],
       instructions: session.instructions || "",
+      localPath: "",
     };
     setEditingId(session.id);
     setEditingStatus(session.status);
@@ -383,6 +385,7 @@ export default function SessionsPage() {
           skillIds: form.skillIds.length > 0 ? form.skillIds : undefined,
           instructions: form.instructions || undefined,
           branch: form.branch || undefined,
+          localPath: form.localPath || undefined,
         });
         toast.success("Session created");
         setIsDialogOpen(false);
@@ -676,13 +679,13 @@ export default function SessionsPage() {
                         onClick={async () => {
                           const folderPath = await selectLocalFolder();
                           if (folderPath) {
-                            setForm({ ...form, name: form.name || folderPath.split("/").pop() || "Local Project" });
-                            toast.success(`Selected: ${folderPath}`);
+                            const folderName = folderPath.split("/").pop() || "Local Project";
+                            setForm({ ...form, localPath: folderPath, name: form.name || folderName });
                           }
                         }}
                       >
                         <FolderOpen className="w-4 h-4 mr-2" />
-                        {form.name && form.name !== "" ? form.name : "Choose folder..."}
+                        {form.localPath || "Choose folder..."}
                       </Button>
                       <p className="text-xs text-muted-foreground">
                         Mount a local folder into the session workspace

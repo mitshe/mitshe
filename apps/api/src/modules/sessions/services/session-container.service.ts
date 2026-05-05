@@ -30,6 +30,7 @@ export interface SessionContainerConfig {
    * Defaults to the configured executor image.
    */
   image?: string;
+  localPath?: string;
 }
 
 /**
@@ -118,9 +119,11 @@ export class SessionContainerService implements OnModuleInit {
       HostConfig: {
         Binds: [
           `mitshe-executor-home-${config.organizationId}:/home/executor`,
-          // DinD: dedicated Docker data volume per session (isolated daemon)
           ...(config.enableDocker
             ? [`mitshe-dind-${config.sessionId}:/var/lib/docker`]
+            : []),
+          ...(config.localPath
+            ? [`${config.localPath}:/workspace/local:rw`]
             : []),
         ],
         Memory: (config.environment?.memoryMb || 4096) * 1024 * 1024,

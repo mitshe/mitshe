@@ -82,6 +82,7 @@ export interface CreateSessionDto {
   skillIds?: string[];
   instructions?: string;
   branch?: string;
+  localPath?: string;
 }
 
 export interface UpdateSessionMetadataDto {

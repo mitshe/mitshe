@@ -24,7 +24,7 @@
   },
   "build": {
     "appId": "com.mitshe.desktop",
-    "productName": "mitshe",
+    "productName": "mitshe Desktop",
     "directories": {
       "output": "release"
     },

@@ -85,6 +85,13 @@ export class CreateSessionDto {
     description: 'Branch to checkout (overrides repo default)',
   })
   branch?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Local filesystem path to mount into /workspace/local',
+  })
+  localPath?: string;
 }
 
 export class UpdateSessionMetadataDto {
