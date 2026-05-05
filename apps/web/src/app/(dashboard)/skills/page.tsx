@@ -283,7 +283,7 @@ export default function SkillsPage() {
             <div
               key={skill.id}
               className="group flex items-center gap-3 px-4 py-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => selectMode ? toggleSelect(skill.id) : openEdit(skill)}
+              onClick={() => selectMode ? toggleSelect(skill.id) : !skill.isSystem && openEdit(skill)}
             >
               {selectMode ? (
                 <input
@@ -299,6 +299,11 @@ export default function SkillsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">{skill.name}</span>
+                  {skill.isSystem && (
+                    <Badge variant="outline" className="text-[10px]">
+                      Built-in
+                    </Badge>
+                  )}
                   {skill.category && (
                     <Badge variant="secondary" className="text-[10px]">
                       {skill.category}

@@ -3,9 +3,11 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { CreateSkillDto, UpdateSkillDto } from '../dto/skill.dto';
+import { getSystemSkills } from '../system';
 
 interface GitHubTreeItem {
   path: string;
@@ -19,10 +21,51 @@ interface GitHubFileResponse {
 }
 
 @Injectable()
-export class SkillsService {
+export class SkillsService implements OnModuleInit {
   private readonly logger = new Logger(SkillsService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit() {
+    await this.seedSystemSkills();
+  }
+
+  private async seedSystemSkills() {
+    const systemSkills = getSystemSkills();
+    let seeded = 0;
+
+    for (const skill of systemSkills) {
+      const existing = await this.prisma.skill.findFirst({
+        where: { name: skill.name, isSystem: true },
+      });
+
+      if (existing) {
+        await this.prisma.skill.update({
+          where: { id: existing.id },
+          data: {
+            description: skill.description,
+            category: skill.category,
+            instructions: skill.instructions,
+          },
+        });
+      } else {
+        await this.prisma.skill.create({
+          data: {
+            name: skill.name,
+            description: skill.description,
+            category: skill.category,
+            instructions: skill.instructions,
+            isSystem: true,
+          },
+        });
+        seeded++;
+      }
+    }
+
+    if (seeded > 0) {
+      this.logger.log(`Seeded ${seeded} system skill(s)`);
+    }
+  }
 
   async create(organizationId: string, userId: string, dto: CreateSkillDto) {
     return this.prisma.skill.create({
