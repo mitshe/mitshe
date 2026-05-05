@@ -223,10 +223,6 @@ export class SessionsController {
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 
-    if (!session.enableBrowser) {
-      throw new BadRequestException('Browser is not enabled for this session');
-    }
-
     if (session.status !== 'RUNNING' || !session.containerId) {
       throw new BadRequestException('Session is not running');
     }

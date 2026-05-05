@@ -931,22 +931,13 @@ export default function SessionDetailPage() {
                     display: activeTabId === tab.id ? "block" : "none",
                   }}
                 >
-                  {isRunning && session?.enableBrowser ? (
+                  {isRunning ? (
                     <BrowserView sessionId={sessionId} />
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center space-y-2">
                         <Globe className="w-10 h-10 mx-auto opacity-30" />
-                        <p className="text-sm">
-                          {!isRunning
-                            ? "Session must be running to use browser"
-                            : "Browser not enabled for this session"}
-                        </p>
-                        {isRunning && !session?.enableBrowser && (
-                          <p className="text-xs opacity-60">
-                            Enable browser when creating a session to use Chromium
-                          </p>
-                        )}
+                        <p className="text-sm">Session must be running to use browser</p>
                       </div>
                     </div>
                   )}
