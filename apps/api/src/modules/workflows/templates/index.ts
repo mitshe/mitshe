@@ -60,6 +60,21 @@ import {
   SPRINT_PLANNER_METADATA,
 } from './sprint-planner.workflow';
 
+import {
+  FEATURE_DEVELOPMENT_WORKFLOW,
+  FEATURE_DEVELOPMENT_METADATA,
+} from './feature-development.workflow';
+
+import {
+  CODE_REVIEW_ON_PR_WORKFLOW,
+  CODE_REVIEW_ON_PR_METADATA,
+} from './code-review-on-pr.workflow';
+
+import {
+  E2E_TEST_RUNNER_WORKFLOW,
+  E2E_TEST_RUNNER_METADATA,
+} from './e2e-test-runner.workflow';
+
 export {
   AI_JIRA_DEVELOPER_WORKFLOW,
   AI_JIRA_DEVELOPER_METADATA,
@@ -83,6 +98,12 @@ export {
   CODE_IMPROVEMENT_SUGGESTIONS_METADATA,
   SPRINT_PLANNER_WORKFLOW,
   SPRINT_PLANNER_METADATA,
+  FEATURE_DEVELOPMENT_WORKFLOW,
+  FEATURE_DEVELOPMENT_METADATA,
+  CODE_REVIEW_ON_PR_WORKFLOW,
+  CODE_REVIEW_ON_PR_METADATA,
+  E2E_TEST_RUNNER_WORKFLOW,
+  E2E_TEST_RUNNER_METADATA,
 };
 
 // Template registry for easy lookup
@@ -130,6 +151,18 @@ export const WORKFLOW_TEMPLATES = {
   'sprint-planner': {
     workflow: SPRINT_PLANNER_WORKFLOW,
     metadata: SPRINT_PLANNER_METADATA,
+  },
+  'feature-development': {
+    workflow: FEATURE_DEVELOPMENT_WORKFLOW,
+    metadata: FEATURE_DEVELOPMENT_METADATA,
+  },
+  'code-review-on-pr': {
+    workflow: CODE_REVIEW_ON_PR_WORKFLOW,
+    metadata: CODE_REVIEW_ON_PR_METADATA,
+  },
+  'e2e-test-runner': {
+    workflow: E2E_TEST_RUNNER_WORKFLOW,
+    metadata: E2E_TEST_RUNNER_METADATA,
   },
 } as const;
 
