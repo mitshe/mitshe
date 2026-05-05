@@ -1,3 +1,5 @@
+> DONE
+
 # 05 — E2E Testing (Chrome/Playwright + Live Preview)
 
 ## Cel

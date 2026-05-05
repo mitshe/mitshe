@@ -67,8 +67,7 @@ Output complete, runnable test files.`,
       name: 'Analyze Test Results',
       position: { x: 700, y: 200 },
       config: {
-        systemPrompt:
-          'You are a QA analyst. Summarize test results concisely.',
+        systemPrompt: 'You are a QA analyst. Summarize test results concisely.',
         prompt: `Analyze the E2E test plan for {{nodes.get_repo.name}}:
 
 {{nodes.ai_generate_tests.content}}

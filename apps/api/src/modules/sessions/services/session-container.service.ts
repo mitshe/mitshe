@@ -223,8 +223,7 @@ export class SessionContainerService implements OnModuleInit {
     try {
       const container = this.docker.getContainer(containerId);
       const info = await container.inspect();
-      const networkName =
-        process.env.DOCKER_NETWORK || 'bridge';
+      const networkName = process.env.DOCKER_NETWORK || 'bridge';
       const network = info.NetworkSettings.Networks[networkName];
       return network?.IPAddress || null;
     } catch {

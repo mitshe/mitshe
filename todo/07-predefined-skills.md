@@ -1,3 +1,5 @@
+> DONE
+
 # 07 — Predefined Skills (System Skills)
 
 ## Cel

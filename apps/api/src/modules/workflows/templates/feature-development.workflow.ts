@@ -41,7 +41,8 @@ export const FEATURE_DEVELOPMENT_WORKFLOW: WorkflowDefinition = {
       position: { x: 500, y: 200 },
       config: {
         repositoryId: '{{vars.repository_id}}',
-        branchName: '{{vars.branch_prefix}}/{{trigger.taskKey || "feature"}}-{{trigger.timestamp}}',
+        branchName:
+          '{{vars.branch_prefix}}/{{trigger.taskKey || "feature"}}-{{trigger.timestamp}}',
         sourceBranch: '{{vars.base_branch}}',
       },
     },

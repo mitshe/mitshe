@@ -698,11 +698,14 @@ export class SessionsController {
   }
 
   @Post(':id/push-and-pr')
-  @ApiOperation({ summary: 'Push changes and create a pull request from session' })
+  @ApiOperation({
+    summary: 'Push changes and create a pull request from session',
+  })
   async pushAndCreatePR(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
-    @Body() body: { title?: string; description?: string; targetBranch?: string },
+    @Body()
+    body: { title?: string; description?: string; targetBranch?: string },
   ) {
     const session = await this.sessionsService.findOne(organizationId, id);
 
@@ -745,12 +748,16 @@ export class SessionsController {
         repo.repository.integrationId,
       );
 
-    const pr = await gitProvider.createMergeRequest(repo.repository.externalId, {
-      title: body.title || session.name,
-      description: body.description || `Created from mitshe session "${session.name}"`,
-      sourceBranch: branchName,
-      targetBranch: body.targetBranch || repo.repository.defaultBranch,
-    });
+    const pr = await gitProvider.createMergeRequest(
+      repo.repository.externalId,
+      {
+        title: body.title || session.name,
+        description:
+          body.description || `Created from mitshe session "${session.name}"`,
+        sourceBranch: branchName,
+        targetBranch: body.targetBranch || repo.repository.defaultBranch,
+      },
+    );
 
     return {
       branch: branchName,

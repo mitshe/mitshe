@@ -1,3 +1,5 @@
+> DONE
+
 # 06 — Landing Page Rework
 
 ## Problem

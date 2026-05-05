@@ -201,9 +201,11 @@ Trigger: webhook (PR updated)
 7. **Code Review flow** (Faza 2) — niszowe ale mocne
 
 ## Definition of Done (MVP)
-- [ ] Branch selector przy tworzeniu sesji (dropdown z branchami)
-- [ ] "Open in session" z task detail page
-- [ ] Browser tab w session detail (noVNC)
-- [ ] Push + Create PR z session detail
+- [x] Branch selector przy tworzeniu sesji (dropdown z branchami)
+- [x] "Open in session" z task detail page
+- [x] Browser tab w session detail (noVNC)
+- [x] Push + Create PR z session detail
 - [ ] Branch status widoczny na session list
-- [ ] Min. 1 workflow template (Feature Development)
+- [x] Min. 1 workflow template (Feature Development)
+- [x] 3 workflow templates (Feature Dev, Code Review, E2E Test Runner)
+- [x] 6 predefined system skills

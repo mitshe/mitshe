@@ -81,7 +81,9 @@ export class CreateSessionDto {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Branch to checkout (overrides repo default)' })
+  @ApiPropertyOptional({
+    description: 'Branch to checkout (overrides repo default)',
+  })
   branch?: string;
 }
 
