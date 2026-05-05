@@ -1,0 +1,130 @@
+name: Desktop Release
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mitshe/types build
+      - run: pnpm --filter @mitshe/api build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: |
+            apps/api/dist/
+            apps/api/prisma/
+            apps/api/package.json
+            apps/api/node_modules/
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mitshe/types build
+      - run: pnpm --filter @mitshe/web build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-standalone
+          path: apps/web/.next/standalone/
+
+  package-mac:
+    needs: [build-api, build-web]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - uses: actions/download-artifact@v4
+        with: { name: api-dist, path: apps/desktop/resources/api }
+      - uses: actions/download-artifact@v4
+        with: { name: web-standalone, path: apps/desktop/resources/web/.next/standalone }
+      - run: cd apps/desktop && pnpm install
+      - run: cd apps/desktop && pnpm package:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-mac
+          path: apps/desktop/release/*.dmg
+
+  package-windows:
+    needs: [build-api, build-web]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - uses: actions/download-artifact@v4
+        with: { name: api-dist, path: apps/desktop/resources/api }
+      - uses: actions/download-artifact@v4
+        with: { name: web-standalone, path: apps/desktop/resources/web/.next/standalone }
+      - run: cd apps/desktop && pnpm install
+      - run: cd apps/desktop && pnpm package:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-win
+          path: apps/desktop/release/*.exe
+
+  package-linux:
+    needs: [build-api, build-web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - uses: actions/download-artifact@v4
+        with: { name: api-dist, path: apps/desktop/resources/api }
+      - uses: actions/download-artifact@v4
+        with: { name: web-standalone, path: apps/desktop/resources/web/.next/standalone }
+      - run: cd apps/desktop && pnpm install
+      - run: cd apps/desktop && pnpm package:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: apps/desktop/release/*.AppImage
+
+  release:
+    needs: [package-mac, package-windows, package-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: desktop-mac, path: release }
+      - uses: actions/download-artifact@v4
+        with: { name: desktop-win, path: release }
+      - uses: actions/download-artifact@v4
+        with: { name: desktop-linux, path: release }
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          draft: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
