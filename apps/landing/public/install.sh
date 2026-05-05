@@ -94,7 +94,7 @@ fi
 # Ask about desktop app
 echo ""
 echo -ne "  Install desktop app? [y/N] "
-read -r INSTALL_DESKTOP
+read -r INSTALL_DESKTOP < /dev/tty
 
 if [[ "$INSTALL_DESKTOP" =~ ^[Yy]$ ]]; then
     echo ""
