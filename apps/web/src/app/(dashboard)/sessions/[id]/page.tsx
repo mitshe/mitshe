@@ -668,14 +668,6 @@ export default function SessionDetailPage() {
         <div className="flex items-center gap-2">
           {isRunning && (
             <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleNewTerminal}
-                title="New Terminal"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -858,6 +850,7 @@ export default function SessionDetailPage() {
             onCloseOthers={handleCloseOtherTabs}
             onCloseAll={handleCloseAllFileTabs}
             onRename={handleRenameTab}
+            onNewTerminal={isRunning ? handleNewTerminal : undefined}
           />
 
           {/* Tab Content */}

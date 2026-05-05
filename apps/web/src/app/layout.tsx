@@ -24,8 +24,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "mitshe - AI Workflow Automation",
-  description: "AI-powered workflow automation platform",
+  title: "mitshe",
+  description: "Workspace manager for AI coding agents",
 };
 
 function getAuthMode(): AuthMode {

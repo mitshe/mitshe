@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Terminal as TerminalIcon, FileText, Globe } from "lucide-react";
+import { X, Terminal as TerminalIcon, FileText, Globe, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { showContextMenu } from "./context-menu";
 
@@ -22,6 +22,7 @@ export function TabBar({
   onCloseOthers,
   onCloseAll,
   onRename,
+  onNewTerminal,
 }: {
   tabs: Tab[];
   activeTabId: string;
@@ -30,6 +31,7 @@ export function TabBar({
   onCloseOthers?: (id: string) => void;
   onCloseAll?: () => void;
   onRename?: (id: string) => void;
+  onNewTerminal?: () => void;
 }) {
   return (
     <div className="flex items-center border-b bg-background overflow-x-auto shrink-0">
@@ -124,6 +126,15 @@ export function TabBar({
           )}
         </div>
       ))}
+      {onNewTerminal && (
+        <button
+          onClick={onNewTerminal}
+          className="flex items-center justify-center w-8 h-full shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          title="New Terminal"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 }
