@@ -12,6 +12,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { autoUpdater } from 'electron-updater';
 
+app.name = 'mitshe';
+
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let serverUrl: string | null = null;
