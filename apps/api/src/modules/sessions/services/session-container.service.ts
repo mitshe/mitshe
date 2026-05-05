@@ -82,7 +82,7 @@ export class SessionContainerService implements OnModuleInit {
       Cmd: [
         `chown -R executor:executor /home/executor 2>/dev/null; ` +
         `if [ -d /var/lib/docker ]; then dockerd &>/var/log/dockerd.log & for i in $(seq 1 30); do docker info &>/dev/null && break || sleep 1; done; fi; ` +
-        `if command -v Xvfb >/dev/null 2>&1; then Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 & sleep 1; x11vnc -display :99 -forever -nopw -shared -rfbport 5900 >/dev/null 2>&1 & /opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 & fi; ` +
+        `Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 & sleep 1; x11vnc -display :99 -forever -nopw -shared -rfbport 5900 >/dev/null 2>&1 & /opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 & ` +
         (config.environment?.setupScript
           ? `echo "$SETUP_SCRIPT_B64" | base64 -d > /tmp/.setup.sh && chmod +x /tmp/.setup.sh && su -s /bin/bash executor -c "bash /tmp/.setup.sh" && rm -f /tmp/.setup.sh; `
           : '') +
