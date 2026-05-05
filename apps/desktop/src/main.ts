@@ -26,8 +26,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'mitshe',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    trafficLightPosition: { x: 16, y: 16 },
+    titleBarStyle: 'default',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,

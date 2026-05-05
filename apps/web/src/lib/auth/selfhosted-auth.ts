@@ -82,8 +82,10 @@ class SelfhostedAuthService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Registration failed");
+      const text = await response.text();
+      let message = "Registration failed";
+      try { message = JSON.parse(text).message || message; } catch { message = text || message; }
+      throw new Error(message);
     }
 
     const result = await response.json();
@@ -113,8 +115,10 @@ class SelfhostedAuthService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Login failed");
+      const text = await response.text();
+      let message = "Login failed";
+      try { message = JSON.parse(text).message || message; } catch { message = text || message; }
+      throw new Error(message);
     }
 
     const result = await response.json();
