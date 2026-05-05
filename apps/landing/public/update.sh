@@ -24,8 +24,9 @@ fi
 printf "  ${GREEN}✓${NC} Docker is running\n"
 
 # Pull latest image
-printf "  Pulling latest image...\n"
+printf "  Pulling latest images...\n"
 docker pull ghcr.io/mitshe/mitshe:latest
+docker pull ghcr.io/mitshe/mitshe-executor:latest 2>/dev/null || true
 
 # Check if container exists
 if ! docker ps -a --filter name=^mitshe$ --format '{{.Names}}' | grep -q mitshe; then
