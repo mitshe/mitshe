@@ -126,8 +126,8 @@ export class SessionContainerService implements OnModuleInit {
           ...(config.localPath
             ? [`${config.localPath}:/workspace/local:rw`]
             : []),
-          ...(config.mountSsh
-            ? [`${process.env.HOME || '/root'}/.ssh:/home/executor/.ssh:ro`]
+          ...(config.mountSsh && process.env.SSH_KEYS_PATH
+            ? [`${process.env.SSH_KEYS_PATH}:/home/executor/.ssh:ro`]
             : []),
         ],
         Memory: (config.environment?.memoryMb || 4096) * 1024 * 1024,
