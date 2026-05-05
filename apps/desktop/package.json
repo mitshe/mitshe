@@ -8,6 +8,7 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsc && electron .",
+    "dev:full": "cd ../.. && pnpm --filter @mitshe/types build && pnpm --filter @mitshe/api build && pnpm --filter @mitshe/web build && cd apps/desktop && tsc && electron .",
     "build": "tsc",
     "package": "tsc && electron-builder",
     "package:mac": "tsc && electron-builder --mac",
