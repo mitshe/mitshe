@@ -177,6 +177,7 @@ export class SessionsController {
     });
 
     // Timeout: if session is still CREATING after 5 minutes, mark as FAILED
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     setTimeout(async () => {
       try {
         const s = await this.sessionsService.findOneById(session.id);
@@ -189,7 +190,9 @@ export class SessionsController {
             'Session creation timed out after 5 minutes',
           );
         }
-      } catch { /* session may have been deleted */ }
+      } catch {
+        /* session may have been deleted */
+      }
     }, 300000);
 
     return { session };
@@ -256,7 +259,9 @@ export class SessionsController {
     }
 
     if (!containerIp) {
-      throw new BadRequestException('Could not resolve container address. Container may still be starting.');
+      throw new BadRequestException(
+        'Could not resolve container address. Container may still be starting.',
+      );
     }
 
     return {
@@ -403,7 +408,9 @@ export class SessionsController {
         await this.containerService.stopContainer(session.containerId);
         await this.containerService.removeContainer(session.containerId, id);
       } catch (err) {
-        this.logger.warn(`Container cleanup failed for session ${id}: ${(err as Error).message}`);
+        this.logger.warn(
+          `Container cleanup failed for session ${id}: ${(err as Error).message}`,
+        );
       }
     }
 

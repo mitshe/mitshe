@@ -201,7 +201,7 @@ export class SessionsService {
             integration: { select: { id: true, type: true, status: true } },
           },
         },
-        messages: { orderBy: { createdAt: 'asc' } },
+        messages: { orderBy: { createdAt: 'asc' }, take: 100 },
         project: { select: { id: true, name: true, key: true } },
         aiCredential: { select: { id: true, provider: true } },
         agentDefinition: { select: { id: true, name: true } },

@@ -46,15 +46,28 @@ export class EncryptionService {
     const authTag = encrypted.subarray(-16);
     const encryptedData = encrypted.subarray(0, -16);
 
-    const decipher = createDecipheriv(this.algorithm, this.key, iv);
-    decipher.setAuthTag(authTag);
+    try {
+      const decipher = createDecipheriv(this.algorithm, this.key, iv);
+      decipher.setAuthTag(authTag);
 
-    const decrypted = Buffer.concat([
-      decipher.update(encryptedData),
-      decipher.final(),
-    ]);
+      const decrypted = Buffer.concat([
+        decipher.update(encryptedData),
+        decipher.final(),
+      ]);
 
-    return decrypted.toString('utf8');
+      return decrypted.toString('utf8');
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('Unsupported state') ||
+          error.message.includes('unable to authenticate'))
+      ) {
+        throw new Error(
+          'Failed to decrypt: the encryption key may have changed. Please re-add your credentials.',
+        );
+      }
+      throw error;
+    }
   }
 
   /**
