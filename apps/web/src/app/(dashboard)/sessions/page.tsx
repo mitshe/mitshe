@@ -52,6 +52,7 @@ import {
   CheckSquare,
   Activity,
   GitBranch,
+  FolderOpen,
   CheckCircle2,
   XCircle,
 } from "lucide-react";
@@ -86,6 +87,7 @@ import {
 } from "@/lib/api/hooks";
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
+import { isDesktopApp, selectLocalFolder } from "@/lib/desktop";
 import { queryKeys } from "@/lib/api/hooks";
 import type { AgentSession, SessionStatus } from "@/lib/api/types";
 
@@ -662,6 +664,31 @@ export default function SessionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {isDesktopApp() && (
+                    <div className="space-y-2">
+                      <Label>Local Project</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start text-muted-foreground"
+                        disabled={configLocked}
+                        onClick={async () => {
+                          const folderPath = await selectLocalFolder();
+                          if (folderPath) {
+                            setForm({ ...form, name: form.name || folderPath.split("/").pop() || "Local Project" });
+                            toast.success(`Selected: ${folderPath}`);
+                          }
+                        }}
+                      >
+                        <FolderOpen className="w-4 h-4 mr-2" />
+                        {form.name && form.name !== "" ? form.name : "Choose folder..."}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        Mount a local folder into the session workspace
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label>Repositories{form.repositoryIds.length > 0 && ` (${form.repositoryIds.length})`}</Label>

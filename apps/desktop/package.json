@@ -1,0 +1,60 @@
+{
+  "name": "@mitshe/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "mitshe Desktop — Workspace manager for AI coding agents",
+  "author": "mitshe",
+  "license": "MIT",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "package": "tsc && electron-builder",
+    "package:mac": "tsc && electron-builder --mac",
+    "package:win": "tsc && electron-builder --win",
+    "package:linux": "tsc && electron-builder --linux"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0",
+    "typescript": "^5.7.0"
+  },
+  "build": {
+    "appId": "com.mitshe.desktop",
+    "productName": "mitshe",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "mac": {
+      "icon": "assets/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        }
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": "nsis"
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": "AppImage",
+      "category": "Development"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "mitshe",
+      "repo": "mitshe"
+    }
+  }
+}
