@@ -53,6 +53,8 @@ RUN apt-get update && apt-get install -y \
     dnsutils \
     # SSH client (for git ssh)
     openssh-client \
+    # Sync
+    rsync \
     # Misc
     locales \
     sudo \
