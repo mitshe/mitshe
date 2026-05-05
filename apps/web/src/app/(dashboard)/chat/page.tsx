@@ -117,13 +117,14 @@ export default function ChatPage() {
     try {
       await sendMessage.mutateAsync({ conversationId: convId, data: { content } });
     } catch (err: unknown) {
-      const error = err as { data?: { message?: string }; message?: string };
+      const error = err as { data?: { message?: string; statusCode?: number }; message?: string };
       const backendMsg = error?.data?.message;
       const msg = backendMsg || error?.message || "Something went wrong.";
-      const cleanMsg =
-        msg.includes("ENCRYPTION_KEY") || msg.includes("Unsupported state")
-          ? "AI provider key could not be loaded. Re-add it in Settings \u2192 AI Providers."
-          : msg;
+      const isEncryptionError =
+        msg.includes("ENCRYPTION_KEY") || msg.includes("Unsupported state") || msg.includes("corrupted") || msg.includes("re-add");
+      const cleanMsg = isEncryptionError
+        ? "AI provider key could not be loaded. Please re-add your API key in Settings → AI Providers."
+        : msg;
       setErrorMessage(cleanMsg);
     } finally {
       setPendingUserMessage(null);
