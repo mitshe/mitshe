@@ -51,6 +51,7 @@ import {
   MoreHorizontal,
   CheckSquare,
   Activity,
+  GitBranch,
   CheckCircle2,
   XCircle,
 } from "lucide-react";
@@ -1089,6 +1090,12 @@ export default function SessionsPage() {
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                         {session.project && <span>{session.project.name}</span>}
                         {session.aiCredential && <span>{providerLabels[session.aiCredential.provider] || session.aiCredential.provider}</span>}
+                        {session.branch && (
+                          <span className="flex items-center gap-1 font-mono">
+                            <GitBranch className="w-3 h-3" />
+                            {session.branch}
+                          </span>
+                        )}
                         {session.enableDocker && <span>Docker</span>}
                         {session.repositories && session.repositories.length > 0 && (
                           <span className="truncate max-w-[200px]">

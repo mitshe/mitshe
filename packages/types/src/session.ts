@@ -18,6 +18,7 @@ export interface AgentSession {
   startArguments: string | null;
   enableDocker: boolean;
   enableBrowser: boolean;
+  branch: string | null;
   baseImageId: string | null;
   status: SessionStatus;
   aiCredentialId: string | null;
