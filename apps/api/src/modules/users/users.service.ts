@@ -66,9 +66,9 @@ export class UsersService {
     }
     this.jwtSecret = secret;
     this.accessTokenExpiry =
-      this.configService.get<string>('JWT_EXPIRY') || '15m';
+      this.configService.get<string>('JWT_EXPIRY') || '7d';
     this.refreshTokenExpiry =
-      this.configService.get<string>('JWT_REFRESH_EXPIRY') || '7d';
+      this.configService.get<string>('JWT_REFRESH_EXPIRY') || '30d';
   }
 
   /**
