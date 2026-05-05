@@ -205,7 +205,7 @@ Trigger: webhook (PR updated)
 - [x] "Open in session" z task detail page
 - [x] Browser tab w session detail (noVNC)
 - [x] Push + Create PR z session detail
-- [ ] Branch status widoczny na session list
+- [x] Branch status widoczny na session list
 - [x] Min. 1 workflow template (Feature Development)
 - [x] 3 workflow templates (Feature Dev, Code Review, E2E Test Runner)
 - [x] 6 predefined system skills
