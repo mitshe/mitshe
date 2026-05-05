@@ -10,12 +10,14 @@ import {
 } from 'electron';
 import * as path from 'path';
 import { autoUpdater } from 'electron-updater';
+import { checkDocker, ensureContainer, stopContainer } from './docker';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 const WEB_URL = process.env.MITSHE_URL || 'http://localhost:3000';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+let containerManaged = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -140,6 +142,9 @@ function setupIPC() {
 
   // Check if running in desktop app
   ipcMain.handle('is-desktop', () => true);
+
+  // Docker status
+  ipcMain.handle('docker-status', () => checkDocker());
 }
 
 function setupAutoUpdater() {
@@ -177,12 +182,51 @@ app.on('activate', () => {
   }
 });
 
-app.whenReady().then(() => {
-  createWindow();
+app.whenReady().then(async () => {
   createTray();
   setupIPC();
 
   if (!IS_DEV) {
+    // Start mitshe container automatically
+    const status = checkDocker();
+
+    if (!status.dockerInstalled || !status.dockerRunning) {
+      createWindow();
+      mainWindow?.webContents.on('did-finish-load', () => {
+        mainWindow?.webContents.executeJavaScript(`
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;color:#888;text-align:center;padding:2rem"><div><h2 style="margin-bottom:1rem">Docker is required</h2><p>Please install and start <a href="https://docker.com/products/docker-desktop" style="color:#6B6EF4">Docker Desktop</a> to use mitshe.</p></div></div>';
+        `);
+      });
+      return;
+    }
+
+    createWindow();
+    mainWindow?.webContents.on('did-finish-load', () => {
+      mainWindow?.webContents.executeJavaScript(`
+        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;color:#888"><div style="text-align:center"><div style="width:32px;height:32px;border:3px solid #333;border-top-color:#6B6EF4;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem"></div><p>Starting mitshe...</p></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+      `);
+    });
+
+    const ready = await ensureContainer();
+    containerManaged = true;
+
+    if (ready) {
+      mainWindow?.loadURL(WEB_URL);
+    } else {
+      mainWindow?.webContents.executeJavaScript(`
+        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;color:#888;text-align:center;padding:2rem"><div><h2 style="margin-bottom:1rem">Failed to start</h2><p>mitshe container could not start. Check Docker Desktop is running.</p></div></div>';
+      `);
+    }
+
     setupAutoUpdater();
+  } else {
+    createWindow();
+  }
+});
+
+// Stop container when quitting (only if we started it)
+app.on('before-quit', () => {
+  if (containerManaged) {
+    stopContainer();
   }
 });
