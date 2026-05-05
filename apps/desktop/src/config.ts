@@ -34,5 +34,5 @@ export function getWebUrl(config: AppConfig): string {
   if (config.mode === 'remote') {
     return config.remoteUrl.replace(/\/$/, '');
   }
-  return 'http://localhost:3000';
+  return 'http://localhost:13000';
 }

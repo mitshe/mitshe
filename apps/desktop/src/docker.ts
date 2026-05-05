@@ -5,8 +5,8 @@ import * as fs from 'fs';
 
 const CONTAINER_NAME = 'mitshe-desktop';
 const IMAGE = 'ghcr.io/mitshe/mitshe:latest';
-const API_PORT = 3001;
-const WEB_PORT = 3000;
+const API_PORT = 13001;
+const WEB_PORT = 13000;
 
 export interface DockerStatus {
   dockerInstalled: boolean;
