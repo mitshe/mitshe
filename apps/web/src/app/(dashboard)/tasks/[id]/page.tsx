@@ -52,6 +52,7 @@ import {
   RefreshCw,
   AlertCircle,
   Terminal,
+  Eye,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import {
@@ -285,19 +286,6 @@ export default function TaskDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            onClick={() => {
-              const params = new URLSearchParams();
-              params.set("taskName", task.title);
-              if (task.description) params.set("taskInstructions", task.description);
-              if (task.projectId) params.set("projectId", task.projectId);
-              router.push(`/sessions?newSession=1&${params.toString()}`);
-            }}
-          >
-            <Terminal className="w-4 h-4 mr-2" />
-            Open in Session
-          </Button>
           <Dialog open={isEditOpen} onOpenChange={handleEditOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -401,6 +389,31 @@ export default function TaskDetailPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set("taskName", task.title);
+                  if (task.description) params.set("taskInstructions", task.description);
+                  if (task.projectId) params.set("projectId", task.projectId);
+                  router.push(`/sessions?newSession=1&${params.toString()}`);
+                }}
+              >
+                <Terminal className="w-4 h-4 mr-2" />
+                Open in Session
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set("taskName", `Review: ${task.title}`);
+                  params.set("taskInstructions", `Review this code for the following task:\n\n${task.title}\n\n${task.description || ""}\n\nCheck for: security issues, performance problems, code quality, test coverage.`);
+                  if (task.projectId) params.set("projectId", task.projectId);
+                  router.push(`/sessions?newSession=1&${params.toString()}`);
+                }}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Review in Session
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleProcessTask}
                 disabled={processTask.isPending}
