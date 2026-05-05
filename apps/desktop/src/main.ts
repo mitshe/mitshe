@@ -71,7 +71,8 @@ function createMainWindow(url: string) {
     return { action: 'deny' };
   });
 
-  mainWindow.webContents.on('did-fail-load', () => {
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.log(`[mitshe] Connection failed: ${errorCode} ${errorDescription}`);
     mainWindow?.loadFile(path.join(__dirname, '..', 'src', 'not-running.html'));
   });
 }

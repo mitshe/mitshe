@@ -464,7 +464,7 @@ export class SessionContainerService implements OnModuleInit {
 
       const statusOutput = await this.execCommand(
         containerId,
-        ['git', 'status', '--porcelain', '-uall'],
+        ['git', 'status', '--porcelain', '-unormal'],
         repoDir,
       );
 

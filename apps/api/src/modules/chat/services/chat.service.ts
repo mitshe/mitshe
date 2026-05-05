@@ -297,6 +297,21 @@ export class ChatService {
       if (response.stopReason !== 'tool_use') {
         break;
       }
+
+      // If all tool calls errored, break to avoid infinite loop
+      const allErrored = toolResults.every((r) => r.is_error);
+      if (allErrored) {
+        this.logger.warn(
+          `All ${toolResults.length} tool calls returned errors — breaking loop`,
+        );
+        break;
+      }
+    }
+
+    if (iterations >= MAX_TOOL_ITERATIONS) {
+      this.logger.warn(
+        `Chat reached MAX_TOOL_ITERATIONS (${MAX_TOOL_ITERATIONS})`,
+      );
     }
 
     // Save assistant message with tool calls

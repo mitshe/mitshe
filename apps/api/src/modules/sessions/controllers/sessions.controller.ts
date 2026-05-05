@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import * as path from 'path';
 import {
@@ -52,6 +53,8 @@ import { AdapterFactoryService } from '../../../infrastructure/adapters/adapter-
 @UseGuards(AuthGuard)
 @ApiRateLimit()
 export class SessionsController {
+  private readonly logger = new Logger(SessionsController.name);
+
   constructor(
     private readonly sessionsService: SessionsService,
     private readonly containerService: SessionContainerService,
@@ -396,8 +399,12 @@ export class SessionsController {
     this.terminalManager.closeByPrefix(`${id}:`);
 
     if (session.containerId) {
-      await this.containerService.stopContainer(session.containerId);
-      await this.containerService.removeContainer(session.containerId, id);
+      try {
+        await this.containerService.stopContainer(session.containerId);
+        await this.containerService.removeContainer(session.containerId, id);
+      } catch (err) {
+        this.logger.warn(`Container cleanup failed for session ${id}: ${(err as Error).message}`);
+      }
     }
 
     await this.sessionsService.remove(organizationId, id);
