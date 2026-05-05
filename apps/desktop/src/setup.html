@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mitshe — Setup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #2a2a35;
+      color: #d0d0dd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container { width: 400px; text-align: center; }
+    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 0.85rem; color: #888; margin-bottom: 2rem; }
+    .options { display: flex; flex-direction: column; gap: 12px; }
+    .option {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px; border-radius: 12px; border: 1px solid #3a3a48;
+      cursor: pointer; text-align: left; transition: all 0.15s;
+      background: transparent;
+      color: #d0d0dd;
+      font-size: 0.9rem;
+    }
+    .option:hover { border-color: #6B6EF4; background: rgba(107,110,244,0.06); }
+    .option-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 1.2rem;
+      background: #3a3a48;
+    }
+    .option-title { font-weight: 600; margin-bottom: 2px; }
+    .option-desc { font-size: 0.75rem; color: #888; line-height: 1.4; }
+
+    .remote-form { display: none; margin-top: 16px; }
+    .remote-form.visible { display: block; }
+    .remote-form input {
+      width: 100%; padding: 10px 14px; border-radius: 8px;
+      border: 1px solid #3a3a48; background: #1e1e28; color: #d0d0dd;
+      font-size: 0.85rem; outline: none; margin-bottom: 10px;
+    }
+    .remote-form input:focus { border-color: #6B6EF4; }
+    .btn {
+      width: 100%; padding: 10px; border-radius: 8px; border: none;
+      background: #6B6EF4; color: white; font-weight: 600;
+      font-size: 0.85rem; cursor: pointer; transition: background 0.15s;
+    }
+    .btn:hover { background: #5558d4; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to mitshe</h1>
+    <p class="subtitle">How would you like to run mitshe?</p>
+
+    <div class="options">
+      <button class="option" id="btn-local">
+        <div class="option-icon">💻</div>
+        <div>
+          <div class="option-title">Run locally</div>
+          <div class="option-desc">Starts a Docker container on your machine. Requires Docker Desktop.</div>
+        </div>
+      </button>
+
+      <button class="option" id="btn-remote">
+        <div class="option-icon">🌐</div>
+        <div>
+          <div class="option-title">Connect to server</div>
+          <div class="option-desc">Connect to an existing mitshe instance running on a remote server.</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="remote-form" id="remote-form">
+      <input type="url" id="remote-url" placeholder="https://mitshe.example.com" />
+      <button class="btn" id="btn-connect">Connect</button>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    document.getElementById('btn-local').addEventListener('click', () => {
+      ipcRenderer.send('setup-mode', 'local');
+    });
+
+    document.getElementById('btn-remote').addEventListener('click', () => {
+      document.getElementById('remote-form').classList.add('visible');
+      document.getElementById('remote-url').focus();
+    });
+
+    document.getElementById('btn-connect').addEventListener('click', () => {
+      const url = document.getElementById('remote-url').value.trim();
+      if (url) {
+        ipcRenderer.send('setup-mode', 'remote', url);
+      }
+    });
+
+    document.getElementById('remote-url').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('btn-connect').click();
+      }
+    });
+  </script>
+</body>
+</html>

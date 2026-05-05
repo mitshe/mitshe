@@ -11,15 +11,14 @@ import {
 import * as path from 'path';
 import { autoUpdater } from 'electron-updater';
 import { checkDocker, ensureContainer, stopContainer } from './docker';
-
-const IS_DEV = process.env.NODE_ENV === 'development';
-const WEB_URL = process.env.MITSHE_URL || 'http://localhost:3000';
+import { loadConfig, saveConfig, getWebUrl, AppConfig } from './config';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let containerManaged = false;
+let appConfig: AppConfig;
 
-function createWindow() {
+function createMainWindow(url: string) {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -33,10 +32,10 @@ function createWindow() {
       contextIsolation: true,
     },
     show: false,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#2a2a35',
   });
 
-  mainWindow.loadURL(WEB_URL);
+  mainWindow.loadURL(url);
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
@@ -46,7 +45,6 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Open external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) {
       shell.openExternal(url);
@@ -55,9 +53,34 @@ function createWindow() {
   });
 }
 
-function createTray() {
+function createSmallWindow(htmlFile: string): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 480,
+    height: 400,
+    resizable: false,
+    titleBarStyle: 'default',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+    backgroundColor: '#2a2a35',
+  });
+
+  win.loadFile(path.join(__dirname, '..', 'src', htmlFile));
+  return win;
+}
+
+function createTray(webUrl: string) {
+  if (tray) return;
+
   const iconPath = path.join(__dirname, '..', 'assets', 'tray-icon.png');
-  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  let icon: Electron.NativeImage;
+  try {
+    icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  } catch {
+    icon = nativeImage.createEmpty();
+  }
+
   tray = new Tray(icon);
 
   const contextMenu = Menu.buildFromTemplate([
@@ -68,40 +91,31 @@ function createTray() {
           mainWindow.show();
           mainWindow.focus();
         } else {
-          createWindow();
+          createMainWindow(webUrl);
         }
       },
     },
     { type: 'separator' },
     {
       label: 'Sessions',
-      click: () => {
-        mainWindow?.loadURL(`${WEB_URL}/sessions`);
-        mainWindow?.show();
-      },
-    },
-    {
-      label: 'Workflows',
-      click: () => {
-        mainWindow?.loadURL(`${WEB_URL}/workflows`);
-        mainWindow?.show();
-      },
+      click: () => { mainWindow?.loadURL(`${webUrl}/sessions`); mainWindow?.show(); },
     },
     {
       label: 'Chat',
-      click: () => {
-        mainWindow?.loadURL(`${WEB_URL}/chat`);
-        mainWindow?.show();
-      },
+      click: () => { mainWindow?.loadURL(`${webUrl}/chat`); mainWindow?.show(); },
     },
     { type: 'separator' },
     {
-      label: `v${app.getVersion()}`,
+      label: appConfig.mode === 'local' ? 'Local mode' : `Remote: ${appConfig.remoteUrl}`,
       enabled: false,
     },
     {
-      label: 'Check for Updates',
-      click: () => autoUpdater.checkForUpdatesAndNotify(),
+      label: 'Change mode...',
+      click: () => {
+        saveConfig({ mode: null, remoteUrl: '' });
+        app.relaunch();
+        app.quit();
+      },
     },
     { type: 'separator' },
     {
@@ -113,18 +127,9 @@ function createTray() {
 
   tray.setToolTip('mitshe');
   tray.setContextMenu(contextMenu);
-
-  tray.on('click', () => {
-    if (mainWindow) {
-      mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
-    } else {
-      createWindow();
-    }
-  });
 }
 
 function setupIPC() {
-  // Native file picker for local project mounting
   ipcMain.handle('select-folder', async () => {
     if (!mainWindow) return null;
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -136,39 +141,50 @@ function setupIPC() {
     return result.filePaths[0];
   });
 
-  // Get app version
   ipcMain.handle('get-version', () => app.getVersion());
-
-  // Check if running in desktop app
   ipcMain.handle('is-desktop', () => true);
-
-  // Docker status
   ipcMain.handle('docker-status', () => checkDocker());
+  ipcMain.handle('get-mode', () => appConfig.mode);
 }
 
-function setupAutoUpdater() {
-  autoUpdater.autoDownload = false;
+async function startLocal() {
+  const splash = createSmallWindow('splash.html');
 
-  autoUpdater.on('update-available', (info) => {
-    if (mainWindow) {
-      mainWindow.webContents.send('update-available', info.version);
-    }
-  });
+  const status = checkDocker();
+  if (!status.dockerInstalled || !status.dockerRunning) {
+    splash.webContents.on('did-finish-load', () => {
+      splash.webContents.executeJavaScript(`
+        document.getElementById('content').innerHTML = '<h2>Docker Desktop Required</h2><p>mitshe needs Docker to run locally.</p><p style="margin-top:1rem"><a href="https://docker.com/products/docker-desktop" style="color:#6B6EF4">Download Docker Desktop</a></p>';
+      `);
+    });
+    return;
+  }
 
-  autoUpdater.on('update-downloaded', () => {
-    if (mainWindow) {
-      mainWindow.webContents.send('update-downloaded');
-    }
-  });
+  const ready = await ensureContainer();
+  containerManaged = true;
 
-  // Check for updates every 4 hours
-  setInterval(() => autoUpdater.checkForUpdates(), 4 * 60 * 60 * 1000);
+  splash.close();
 
-  // Check on startup (after 10 seconds)
-  setTimeout(() => autoUpdater.checkForUpdates(), 10000);
+  if (ready) {
+    const webUrl = getWebUrl(appConfig);
+    createMainWindow(webUrl);
+    createTray(webUrl);
+  } else {
+    const errWin = createSmallWindow('splash.html');
+    errWin.webContents.on('did-finish-load', () => {
+      errWin.webContents.executeJavaScript(`
+        document.getElementById('content').innerHTML = '<h2 style="color:#f87171">Failed to Start</h2><p>Could not start mitshe container. Make sure Docker Desktop is running.</p>';
+      `);
+    });
+  }
 }
 
-// macOS: keep app running when window closed
+function startRemote() {
+  const webUrl = getWebUrl(appConfig);
+  createMainWindow(webUrl);
+  createTray(webUrl);
+}
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
@@ -176,54 +192,47 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+  if (BrowserWindow.getAllWindows().length === 0 && appConfig.mode) {
+    createMainWindow(getWebUrl(appConfig));
   }
 });
 
 app.whenReady().then(async () => {
-  createTray();
   setupIPC();
+  appConfig = loadConfig();
 
-  if (!IS_DEV) {
-    // Start mitshe container automatically
-    const status = checkDocker();
+  // First launch — show setup screen
+  if (!appConfig.mode) {
+    const setupWin = createSmallWindow('setup.html');
 
-    if (!status.dockerInstalled || !status.dockerRunning) {
-      createWindow();
-      mainWindow?.webContents.on('did-finish-load', () => {
-        mainWindow?.webContents.executeJavaScript(`
-          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;color:#888;text-align:center;padding:2rem"><div><h2 style="margin-bottom:1rem">Docker is required</h2><p>Please install and start <a href="https://docker.com/products/docker-desktop" style="color:#6B6EF4">Docker Desktop</a> to use mitshe.</p></div></div>';
-        `);
-      });
-      return;
-    }
+    ipcMain.once('setup-mode', (_event, mode: string, remoteUrl?: string) => {
+      appConfig = {
+        mode: mode as 'local' | 'remote',
+        remoteUrl: remoteUrl || '',
+      };
+      saveConfig(appConfig);
+      setupWin.close();
 
-    createWindow();
-    mainWindow?.webContents.on('did-finish-load', () => {
-      mainWindow?.webContents.executeJavaScript(`
-        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;color:#888"><div style="text-align:center"><div style="width:32px;height:32px;border:3px solid #333;border-top-color:#6B6EF4;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem"></div><p>Starting mitshe...</p></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
-      `);
+      if (appConfig.mode === 'local') {
+        startLocal();
+      } else {
+        startRemote();
+      }
     });
 
-    const ready = await ensureContainer();
-    containerManaged = true;
-
-    if (ready) {
-      mainWindow?.loadURL(WEB_URL);
-    } else {
-      mainWindow?.webContents.executeJavaScript(`
-        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;color:#888;text-align:center;padding:2rem"><div><h2 style="margin-bottom:1rem">Failed to start</h2><p>mitshe container could not start. Check Docker Desktop is running.</p></div></div>';
-      `);
-    }
-
-    setupAutoUpdater();
-  } else {
-    createWindow();
+    return;
   }
+
+  if (appConfig.mode === 'local') {
+    await startLocal();
+  } else {
+    startRemote();
+  }
+
+  autoUpdater.autoDownload = false;
+  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10000);
 });
 
-// Stop container when quitting (only if we started it)
 app.on('before-quit', () => {
   if (containerManaged) {
     stopContainer();

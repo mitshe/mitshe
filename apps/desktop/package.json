@@ -30,6 +30,8 @@
     },
     "files": [
       "dist/**/*",
+      "src/splash.html",
+      "src/setup.html",
       "assets/**/*"
     ],
     "mac": {

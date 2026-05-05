@@ -1,5 +1,5 @@
-import { execSync, spawn, ChildProcess } from 'child_process';
-import { app } from 'electron';
+import { execSync, spawn } from 'child_process';
+import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -39,12 +39,23 @@ export function checkDocker(): DockerStatus {
   let containerExists = false;
 
   if (dockerRunning) {
-    const ps = exec(`docker ps -a --filter name=${CONTAINER_NAME} --format "{{.Status}}"`);
+    const ps = exec(`docker ps -a --filter name=^${CONTAINER_NAME}$ --format "{{.Status}}"`);
     containerExists = ps.length > 0;
     containerRunning = ps.toLowerCase().startsWith('up');
   }
 
   return { dockerInstalled, dockerRunning, containerRunning, containerExists };
+}
+
+function pullImage(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn('docker', ['pull', IMAGE]);
+    proc.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`docker pull exited with code ${code}`));
+    });
+    proc.on('error', reject);
+  });
 }
 
 export async function ensureContainer(): Promise<boolean> {
@@ -55,7 +66,7 @@ export async function ensureContainer(): Promise<boolean> {
   }
 
   if (status.containerRunning) {
-    return true;
+    return waitForReady();
   }
 
   const dataDir = getDataDir();
@@ -66,9 +77,13 @@ export async function ensureContainer(): Promise<boolean> {
   }
 
   // Pull image if not present
-  const hasImage = exec(`docker image inspect ${IMAGE}`).length > 0;
+  const hasImage = exec(`docker image inspect ${IMAGE} 2>/dev/null`).includes(IMAGE);
   if (!hasImage) {
-    execSync(`docker pull ${IMAGE}`, { stdio: 'inherit', timeout: 300000 });
+    try {
+      await pullImage();
+    } catch {
+      return false;
+    }
   }
 
   // Run container
@@ -83,16 +98,17 @@ export async function ensureContainer(): Promise<boolean> {
     `-p ${API_PORT}:3001`,
     `-v "${dataDir}":/build/data`,
     `-v ${dockerSocket}:/var/run/docker.sock`,
+    `--restart unless-stopped`,
     IMAGE,
   ].join(' '));
 
   return waitForReady();
 }
 
-async function waitForReady(retries = 30): Promise<boolean> {
+async function waitForReady(retries = 60): Promise<boolean> {
   for (let i = 0; i < retries; i++) {
     try {
-      const res = await fetch(`http://localhost:${API_PORT}/api/v1/health`);
+      const res = await fetch(`http://localhost:${API_PORT}/health`);
       if (res.ok) return true;
     } catch {
       // not ready yet
