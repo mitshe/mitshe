@@ -249,8 +249,12 @@ export class SessionsController {
       throw new BadRequestException('Session is not running');
     }
 
+    // Start browser on demand (idempotent)
+    await this.containerService.startBrowser(session.containerId);
+
+    // Wait for noVNC to be ready
     let containerIp: string | null = null;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       containerIp = await this.containerService.getContainerIp(
         session.containerId,
       );
@@ -260,7 +264,7 @@ export class SessionsController {
 
     if (!containerIp) {
       throw new BadRequestException(
-        'Could not resolve container address. Container may still be starting.',
+        'Could not resolve container address.',
       );
     }
 

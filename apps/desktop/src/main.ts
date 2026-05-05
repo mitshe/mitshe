@@ -71,9 +71,13 @@ function createMainWindow(url: string) {
     return { action: 'deny' };
   });
 
-  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
-    console.log(`[mitshe] Connection failed: ${errorCode} ${errorDescription}`);
-    mainWindow?.loadFile(path.join(__dirname, '..', 'src', 'not-running.html'));
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (!isMainFrame) return; // ignore iframe failures (noVNC etc.)
+    console.log(`[mitshe] Connection failed: ${errorCode} ${errorDescription} ${validatedURL}`);
+    // Retry after 3 seconds instead of showing error page
+    setTimeout(() => {
+      if (mainWindow && serverUrl) mainWindow.loadURL(serverUrl);
+    }, 3000);
   });
 }
 
