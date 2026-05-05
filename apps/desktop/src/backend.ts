@@ -1,12 +1,14 @@
-import { execSync, spawn } from 'child_process';
+import { ChildProcess, spawn, execSync } from 'child_process';
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 
-const CONTAINER_NAME = 'mitshe-desktop';
-const IMAGE = process.env.MITSHE_IMAGE || 'ghcr.io/mitshe/mitshe:latest';
 export const API_PORT = 13001;
 export const WEB_PORT = 13000;
+
+let apiProcess: ChildProcess | null = null;
+let webProcess: ChildProcess | null = null;
 
 function getDataDir(): string {
   const dir = path.join(app.getPath('userData'), 'data');
@@ -14,11 +16,39 @@ function getDataDir(): string {
   return dir;
 }
 
-function exec(cmd: string): string {
+function getBackendDir(): string {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'backend');
+  }
+  return path.join(__dirname, '..', 'backend');
+}
+
+function getEncryptionKey(): string {
+  const keyFile = path.join(getDataDir(), '.encryption_key');
+  if (fs.existsSync(keyFile)) {
+    return fs.readFileSync(keyFile, 'utf-8').trim();
+  }
+  const key = crypto.randomBytes(32).toString('hex');
+  fs.writeFileSync(keyFile, key, { mode: 0o600 });
+  return key;
+}
+
+function initDatabase(): void {
+  const backendDir = getBackendDir();
+  const dbPath = path.join(getDataDir(), 'mitshe.db');
+
   try {
-    return execSync(cmd, { encoding: 'utf-8', timeout: 15000 }).trim();
-  } catch {
-    return '';
+    execSync('npx prisma db push --skip-generate', {
+      cwd: backendDir,
+      env: {
+        ...process.env,
+        DATABASE_URL: `file:${dbPath}`,
+      },
+      stdio: 'pipe',
+      timeout: 30000,
+    });
+  } catch (err) {
+    console.error('[backend] prisma db push failed:', (err as Error).message);
   }
 }
 
@@ -27,84 +57,137 @@ export interface StartResult {
   error?: string;
 }
 
-export function checkDocker(): { installed: boolean; running: boolean } {
-  const installed = exec('docker --version').includes('Docker');
-  const running = installed && exec('docker info').includes('Server');
-  return { installed, running };
-}
-
 export async function startBackend(): Promise<StartResult> {
-  const docker = checkDocker();
-  if (!docker.installed) return { success: false, error: 'docker-not-installed' };
-  if (!docker.running) return { success: false, error: 'docker-not-running' };
+  const backendDir = getBackendDir();
+  const entryPoint = path.join(backendDir, 'dist', 'main.js');
 
-  // Check if container already running
-  const status = exec(`docker ps --filter name=^${CONTAINER_NAME}$ --format "{{.Status}}"`);
-  if (status.toLowerCase().startsWith('up')) {
-    const healthy = await waitForReady();
-    return healthy ? { success: true } : { success: false, error: 'unhealthy' };
+  if (!fs.existsSync(entryPoint)) {
+    return { success: false, error: 'Backend not built. Run: cd apps/desktop && ./scripts/build-backend.sh' };
   }
 
-  // Check if container exists but stopped
-  const exists = exec(`docker ps -a --filter name=^${CONTAINER_NAME}$ --format "{{.ID}}"`);
-  if (exists) {
-    exec(`docker rm -f ${CONTAINER_NAME}`);
-  }
+  // Init/migrate database
+  initDatabase();
 
-  // Check if image exists
-  const hasImage = exec(`docker images -q ${IMAGE}`).length > 0;
-  if (!hasImage) {
-    try {
-      await pullImage();
-    } catch {
-      return { success: false, error: 'pull-failed' };
-    }
-  }
+  const dbPath = path.join(getDataDir(), 'mitshe.db');
 
-  // Start container
-  const dataDir = getDataDir();
-  const dockerSocket = process.platform === 'win32'
-    ? '//var/run/docker.sock'
-    : '/var/run/docker.sock';
+  return new Promise((resolve) => {
+    apiProcess = spawn('node', [entryPoint], {
+      cwd: backendDir,
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        PORT: String(API_PORT),
+        DATABASE_URL: `file:${dbPath}`,
+        ENCRYPTION_KEY: getEncryptionKey(),
+        AUTH_MODE: 'selfhosted',
+        NEXT_PUBLIC_AUTH_MODE: 'selfhosted',
+        NEXT_PUBLIC_APP_URL: `http://localhost:${WEB_PORT}`,
+        NEXT_PUBLIC_API_URL: `http://localhost:${API_PORT}`,
+        DESKTOP_MODE: 'true',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
 
-  const result = exec([
-    'docker run -d',
-    `--name ${CONTAINER_NAME}`,
-    `-p ${WEB_PORT}:3000`,
-    `-p ${API_PORT}:3001`,
-    `-v "${dataDir}":/build/data`,
-    `-v ${dockerSocket}:/var/run/docker.sock`,
-    `--restart unless-stopped`,
-    IMAGE,
-  ].join(' '));
+    let started = false;
 
-  if (!result) {
-    return { success: false, error: 'container-start-failed' };
-  }
+    apiProcess.stdout?.on('data', (data: Buffer) => {
+      const msg = data.toString();
+      console.log('[api]', msg.trim());
+      if (!started && (msg.includes('Nest application successfully started') || msg.includes('application is running'))) {
+        started = true;
+        resolve({ success: true });
+      }
+    });
 
-  const healthy = await waitForReady();
-  return healthy ? { success: true } : { success: false, error: 'unhealthy' };
-}
+    apiProcess.stderr?.on('data', (data: Buffer) => {
+      console.error('[api]', data.toString().trim());
+    });
 
-function pullImage(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn('docker', ['pull', IMAGE]);
-    proc.on('close', (code) => code === 0 ? resolve() : reject(new Error(`exit ${code}`)));
-    proc.on('error', reject);
+    apiProcess.on('exit', (code) => {
+      console.log(`[api] exited with code ${code}`);
+      apiProcess = null;
+      if (!started) resolve({ success: false, error: `API exited with code ${code}` });
+    });
+
+    setTimeout(() => {
+      if (!started) resolve({ success: false, error: 'API startup timeout (30s)' });
+    }, 30000);
   });
 }
 
-async function waitForReady(retries = 60): Promise<boolean> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const res = await fetch(`http://localhost:${API_PORT}/health`);
-      if (res.ok) return true;
-    } catch { /* not ready */ }
-    await new Promise((r) => setTimeout(r, 2000));
+export async function startWeb(): Promise<StartResult> {
+  const webDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'web-standalone')
+    : path.join(__dirname, '..', 'web-standalone');
+
+  const serverJs = path.join(webDir, 'apps', 'web', 'server.js');
+
+  if (!fs.existsSync(serverJs)) {
+    return { success: false, error: 'Web not built. Run: cd apps/desktop && ./scripts/build-backend.sh' };
   }
-  return false;
+
+  return new Promise((resolve) => {
+    webProcess = spawn('node', [serverJs], {
+      cwd: path.join(webDir, 'apps', 'web'),
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        PORT: String(WEB_PORT),
+        HOSTNAME: 'localhost',
+        BACKEND_URL: `http://localhost:${API_PORT}`,
+        AUTH_MODE: 'selfhosted',
+        NEXT_PUBLIC_AUTH_MODE: 'selfhosted',
+        NEXT_PUBLIC_APP_URL: `http://localhost:${WEB_PORT}`,
+        NEXT_PUBLIC_API_URL: `http://localhost:${API_PORT}`,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let started = false;
+
+    webProcess.stdout?.on('data', (data: Buffer) => {
+      const msg = data.toString();
+      console.log('[web]', msg.trim());
+      if (!started && (msg.includes('Ready') || msg.includes(`localhost:${WEB_PORT}`) || msg.includes('started server'))) {
+        started = true;
+        resolve({ success: true });
+      }
+    });
+
+    webProcess.stderr?.on('data', (data: Buffer) => {
+      console.error('[web]', data.toString().trim());
+    });
+
+    webProcess.on('exit', (code) => {
+      console.log(`[web] exited with code ${code}`);
+      webProcess = null;
+      if (!started) resolve({ success: false, error: `Web exited with code ${code}` });
+    });
+
+    setTimeout(() => {
+      if (!started) resolve({ success: false, error: 'Web startup timeout (30s)' });
+    }, 30000);
+  });
 }
 
 export function stopBackend(): void {
-  exec(`docker stop ${CONTAINER_NAME}`);
+  if (apiProcess) {
+    apiProcess.kill('SIGTERM');
+    apiProcess = null;
+  }
+  if (webProcess) {
+    webProcess.kill('SIGTERM');
+    webProcess = null;
+  }
+}
+
+export function checkDocker(): { installed: boolean; running: boolean } {
+  try {
+    const v = execSync('docker --version', { encoding: 'utf-8', timeout: 5000 });
+    const installed = v.includes('Docker');
+    const running = installed && execSync('docker info', { encoding: 'utf-8', timeout: 5000 }).includes('Server');
+    return { installed, running };
+  } catch {
+    return { installed: false, running: false };
+  }
 }

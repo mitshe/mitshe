@@ -34,6 +34,12 @@
       "src/setup.html",
       "assets/**/*"
     ],
+    "extraResources": [
+      { "from": "backend/dist", "to": "backend/dist" },
+      { "from": "backend/prisma", "to": "backend/prisma" },
+      { "from": "backend/node_modules", "to": "backend/node_modules" },
+      { "from": "web-standalone", "to": "web-standalone" }
+    ],
     "mac": {
       "icon": "assets/icon.icns",
       "target": [

@@ -11,7 +11,7 @@ import {
 import * as path from 'path';
 import { autoUpdater } from 'electron-updater';
 import { loadConfig, saveConfig, AppConfig } from './config';
-import { startBackend, stopBackend, checkDocker, WEB_PORT } from './backend';
+import { startBackend, startWeb, stopBackend, checkDocker, WEB_PORT } from './backend';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -101,26 +101,38 @@ function setupIPC() {
   ipcMain.handle('get-mode', () => appConfig.mode);
 }
 
+function showSplashError(splash: BrowserWindow, msg: string) {
+  const safe = msg.replace(/'/g, "\\'");
+  splash.webContents.executeJavaScript(
+    `document.getElementById('content').innerHTML = '${safe}';`
+  ).catch(() => {});
+}
+
 async function startLocal() {
   const splash = createSmallWindow('splash.html');
 
-  const result = await startBackend();
-  backendStarted = result.success;
+  // Start API
+  splash.webContents.on('did-finish-load', () => {
+    splash.webContents.executeJavaScript(
+      `document.getElementById('status').textContent = 'Starting API...';`
+    ).catch(() => {});
+  });
 
-  if (!result.success) {
-    const messages: Record<string, string> = {
-      'docker-not-installed': '<h2>Docker Desktop Required</h2><p>Install <a href="https://docker.com/products/docker-desktop" style="color:#6B6EF4">Docker Desktop</a> to run mitshe locally.</p>',
-      'docker-not-running': '<h2>Docker is Not Running</h2><p>Start Docker Desktop and try again.</p>',
-      'pull-failed': '<h2>Download Failed</h2><p>Could not download mitshe image. Check your internet connection.</p>',
-      'container-start-failed': '<h2>Container Failed</h2><p>Could not start mitshe container. Ports 13000/13001 may be in use.</p>',
-      'unhealthy': '<h2>Start Timeout</h2><p>mitshe started but did not become healthy. Try restarting.</p>',
-    };
-    const msg = messages[result.error || ''] || '<h2>Unknown Error</h2>';
-    splash.webContents.on('did-finish-load', () => {
-      splash.webContents.executeJavaScript(
-        `document.getElementById('content').innerHTML = '${msg.replace(/'/g, "\\'")}';`
-      ).catch(() => {});
-    });
+  const apiResult = await startBackend();
+  if (!apiResult.success) {
+    showSplashError(splash, `<h2 style="color:#f87171">API Failed</h2><p>${apiResult.error}</p>`);
+    return;
+  }
+  backendStarted = true;
+
+  // Start Web
+  splash.webContents.executeJavaScript(
+    `document.getElementById('status').textContent = 'Starting web interface...';`
+  ).catch(() => {});
+
+  const webResult = await startWeb();
+  if (!webResult.success) {
+    showSplashError(splash, `<h2 style="color:#f87171">Web Failed</h2><p>${webResult.error}</p>`);
     return;
   }
 
