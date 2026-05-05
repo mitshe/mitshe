@@ -92,6 +92,11 @@ export class CreateSessionDto {
     description: 'Local filesystem path to mount into /workspace/local',
   })
   localPath?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Mount host SSH keys into session (read-only)' })
+  mountSsh?: boolean;
 }
 
 export class UpdateSessionMetadataDto {

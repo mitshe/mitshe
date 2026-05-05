@@ -206,6 +206,7 @@ export default function SessionsPage() {
     startArguments: "",
     enableDocker: false,
     enableBrowser: false,
+    mountSsh: false,
     baseImageId: "",
     skillIds: [] as string[],
     instructions: "",
@@ -299,6 +300,7 @@ export default function SessionsPage() {
       startArguments: session.startArguments || "",
       enableDocker: session.enableDocker,
       enableBrowser: session.enableBrowser ?? false,
+      mountSsh: false,
       baseImageId: session.baseImageId || "",
       skillIds: [] as string[],
       instructions: session.instructions || "",
@@ -386,6 +388,7 @@ export default function SessionsPage() {
           instructions: form.instructions || undefined,
           branch: form.branch || undefined,
           localPath: form.localPath || undefined,
+          mountSsh: form.mountSsh || undefined,
         });
         toast.success("Session created");
         setIsDialogOpen(false);
@@ -912,6 +915,25 @@ export default function SessionsPage() {
                       }`}
                     >
                       Enable browser (Playwright/Chromium for E2E testing)
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="mountSsh"
+                      checked={form.mountSsh}
+                      onCheckedChange={(checked) =>
+                        setForm({ ...form, mountSsh: checked === true })
+                      }
+                      disabled={configLocked}
+                    />
+                    <Label
+                      htmlFor="mountSsh"
+                      className={`font-normal text-sm ${
+                        configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                      }`}
+                    >
+                      Mount SSH keys (for git push/commit)
                     </Label>
                   </div>
 

@@ -83,6 +83,7 @@ export interface CreateSessionDto {
   instructions?: string;
   branch?: string;
   localPath?: string;
+  mountSsh?: boolean;
 }
 
 export interface UpdateSessionMetadataDto {

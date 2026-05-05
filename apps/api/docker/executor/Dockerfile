@@ -97,6 +97,15 @@ RUN ARCH=$(dpkg --print-architecture) && \
     rm /tmp/glab.deb \
     || echo "glab installation failed, skipping..."
 
+# Install Jira CLI (go-jira)
+RUN ARCH=$(dpkg --print-architecture) && \
+    GOARCH=$([ "$ARCH" = "amd64" ] && echo "amd64" || echo "arm64") && \
+    curl -fsSL "https://github.com/ankitpokhrel/jira-cli/releases/latest/download/jira_linux_${GOARCH}.tar.gz" -o /tmp/jira.tar.gz && \
+    tar -xzf /tmp/jira.tar.gz -C /usr/local/bin jira && \
+    chmod +x /usr/local/bin/jira && \
+    rm /tmp/jira.tar.gz \
+    || echo "jira-cli installation failed, skipping..."
+
 # Install Playwright dependencies (Chromium system libs)
 RUN npx playwright install-deps chromium
 

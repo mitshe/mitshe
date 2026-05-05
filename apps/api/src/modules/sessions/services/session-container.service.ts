@@ -31,6 +31,7 @@ export interface SessionContainerConfig {
    */
   image?: string;
   localPath?: string;
+  mountSsh?: boolean;
 }
 
 /**
@@ -124,6 +125,9 @@ export class SessionContainerService implements OnModuleInit {
             : []),
           ...(config.localPath
             ? [`${config.localPath}:/workspace/local:rw`]
+            : []),
+          ...(config.mountSsh
+            ? [`${process.env.HOME || '/root'}/.ssh:/home/executor/.ssh:ro`]
             : []),
         ],
         Memory: (config.environment?.memoryMb || 4096) * 1024 * 1024,
@@ -246,6 +250,17 @@ export class SessionContainerService implements OnModuleInit {
   ): Promise<string> {
     const container = this.docker.getContainer(containerId);
     const repo = 'mitshe-clone';
+
+    // Copy bind-mounted local files into container filesystem before commit
+    // (docker commit doesn't include bind mount contents)
+    try {
+      await this.execCommand(
+        containerId,
+        ['bash', '-c', 'if [ -d /workspace/local ]; then cp -a /workspace/local /workspace/project; fi'],
+      );
+    } catch {
+      this.logger.warn('Could not copy local mount for snapshot');
+    }
 
     await container.commit({
       repo,
