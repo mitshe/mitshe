@@ -135,6 +135,12 @@ function setupIPC() {
   ipcMain.on('retry-connection', () => {
     if (serverUrl) mainWindow?.loadURL(serverUrl);
   });
+
+  ipcMain.on('change-server', () => {
+    clearServerUrl();
+    app.relaunch();
+    app.quit();
+  });
 }
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

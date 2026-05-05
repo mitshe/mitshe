@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld('mitsheDesktop', {
 
   isDesktop: (): Promise<boolean> =>
     ipcRenderer.invoke('is-desktop'),
+
+  changeServer: () =>
+    ipcRenderer.send('change-server'),
 });

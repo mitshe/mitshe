@@ -8,8 +8,7 @@ interface MitsheDesktopAPI {
   selectFolder: () => Promise<string | null>;
   getVersion: () => Promise<string>;
   isDesktop: () => Promise<boolean>;
-  onUpdateAvailable: (callback: (version: string) => void) => void;
-  onUpdateDownloaded: (callback: () => void) => void;
+  changeServer: () => void;
 }
 
 declare global {

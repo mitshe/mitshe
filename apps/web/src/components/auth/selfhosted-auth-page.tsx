@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { selfhostedAuth } from "@/lib/auth/selfhosted-auth";
-import { Loader2 } from "lucide-react";
+import { isDesktopApp } from "@/lib/desktop";
+import { Loader2, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -260,6 +261,16 @@ function LoginForm() {
             )}
           </Button>
         </form>
+        {isDesktopApp() && (
+          <button
+            type="button"
+            onClick={() => window.mitsheDesktop?.changeServer?.()}
+            className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto"
+          >
+            <Server className="h-3 w-3" />
+            Change server
+          </button>
+        )}
       </div>
     </div>
   );
