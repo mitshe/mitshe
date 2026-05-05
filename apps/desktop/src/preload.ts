@@ -9,12 +9,4 @@ contextBridge.exposeInMainWorld('mitsheDesktop', {
 
   isDesktop: (): Promise<boolean> =>
     ipcRenderer.invoke('is-desktop'),
-
-  onUpdateAvailable: (callback: (version: string) => void) => {
-    ipcRenderer.on('update-available', (_event, version) => callback(version));
-  },
-
-  onUpdateDownloaded: (callback: () => void) => {
-    ipcRenderer.on('update-downloaded', () => callback());
-  },
 });

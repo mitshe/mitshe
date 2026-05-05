@@ -1,8 +1,6 @@
 node_modules/
 dist/
 release/
-backend/
-web-standalone/
 *.dmg
 *.exe
 *.AppImage

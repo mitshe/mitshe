@@ -2,7 +2,7 @@
   "name": "@mitshe/desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "mitshe Desktop — Workspace manager for AI coding agents",
+  "description": "mitshe Desktop — native wrapper for mitshe",
   "author": "mitshe",
   "license": "MIT",
   "main": "dist/main.js",
@@ -30,15 +30,8 @@
     },
     "files": [
       "dist/**/*",
-      "src/splash.html",
-      "src/setup.html",
+      "src/not-running.html",
       "assets/**/*"
-    ],
-    "extraResources": [
-      { "from": "backend/dist", "to": "backend/dist" },
-      { "from": "backend/prisma", "to": "backend/prisma" },
-      { "from": "backend/node_modules", "to": "backend/node_modules" },
-      { "from": "web-standalone", "to": "web-standalone" }
     ],
     "mac": {
       "icon": "assets/icon.icns",

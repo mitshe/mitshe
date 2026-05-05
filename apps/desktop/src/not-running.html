@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mitshe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #2a2a35;
+      color: #d0d0dd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container { text-align: center; max-width: 400px; padding: 2rem; }
+    h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.75rem; }
+    p { font-size: 0.85rem; color: #888; line-height: 1.6; margin-bottom: 1rem; }
+    code {
+      display: block; background: #1e1e28; border: 1px solid #3a3a48;
+      border-radius: 8px; padding: 12px 16px; font-size: 0.75rem;
+      color: #a0a0b0; text-align: left; margin: 1rem 0;
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .btn {
+      display: inline-block; padding: 8px 20px; border-radius: 8px;
+      border: 1px solid #3a3a48; background: transparent; color: #d0d0dd;
+      font-size: 0.85rem; cursor: pointer; transition: all 0.15s;
+      margin-top: 0.5rem;
+    }
+    .btn:hover { border-color: #6B6EF4; background: rgba(107,110,244,0.1); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>mitshe is not running</h2>
+    <p>Start the mitshe Docker container first:</p>
+    <code>docker run -d --name mitshe \
+  -p 3000:3000 -p 3001:3001 \
+  -v mitshe-data:/build/data \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  ghcr.io/mitshe/mitshe:latest</code>
+    <p>Then click retry below.</p>
+    <button class="btn" onclick="require('electron').ipcRenderer.send('retry-connection')">Retry</button>
+  </div>
+</body>
+</html>
