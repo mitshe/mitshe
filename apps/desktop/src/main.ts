@@ -9,15 +9,35 @@ import {
   shell,
 } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 import { autoUpdater } from 'electron-updater';
-
-// mitshe Docker container exposes these ports
-const MITSHE_URL = process.env.MITSHE_URL || 'http://localhost:3000';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+let serverUrl: string | null = null;
 
-function createMainWindow() {
+function configPath(): string {
+  return path.join(app.getPath('userData'), 'server.txt');
+}
+
+function loadServerUrl(): string | null {
+  try {
+    if (fs.existsSync(configPath())) {
+      return fs.readFileSync(configPath(), 'utf-8').trim() || null;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveServerUrl(url: string): void {
+  fs.writeFileSync(configPath(), url);
+}
+
+function clearServerUrl(): void {
+  try { fs.unlinkSync(configPath()); } catch { /* ignore */ }
+}
+
+function createMainWindow(url: string) {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -34,7 +54,7 @@ function createMainWindow() {
     backgroundColor: '#2a2a35',
   });
 
-  mainWindow.loadURL(MITSHE_URL);
+  mainWindow.loadURL(url);
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   mainWindow.on('closed', () => { mainWindow = null; });
 
@@ -43,13 +63,35 @@ function createMainWindow() {
     return { action: 'deny' };
   });
 
-  // Handle load failure (mitshe not running)
   mainWindow.webContents.on('did-fail-load', () => {
     mainWindow?.loadFile(path.join(__dirname, '..', 'src', 'not-running.html'));
   });
 }
 
+function showConnectScreen() {
+  const win = new BrowserWindow({
+    width: 440,
+    height: 340,
+    resizable: false,
+    titleBarStyle: 'default',
+    webPreferences: { nodeIntegration: true, contextIsolation: false },
+    backgroundColor: '#2a2a35',
+  });
+
+  win.loadFile(path.join(__dirname, '..', 'src', 'connect.html'));
+
+  ipcMain.once('connect', (_event, url: string) => {
+    serverUrl = url;
+    saveServerUrl(url);
+    win.close();
+    createMainWindow(serverUrl);
+    createTray();
+  });
+}
+
 function createTray() {
+  if (tray || !serverUrl) return;
+
   const iconPath = path.join(__dirname, '..', 'assets', 'tray-icon.png');
   let icon: Electron.NativeImage;
   try { icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 }); }
@@ -58,23 +100,25 @@ function createTray() {
   tray = new Tray(icon);
   tray.setToolTip('mitshe');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open mitshe', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } else createMainWindow(); } },
+    { label: 'Open mitshe', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } else if (serverUrl) createMainWindow(serverUrl); } },
     { type: 'separator' },
-    { label: 'Sessions', click: () => { mainWindow?.loadURL(`${MITSHE_URL}/sessions`); mainWindow?.show(); } },
-    { label: 'Chat', click: () => { mainWindow?.loadURL(`${MITSHE_URL}/chat`); mainWindow?.show(); } },
-    { label: 'Workflows', click: () => { mainWindow?.loadURL(`${MITSHE_URL}/workflows`); mainWindow?.show(); } },
+    { label: 'Sessions', click: () => { mainWindow?.loadURL(`${serverUrl}/sessions`); mainWindow?.show(); } },
+    { label: 'Chat', click: () => { mainWindow?.loadURL(`${serverUrl}/chat`); mainWindow?.show(); } },
+    { label: 'Workflows', click: () => { mainWindow?.loadURL(`${serverUrl}/workflows`); mainWindow?.show(); } },
+    { type: 'separator' },
+    { label: serverUrl || '', enabled: false },
+    { label: 'Disconnect', click: () => { clearServerUrl(); app.relaunch(); app.quit(); } },
     { type: 'separator' },
     { label: 'Quit', accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4', click: () => app.quit() },
   ]));
 
   tray.on('click', () => {
     if (mainWindow) { mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show(); }
-    else createMainWindow();
+    else if (serverUrl) createMainWindow(serverUrl);
   });
 }
 
 function setupIPC() {
-  // Native file picker for local project mounting
   ipcMain.handle('select-folder', async () => {
     if (!mainWindow) return null;
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -88,19 +132,24 @@ function setupIPC() {
   ipcMain.handle('get-version', () => app.getVersion());
   ipcMain.handle('is-desktop', () => true);
 
-  // Retry connection (from not-running page)
   ipcMain.on('retry-connection', () => {
-    mainWindow?.loadURL(MITSHE_URL);
+    if (serverUrl) mainWindow?.loadURL(serverUrl);
   });
 }
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow(); });
+app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) { if (serverUrl) createMainWindow(serverUrl); else showConnectScreen(); } });
 
 app.whenReady().then(() => {
   setupIPC();
-  createMainWindow();
-  createTray();
+  serverUrl = loadServerUrl();
+
+  if (serverUrl) {
+    createMainWindow(serverUrl);
+    createTray();
+  } else {
+    showConnectScreen();
+  }
 
   autoUpdater.autoDownload = false;
   setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10000);

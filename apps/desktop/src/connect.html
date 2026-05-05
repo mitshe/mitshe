@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mitshe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #2a2a35;
+      color: #d0d0dd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container { width: 380px; }
+    h1 { font-size: 1.4rem; font-weight: 600; text-align: center; margin-bottom: 0.4rem; }
+    .subtitle { font-size: 0.8rem; color: #888; text-align: center; margin-bottom: 2rem; }
+    label { display: block; font-size: 0.8rem; color: #999; margin-bottom: 6px; }
+    input {
+      width: 100%; padding: 10px 14px; border-radius: 8px;
+      border: 1px solid #3a3a48; background: #1e1e28; color: #d0d0dd;
+      font-size: 0.85rem; outline: none; margin-bottom: 16px;
+    }
+    input:focus { border-color: #6B6EF4; }
+    .btn {
+      width: 100%; padding: 11px; border-radius: 8px; border: none;
+      background: #6B6EF4; color: white; font-weight: 600;
+      font-size: 0.85rem; cursor: pointer; transition: background 0.15s;
+    }
+    .btn:hover { background: #5558d4; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error { color: #f87171; font-size: 0.75rem; margin-bottom: 12px; display: none; }
+    .hint { font-size: 0.7rem; color: #555; margin-top: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>mitshe</h1>
+    <p class="subtitle">Connect to your mitshe instance</p>
+    <label for="url">Server URL</label>
+    <input type="url" id="url" placeholder="http://localhost:3000" autofocus />
+    <div class="error" id="error"></div>
+    <button class="btn" id="connect" onclick="connect()">Connect</button>
+    <p class="hint">Run mitshe with Docker first, then enter the URL here.</p>
+  </div>
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    document.getElementById('url').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') connect();
+    });
+
+    async function connect() {
+      const url = document.getElementById('url').value.trim();
+      if (!url) return;
+
+      const btn = document.getElementById('connect');
+      const err = document.getElementById('error');
+      btn.disabled = true;
+      btn.textContent = 'Connecting...';
+      err.style.display = 'none';
+
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        if (res.ok || res.status === 302 || res.status === 307) {
+          ipcRenderer.send('connect', url.replace(/\/$/, ''));
+          return;
+        }
+        throw new Error(`Server responded with ${res.status}`);
+      } catch (e) {
+        err.textContent = 'Could not connect. Make sure mitshe is running at this URL.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Connect';
+      }
+    }
+  </script>
+</body>
+</html>

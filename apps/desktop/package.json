@@ -30,6 +30,7 @@
     },
     "files": [
       "dist/**/*",
+      "src/connect.html",
       "src/not-running.html",
       "assets/**/*"
     ],
