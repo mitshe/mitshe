@@ -4,6 +4,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 const API_URL = process.env.BACKEND_URL || "http://localhost:3001";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   // Set turbopack root for monorepo builds (needed in Docker)
   turbopack: {
     root: process.env.TURBO_ROOT || undefined,

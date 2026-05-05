@@ -67,30 +67,27 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
     // CQRS
     CqrsModule.forRoot(),
 
-    // Rate Limiting with Redis storage for distributed rate limiting
+    // Rate Limiting
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
+        const desktopMode = config.get('DESKTOP_MODE') === 'true';
         const redisUrl = config.get('REDIS_URL');
+
+        const throttlers = [
+          { name: 'short', ttl: 1000, limit: 10 },
+          { name: 'medium', ttl: 10000, limit: 50 },
+          { name: 'long', ttl: 60000, limit: 200 },
+        ];
+
+        // Desktop mode: skip Redis storage, use in-memory
+        if (desktopMode || (!redisUrl && !config.get('REDIS_HOST'))) {
+          return { throttlers };
+        }
+
         return {
-          throttlers: [
-            {
-              name: 'short',
-              ttl: 1000, // 1 second
-              limit: 10, // 10 requests per second
-            },
-            {
-              name: 'medium',
-              ttl: 10000, // 10 seconds
-              limit: 50, // 50 requests per 10 seconds
-            },
-            {
-              name: 'long',
-              ttl: 60000, // 1 minute
-              limit: 200, // 200 requests per minute
-            },
-          ],
+          throttlers,
           storage: new ThrottlerStorageRedisService(
             redisUrl
               ? new Redis(redisUrl, { keyPrefix: 'throttle:' })
@@ -109,7 +106,22 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
+        const desktopMode = config.get('DESKTOP_MODE') === 'true';
         const redisUrl = config.get('REDIS_URL');
+
+        // Desktop mode: use maxRetriesPerRequest to make BullMQ fail fast
+        if (desktopMode || (!redisUrl && !config.get('REDIS_HOST'))) {
+          return {
+            connection: {
+              host: '127.0.0.1',
+              port: 6379,
+              maxRetriesPerRequest: 0,
+              lazyConnect: true,
+              enableOfflineQueue: false,
+            },
+          };
+        }
+
         if (redisUrl) {
           const url = new URL(redisUrl);
           return {

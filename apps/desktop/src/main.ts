@@ -10,15 +10,23 @@ import {
 } from 'electron';
 import * as path from 'path';
 import { autoUpdater } from 'electron-updater';
-import { checkDocker, ensureContainer, stopContainer } from './docker';
-import { loadConfig, saveConfig, getWebUrl, AppConfig } from './config';
+import { loadConfig, saveConfig, AppConfig } from './config';
+import { startAPI, startWeb, stopBackend, waitForHealth, WEB_PORT } from './backend';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
-let containerManaged = false;
 let appConfig: AppConfig;
 
-function createMainWindow(url: string) {
+function getWebUrl(): string {
+  if (appConfig.mode === 'remote') {
+    return appConfig.remoteUrl.replace(/\/$/, '');
+  }
+  return `http://localhost:${WEB_PORT}`;
+}
+
+function createMainWindow() {
+  const url = getWebUrl();
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -36,19 +44,11 @@ function createMainWindow(url: string) {
   });
 
   mainWindow.loadURL(url);
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show();
-  });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
+  mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.on('closed', () => { mainWindow = null; });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http')) {
-      shell.openExternal(url);
-    }
+    if (url.startsWith('http')) shell.openExternal(url);
     return { action: 'deny' };
   });
 }
@@ -65,12 +65,11 @@ function createSmallWindow(htmlFile: string): BrowserWindow {
     },
     backgroundColor: '#2a2a35',
   });
-
   win.loadFile(path.join(__dirname, '..', 'src', htmlFile));
   return win;
 }
 
-function createTray(webUrl: string) {
+function createTray() {
   if (tray) return;
 
   const iconPath = path.join(__dirname, '..', 'assets', 'tray-icon.png');
@@ -82,47 +81,24 @@ function createTray(webUrl: string) {
   }
 
   tray = new Tray(icon);
+  const webUrl = getWebUrl();
 
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open mitshe',
       click: () => {
-        if (mainWindow) {
-          mainWindow.show();
-          mainWindow.focus();
-        } else {
-          createMainWindow(webUrl);
-        }
+        if (mainWindow) { mainWindow.show(); mainWindow.focus(); }
+        else createMainWindow();
       },
     },
     { type: 'separator' },
-    {
-      label: 'Sessions',
-      click: () => { mainWindow?.loadURL(`${webUrl}/sessions`); mainWindow?.show(); },
-    },
-    {
-      label: 'Chat',
-      click: () => { mainWindow?.loadURL(`${webUrl}/chat`); mainWindow?.show(); },
-    },
+    { label: 'Sessions', click: () => { mainWindow?.loadURL(`${webUrl}/sessions`); mainWindow?.show(); } },
+    { label: 'Chat', click: () => { mainWindow?.loadURL(`${webUrl}/chat`); mainWindow?.show(); } },
     { type: 'separator' },
-    {
-      label: appConfig.mode === 'local' ? 'Local mode' : `Remote: ${appConfig.remoteUrl}`,
-      enabled: false,
-    },
-    {
-      label: 'Change mode...',
-      click: () => {
-        saveConfig({ mode: null, remoteUrl: '' });
-        app.relaunch();
-        app.quit();
-      },
-    },
+    { label: appConfig.mode === 'local' ? 'Local mode' : `Remote: ${appConfig.remoteUrl}`, enabled: false },
+    { label: 'Change mode...', click: () => { saveConfig({ mode: null, remoteUrl: '' }); app.relaunch(); app.quit(); } },
     { type: 'separator' },
-    {
-      label: 'Quit',
-      accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4',
-      click: () => app.quit(),
-    },
+    { label: 'Quit', accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4', click: () => app.quit() },
   ]);
 
   tray.setToolTip('mitshe');
@@ -143,57 +119,60 @@ function setupIPC() {
 
   ipcMain.handle('get-version', () => app.getVersion());
   ipcMain.handle('is-desktop', () => true);
-  ipcMain.handle('docker-status', () => checkDocker());
   ipcMain.handle('get-mode', () => appConfig.mode);
 }
 
 async function startLocal() {
   const splash = createSmallWindow('splash.html');
 
-  const status = checkDocker();
-  if (!status.dockerInstalled || !status.dockerRunning) {
-    splash.webContents.on('did-finish-load', () => {
+  // Start API
+  splash.webContents.on('did-finish-load', () => {
+    splash.webContents.executeJavaScript(
+      `document.getElementById('status').textContent = 'Starting API server...'`
+    ).catch(() => {});
+  });
+
+  const apiStarted = await startAPI();
+  if (!apiStarted) {
+    const healthy = await waitForHealth();
+    if (!healthy) {
       splash.webContents.executeJavaScript(`
-        document.getElementById('content').innerHTML = '<h2>Docker Desktop Required</h2><p>mitshe needs Docker to run locally.</p><p style="margin-top:1rem"><a href="https://docker.com/products/docker-desktop" style="color:#6B6EF4">Download Docker Desktop</a></p>';
-      `);
-    });
+        document.getElementById('content').innerHTML = '<h2 style="color:#f87171">Failed to Start</h2><p>API server could not start. Check the logs.</p>';
+      `).catch(() => {});
+      return;
+    }
+  }
+
+  // Start Web
+  splash.webContents.executeJavaScript(
+    `document.getElementById('status').textContent = 'Starting web interface...'`
+  ).catch(() => {});
+
+  const webStarted = await startWeb();
+  if (!webStarted) {
+    splash.webContents.executeJavaScript(`
+      document.getElementById('content').innerHTML = '<h2 style="color:#f87171">Failed to Start</h2><p>Web server could not start.</p>';
+    `).catch(() => {});
     return;
   }
 
-  const ready = await ensureContainer();
-  containerManaged = true;
-
   splash.close();
-
-  if (ready) {
-    const webUrl = getWebUrl(appConfig);
-    createMainWindow(webUrl);
-    createTray(webUrl);
-  } else {
-    const errWin = createSmallWindow('splash.html');
-    errWin.webContents.on('did-finish-load', () => {
-      errWin.webContents.executeJavaScript(`
-        document.getElementById('content').innerHTML = '<h2 style="color:#f87171">Failed to Start</h2><p>Could not start mitshe container. Make sure Docker Desktop is running.</p>';
-      `);
-    });
-  }
+  createMainWindow();
+  createTray();
 }
 
 function startRemote() {
-  const webUrl = getWebUrl(appConfig);
-  createMainWindow(webUrl);
-  createTray(webUrl);
+  createMainWindow();
+  createTray();
 }
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0 && appConfig.mode) {
-    createMainWindow(getWebUrl(appConfig));
+    createMainWindow();
   }
 });
 
@@ -201,40 +180,27 @@ app.whenReady().then(async () => {
   setupIPC();
   appConfig = loadConfig();
 
-  // First launch — show setup screen
   if (!appConfig.mode) {
     const setupWin = createSmallWindow('setup.html');
 
     ipcMain.once('setup-mode', (_event, mode: string, remoteUrl?: string) => {
-      appConfig = {
-        mode: mode as 'local' | 'remote',
-        remoteUrl: remoteUrl || '',
-      };
+      appConfig = { mode: mode as 'local' | 'remote', remoteUrl: remoteUrl || '' };
       saveConfig(appConfig);
       setupWin.close();
 
-      if (appConfig.mode === 'local') {
-        startLocal();
-      } else {
-        startRemote();
-      }
+      if (appConfig.mode === 'local') startLocal();
+      else startRemote();
     });
-
     return;
   }
 
-  if (appConfig.mode === 'local') {
-    await startLocal();
-  } else {
-    startRemote();
-  }
+  if (appConfig.mode === 'local') await startLocal();
+  else startRemote();
 
   autoUpdater.autoDownload = false;
   setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10000);
 });
 
 app.on('before-quit', () => {
-  if (containerManaged) {
-    stopContainer();
-  }
+  stopBackend();
 });
