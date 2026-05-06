@@ -252,23 +252,23 @@ export class SessionsController {
     // Start browser on demand (idempotent)
     await this.containerService.startBrowser(session.containerId);
 
-    // Wait for noVNC to be ready
-    let containerIp: string | null = null;
+    // Get host-mapped port for noVNC
+    let port: number | null = null;
     for (let i = 0; i < 5; i++) {
-      containerIp = await this.containerService.getContainerIp(
-        session.containerId,
-      );
-      if (containerIp) break;
+      port = await this.containerService.getBrowserPort(session.containerId);
+      if (port) break;
       await new Promise((r) => setTimeout(r, 1000));
     }
 
-    if (!containerIp) {
-      throw new BadRequestException('Could not resolve container address.');
+    if (!port) {
+      throw new BadRequestException('Browser port not available. Try again.');
     }
 
+    const host = process.env.BROWSER_HOST || 'localhost';
+
     return {
-      wsUrl: `ws://${containerIp}:6080/websockify`,
-      httpUrl: `http://${containerIp}:6080`,
+      wsUrl: `ws://${host}:${port}/websockify`,
+      httpUrl: `http://${host}:${port}`,
       status: 'ready',
     };
   }

@@ -87,6 +87,7 @@ export class SessionContainerService implements OnModuleInit {
             : '') +
           `exec su -s /bin/bash executor -c "node /session/server.js"`,
       ],
+      ExposedPorts: { '6080/tcp': {} },
       Env: [
         `SESSION_CONFIG=${sessionConfig}`,
         'DISPLAY=:99',
@@ -120,6 +121,9 @@ export class SessionContainerService implements OnModuleInit {
             ? [`${process.env.SSH_KEYS_PATH}:/home/executor/.ssh:ro`]
             : []),
         ],
+        PortBindings: {
+          '6080/tcp': [{ HostPort: '0' }], // noVNC on random host port
+        },
         Memory: (config.environment?.memoryMb || 4096) * 1024 * 1024,
         NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
         PidsLimit: config.enableDocker ? 1024 : 512,
@@ -211,6 +215,23 @@ export class SessionContainerService implements OnModuleInit {
     const container = this.docker.getContainer(containerId);
     await container.start();
     this.logger.log(`Restarted stopped container: ${containerId.slice(0, 12)}`);
+  }
+
+  /**
+   * Get the host-mapped port for noVNC (port 6080 inside container).
+   */
+  async getBrowserPort(containerId: string): Promise<number | null> {
+    try {
+      const container = this.docker.getContainer(containerId);
+      const info = await container.inspect();
+      const portBindings = info.NetworkSettings.Ports['6080/tcp'];
+      if (portBindings && portBindings.length > 0) {
+        return parseInt(portBindings[0].HostPort, 10);
+      }
+    } catch {
+      // container may not exist
+    }
+    return null;
   }
 
   /**
