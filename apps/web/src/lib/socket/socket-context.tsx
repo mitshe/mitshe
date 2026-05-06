@@ -61,29 +61,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     if (!socket) return;
 
     const handleConnect = () => {
-      console.log("[WebSocket] Connected, socket id:", socket.id);
       setIsConnected(true);
     };
-    const handleDisconnect = (reason: string) => {
-      console.log("[WebSocket] Disconnected, reason:", reason);
+    const handleDisconnect = () => {
       setIsConnected(false);
     };
     const handleError = (error: Error) => {
       console.error("[Socket] Connection error:", error.message);
     };
 
-    // DEBUG: Log ALL incoming events
-    const handleAnyEvent = (eventName: string, ...args: unknown[]) => {
-      console.log(`[WebSocket] EVENT: ${eventName}`, args);
-    };
-    socket.onAny(handleAnyEvent);
-
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("connect_error", handleError);
 
     return () => {
-      socket.offAny(handleAnyEvent);
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
       socket.off("connect_error", handleError);
@@ -95,14 +86,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     if (!socket || !orgId) return;
 
     const connectAndAuth = async () => {
-      console.log("[WebSocket] Starting connection for org:", orgId);
       if (!socket.connected) {
         socket.connect();
       }
 
       const handleConnect = async () => {
         try {
-          console.log("[WebSocket] Socket connected, authenticating...");
           const token = await getToken();
           socket.emit("authenticate", { organizationId: orgId, token });
         } catch (error) {
@@ -110,8 +99,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      const handleAuthenticated = (data: { organizationId: string }) => {
-        console.log("[WebSocket] Authenticated for org:", data.organizationId);
+      const handleAuthenticated = (_data: { organizationId: string }) => {
+        // Authenticated successfully
       };
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -125,7 +114,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
       if (socket.connected) {
         try {
-          console.log("[WebSocket] Already connected, authenticating...");
           const token = await getToken();
           socket.emit("authenticate", { organizationId: orgId, token });
         } catch (error) {
@@ -145,7 +133,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     // Reconnect when page becomes visible again (after sleep/tab switch)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && socket && !socket.connected) {
-        console.log('[WebSocket] Page visible, reconnecting...');
         socket.connect();
       }
     };
@@ -279,19 +266,12 @@ export function useWorkflowExecution(executionId: string | null) {
   useEffect(() => {
     if (!socket || !executionId) return;
 
-    console.log("[WebSocket] Subscribing to execution:", executionId);
     subscribeToExecution(executionId);
 
     const handleNodeUpdate = (
       payload: SocketEventPayloads["workflow:node:update"],
     ) => {
-      console.log("[WebSocket] Received node update:", payload);
       if (payload.executionId === executionId) {
-        console.log(
-          "[WebSocket] Updating node state:",
-          payload.nodeId,
-          payload.status,
-        );
         setNodeUpdates((prev) => new Map(prev).set(payload.nodeId, payload));
       }
     };
@@ -299,7 +279,6 @@ export function useWorkflowExecution(executionId: string | null) {
     const handleExecutionStarted = (
       payload: SocketEventPayloads["workflow:execution:started"],
     ) => {
-      console.log("[WebSocket] Received execution:started:", payload);
       if (payload.executionId === executionId) {
         setStatus("running");
       }
@@ -308,7 +287,6 @@ export function useWorkflowExecution(executionId: string | null) {
     const handleExecutionCompleted = (
       payload: SocketEventPayloads["workflow:execution:completed"],
     ) => {
-      console.log("[WebSocket] Received execution:completed:", payload);
       if (payload.executionId === executionId) {
         setStatus("completed");
       }
@@ -317,7 +295,6 @@ export function useWorkflowExecution(executionId: string | null) {
     const handleExecutionFailed = (
       payload: SocketEventPayloads["workflow:execution:failed"],
     ) => {
-      console.log("[WebSocket] Received execution:failed:", payload);
       if (payload.executionId === executionId) {
         setStatus("failed");
         setError(payload.error || "Unknown error");

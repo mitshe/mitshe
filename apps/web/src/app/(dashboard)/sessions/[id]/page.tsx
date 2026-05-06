@@ -58,6 +58,14 @@ import { FileEditor } from "./components/file-editor";
 import BrowserView from "./components/browser-view";
 import { TabBar, type Tab } from "./components/tab-bar";
 
+const statusLabels: Record<string, string> = {
+  CREATING: "Creating",
+  RUNNING: "Running",
+  PAUSED: "Paused",
+  COMPLETED: "Stopped",
+  FAILED: "Failed",
+};
+
 const providerLabels: Record<string, string> = {
   CLAUDE: "Claude",
   OPENAI: "OpenAI",
@@ -640,7 +648,7 @@ export default function SessionDetailPage() {
                 className="gap-1"
               >
                 {isRunning && <Radio className="w-3 h-3 animate-pulse" />}
-                {currentStatus}
+                {statusLabels[currentStatus] || currentStatus}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
