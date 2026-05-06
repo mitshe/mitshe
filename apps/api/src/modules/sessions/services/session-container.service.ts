@@ -81,11 +81,11 @@ export class SessionContainerService implements OnModuleInit {
       Entrypoint: ['bash', '-c'],
       Cmd: [
         `chown -R executor:executor /home/executor 2>/dev/null; ` +
-        `if [ -d /var/lib/docker ]; then dockerd &>/var/log/dockerd.log & for i in $(seq 1 30); do docker info &>/dev/null && break || sleep 1; done; fi; ` +
-        (config.environment?.setupScript
-          ? `echo "$SETUP_SCRIPT_B64" | base64 -d > /tmp/.setup.sh && chmod +x /tmp/.setup.sh && su -s /bin/bash executor -c "bash /tmp/.setup.sh" && rm -f /tmp/.setup.sh; `
-          : '') +
-        `exec su -s /bin/bash executor -c "node /session/server.js"`,
+          `if [ -d /var/lib/docker ]; then dockerd &>/var/log/dockerd.log & for i in $(seq 1 30); do docker info &>/dev/null && break || sleep 1; done; fi; ` +
+          (config.environment?.setupScript
+            ? `echo "$SETUP_SCRIPT_B64" | base64 -d > /tmp/.setup.sh && chmod +x /tmp/.setup.sh && su -s /bin/bash executor -c "bash /tmp/.setup.sh" && rm -f /tmp/.setup.sh; `
+            : '') +
+          `exec su -s /bin/bash executor -c "node /session/server.js"`,
       ],
       Env: [
         `SESSION_CONFIG=${sessionConfig}`,
@@ -220,7 +220,9 @@ export class SessionContainerService implements OnModuleInit {
   async startBrowser(containerId: string): Promise<void> {
     // Check if already running
     const check = await this.execCommand(containerId, [
-      'bash', '-c', 'pgrep -x Xvfb >/dev/null 2>&1 && echo running || echo stopped',
+      'bash',
+      '-c',
+      'pgrep -x Xvfb >/dev/null 2>&1 && echo running || echo stopped',
     ]);
 
     if (check.trim() === 'running') {
@@ -228,13 +230,19 @@ export class SessionContainerService implements OnModuleInit {
     }
 
     // Start Xvfb + fluxbox + x11vnc + noVNC
-    await this.execCommand(containerId, [
-      'bash', '-c',
-      'Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 & sleep 1; ' +
-      'DISPLAY=:99 fluxbox >/dev/null 2>&1 & ' +
-      'x11vnc -display :99 -forever -nopw -shared -rfbport 5900 >/dev/null 2>&1 & ' +
-      '/opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 &',
-    ], '/workspace', 15000);
+    await this.execCommand(
+      containerId,
+      [
+        'bash',
+        '-c',
+        'Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 & sleep 1; ' +
+          'DISPLAY=:99 fluxbox >/dev/null 2>&1 & ' +
+          'x11vnc -display :99 -forever -nopw -shared -rfbport 5900 >/dev/null 2>&1 & ' +
+          '/opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 &',
+      ],
+      '/workspace',
+      15000,
+    );
 
     this.logger.log(`Browser started in container ${containerId.slice(0, 12)}`);
   }

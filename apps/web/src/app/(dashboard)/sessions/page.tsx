@@ -75,7 +75,6 @@ import {
   useUpdateSession,
   useRecreateSession,
   useDeleteSession,
-  usePauseSession,
   useStopSession,
   useProjects,
   useRepositories,
@@ -183,7 +182,6 @@ export default function SessionsPage() {
   const updateSession = useUpdateSession();
   const recreateSession = useRecreateSession();
   const deleteSession = useDeleteSession();
-  const pauseSession = usePauseSession();
   const stopSession = useStopSession();
 
   // Auto-refresh list when session status changes (WebSocket)
@@ -478,16 +476,6 @@ export default function SessionsPage() {
       toast.success("Session deleted");
     } catch {
       toast.error("Failed to delete session");
-    }
-  };
-
-  const handlePause = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    try {
-      await pauseSession.mutateAsync(id);
-      toast.success("Session paused");
-    } catch {
-      toast.error("Failed to pause session");
     }
   };
 

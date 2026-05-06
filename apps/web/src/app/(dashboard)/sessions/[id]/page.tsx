@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
-  Pause,
   Play,
   Square,
   ArrowLeft,
@@ -39,7 +38,6 @@ import {
 import {
   useSession,
   useCloseTerminal,
-  usePauseSession,
   useResumeSession,
   useStopSession,
   useDeleteSession,
@@ -80,7 +78,6 @@ export default function SessionDetailPage() {
   const { data: session, isLoading, refetch } = useSession(sessionId);
   const { data: files = [], isLoading: filesLoading } = useSessionFiles(sessionId);
   const { data: gitStatuses = [] } = useSessionGitStatus(sessionId);
-  const pauseSession = usePauseSession();
   const resumeSession = useResumeSession();
   const stopSession = useStopSession();
   const deleteSession = useDeleteSession();
@@ -541,15 +538,6 @@ export default function SessionDetailPage() {
   );
 
   // ─── Session Lifecycle ─────────────────────────────────────────
-
-  const handlePause = async () => {
-    try {
-      await pauseSession.mutateAsync(sessionId);
-      refetch();
-    } catch {
-      toast.error("Failed to pause session");
-    }
-  };
 
   const handleResume = async () => {
     try {

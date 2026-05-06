@@ -49,7 +49,6 @@ import {
   Plus,
   Loader2,
   MoreHorizontal,
-  Play,
   Eye,
   Trash2,
   ListTodo,
@@ -73,7 +72,6 @@ import {
   useProjects,
   useWorkflows,
   useCreateTask,
-  useProcessTask,
   useDeleteTask,
   useImportPreview,
   useImportConfirm,
@@ -95,7 +93,6 @@ export default function TasksPage() {
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: workflows = [] } = useWorkflows();
   const createTask = useCreateTask();
-  const processTask = useProcessTask();
   const deleteTask = useDeleteTask();
   const importPreview = useImportPreview();
   const importConfirm = useImportConfirm();
@@ -284,14 +281,6 @@ export default function TasksPage() {
       });
     } catch {
       toast.error("Failed to create task");
-    }
-  };
-
-  const handleProcessTask = async (taskId: string) => {
-    try {
-      await processTask.mutateAsync(taskId);
-    } catch {
-      toast.error("Failed to process task");
     }
   };
 

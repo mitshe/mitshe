@@ -263,9 +263,7 @@ export class SessionsController {
     }
 
     if (!containerIp) {
-      throw new BadRequestException(
-        'Could not resolve container address.',
-      );
+      throw new BadRequestException('Could not resolve container address.');
     }
 
     return {
