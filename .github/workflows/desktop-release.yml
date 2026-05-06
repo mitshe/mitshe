@@ -1,9 +1,8 @@
 name: Desktop Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -72,8 +71,8 @@ jobs:
         with: { name: desktop-linux, path: release }
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.release.tag_name }}
           files: release/*
           fail_on_unmatched_files: false
-          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
