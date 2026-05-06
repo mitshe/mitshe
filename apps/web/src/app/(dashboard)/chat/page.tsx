@@ -190,7 +190,6 @@ export default function ChatPage() {
         placeholder={isEmptyState ? "Ask anything..." : "Reply..."}
         className="w-full min-h-[48px] max-h-[200px] resize-none text-sm bg-transparent px-4 pt-3.5 pb-1 outline-none placeholder:text-muted-foreground overflow-y-auto"
         rows={1}
-        disabled={sendMessage.isPending}
       />
       <div className="flex items-center justify-between px-3 pb-2.5">
         <Select value={selectedCredentialId} onValueChange={setSelectedCredentialId}>
