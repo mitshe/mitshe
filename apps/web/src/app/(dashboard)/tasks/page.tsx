@@ -65,6 +65,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Terminal,
 } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import {
@@ -487,6 +488,12 @@ export default function TasksPage() {
                     <Link href={`/tasks/${task.id}`}>
                       <Eye className="mr-2 h-4 w-4" />
                       View Details
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`}>
+                      <Terminal className="mr-2 h-4 w-4" />
+                      Open in Session
                     </Link>
                   </DropdownMenuItem>
                   {task.status === "PENDING" && (
