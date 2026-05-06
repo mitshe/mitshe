@@ -496,14 +496,6 @@ export default function TasksPage() {
                       Open in Session
                     </Link>
                   </DropdownMenuItem>
-                  {task.status === "PENDING" && (
-                    <DropdownMenuItem
-                      onClick={() => handleProcessTask(task.id)}
-                    >
-                      <Play className="mr-2 h-4 w-4" />
-                      Process with AI
-                    </DropdownMenuItem>
-                  )}
                   {manualWorkflows.length > 0 && (
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
@@ -605,12 +597,6 @@ export default function TasksPage() {
                 View Details
               </Link>
             </DropdownMenuItem>
-            {task.status === "PENDING" && (
-              <DropdownMenuItem onClick={() => handleProcessTask(task.id)}>
-                <Play className="mr-2 h-4 w-4" />
-                Process with AI
-              </DropdownMenuItem>
-            )}
             {task.externalSource && (
               <DropdownMenuItem asChild>
                 <a
