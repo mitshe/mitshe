@@ -67,6 +67,15 @@ function createMainWindow(url: string) {
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   mainWindow.on('closed', () => { mainWindow = null; });
 
+  // Reload page after system wake from sleep to restore connection
+  const { powerMonitor } = require('electron');
+  powerMonitor.on('resume', () => {
+    console.log('[mitshe] System resumed from sleep, reloading...');
+    setTimeout(() => {
+      mainWindow?.webContents.reload();
+    }, 2000);
+  });
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) shell.openExternal(url);
     return { action: 'deny' };
