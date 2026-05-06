@@ -712,17 +712,12 @@ export default function SessionDetailPage() {
               Create PR
             </Button>
           )}
-          {isRunning && (
-            <Button variant="outline" size="sm" onClick={handlePause}>
-              <Pause className="w-4 h-4 mr-1" /> Pause
-            </Button>
-          )}
-          {(isPaused || isCompleted) && (
+          {isCompleted && (
             <Button variant="outline" size="sm" onClick={handleResume}>
               <Play className="w-4 h-4 mr-1" /> Resume
             </Button>
           )}
-          {isActive && (
+          {isRunning && (
             <Button variant="destructive" size="sm" onClick={handleStop}>
               <Square className="w-4 h-4 mr-1" /> Stop
             </Button>

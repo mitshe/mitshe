@@ -1167,16 +1167,10 @@ export default function SessionsPage() {
                               Open
                             </DropdownMenuItem>
                             {session.status === "RUNNING" && (
-                              <>
-                                <DropdownMenuItem onClick={(e) => handlePause(e as unknown as React.MouseEvent, session.id)}>
-                                  <Pause className="w-4 h-4 mr-2" />
-                                  Pause
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => handleStop(e as unknown as React.MouseEvent, session.id)}>
-                                  <Square className="w-4 h-4 mr-2" />
-                                  Stop
-                                </DropdownMenuItem>
-                              </>
+                              <DropdownMenuItem onClick={(e) => handleStop(e as unknown as React.MouseEvent, session.id)}>
+                                <Square className="w-4 h-4 mr-2" />
+                                Stop
+                              </DropdownMenuItem>
                             )}
                             {session.status !== "CREATING" && (
                               <DropdownMenuItem onClick={(e) => handleEdit(e as unknown as React.MouseEvent, session)}>
