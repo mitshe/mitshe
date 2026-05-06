@@ -99,7 +99,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      const handleAuthenticated = (_data: { organizationId: string }) => {
+      const handleAuthenticated = () => {
         // Authenticated successfully
       };
 
