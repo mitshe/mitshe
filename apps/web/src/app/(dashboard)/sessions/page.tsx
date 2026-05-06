@@ -1052,7 +1052,6 @@ export default function SessionsPage() {
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="RUNNING">Running</SelectItem>
-            <SelectItem value="PAUSED">Paused</SelectItem>
             <SelectItem value="COMPLETED">Stopped</SelectItem>
             <SelectItem value="FAILED">Failed</SelectItem>
             <SelectItem value="CREATING">Creating</SelectItem>
