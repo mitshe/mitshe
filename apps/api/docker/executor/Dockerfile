@@ -108,6 +108,12 @@ RUN ARCH=$(dpkg --print-architecture) && \
     rm /tmp/jira.tar.gz \
     || echo "jira-cli installation failed, skipping..."
 
+# Install Google Chrome (full browser for interactive use)
+RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o /tmp/chrome.deb && \
+    apt-get update && apt-get install -y /tmp/chrome.deb && \
+    rm /tmp/chrome.deb && rm -rf /var/lib/apt/lists/* \
+    || echo "Chrome installation failed (arm64?), skipping..."
+
 # Install Playwright dependencies (Chromium system libs)
 RUN npx playwright install-deps chromium
 

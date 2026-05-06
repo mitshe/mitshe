@@ -124,7 +124,8 @@ export class SessionContainerService implements OnModuleInit {
         PortBindings: {
           '6080/tcp': [{ HostPort: '0' }], // noVNC on random host port
         },
-        Memory: (config.environment?.memoryMb || 4096) * 1024 * 1024,
+        ShmSize: 512 * 1024 * 1024, // 512MB shared memory for Chrome
+        Memory: (config.environment?.memoryMb || 8192) * 1024 * 1024,
         NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
         PidsLimit: config.enableDocker ? 1024 : 512,
         NetworkMode: process.env.DOCKER_NETWORK || 'bridge',
@@ -260,8 +261,8 @@ export class SessionContainerService implements OnModuleInit {
           'DISPLAY=:99 fluxbox >/dev/null 2>&1 & ' +
           'x11vnc -display :99 -forever -nopw -shared -rfbport 5900 >/dev/null 2>&1 & ' +
           '/opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 & ' +
-          'sleep 1; CHROME=$(find /home/executor/.cache/ms-playwright -name chrome -type f 2>/dev/null | head -1); ' +
-          'if [ -n "$CHROME" ]; then DISPLAY=:99 "$CHROME" --no-sandbox --disable-gpu --window-size=1920,1080 --start-maximized about:blank >/dev/null 2>&1 & fi',
+          'sleep 1; CHROME=$(command -v google-chrome || command -v google-chrome-stable || find /home/executor/.cache/ms-playwright -name chrome -type f 2>/dev/null | head -1); ' +
+          'if [ -n "$CHROME" ]; then DISPLAY=:99 "$CHROME" --no-sandbox --disable-dev-shm-usage --disable-gpu --remote-debugging-port=9222 --window-size=1920,1080 --start-maximized about:blank >/dev/null 2>&1 & fi',
       ],
       '/workspace',
       15000,

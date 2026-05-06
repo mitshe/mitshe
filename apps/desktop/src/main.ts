@@ -51,6 +51,7 @@ function createMainWindow(url: string) {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      webSecurity: false, // allow noVNC iframe from different port
     },
     show: false,
     backgroundColor: '#2a2a35',
