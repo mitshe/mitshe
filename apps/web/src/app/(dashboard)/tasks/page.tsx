@@ -669,7 +669,7 @@ export default function TasksPage() {
                 Import
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
                   {importSource
