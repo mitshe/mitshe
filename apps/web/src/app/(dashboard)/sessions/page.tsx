@@ -147,6 +147,7 @@ export default function SessionsPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
@@ -471,11 +472,14 @@ export default function SessionsPage() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    setDeletingId(id);
     try {
       await deleteSession.mutateAsync(id);
       toast.success("Session deleted");
     } catch {
       toast.error("Failed to delete session");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -1166,9 +1170,9 @@ export default function SessionsPage() {
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={(e) => handleDelete(e as unknown as React.MouseEvent, session.id)}>
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
+                            <DropdownMenuItem className="text-destructive" disabled={deletingId === session.id} onClick={(e) => handleDelete(e as unknown as React.MouseEvent, session.id)}>
+                              {deletingId === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                              {deletingId === session.id ? "Deleting..." : "Delete"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

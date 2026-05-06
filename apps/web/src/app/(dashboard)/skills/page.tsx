@@ -126,9 +126,9 @@ export default function SkillsPage() {
     setDialogOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    deleteSkill.mutate(deleteTarget.id);
+    await deleteSkill.mutateAsync(deleteTarget.id);
     setDeleteTarget(null);
   };
 
@@ -501,12 +501,14 @@ export default function SkillsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteSkill.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              disabled={deleteSkill.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {deleteSkill.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deleteSkill.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

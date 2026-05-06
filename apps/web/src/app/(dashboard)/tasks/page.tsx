@@ -98,6 +98,7 @@ export default function TasksPage() {
   const importConfirm = useImportConfirm();
   const runWorkflowOnTask = useRunWorkflowOnTask();
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importSource, setImportSource] = useState<"jira" | "youtrack" | null>(
@@ -285,10 +286,13 @@ export default function TasksPage() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    setDeletingId(taskId);
     try {
       await deleteTask.mutateAsync(taskId);
     } catch {
       toast.error("Failed to delete task");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -522,10 +526,11 @@ export default function TasksPage() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive"
+                    disabled={deletingId === task.id}
                     onClick={() => handleDeleteTask(task.id)}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+                    {deletingId === task.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    {deletingId === task.id ? "Deleting..." : "Delete"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -601,10 +606,11 @@ export default function TasksPage() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive"
+              disabled={deletingId === task.id}
               onClick={() => handleDeleteTask(task.id)}
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {deletingId === task.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              {deletingId === task.id ? "Deleting..." : "Delete"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
