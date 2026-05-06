@@ -687,39 +687,31 @@ export default function TasksPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setImportSource("jira")}
-                      className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-border hover:border-primary hover:bg-accent transition-colors"
+                      className="flex items-center gap-3 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-colors text-left"
                     >
-                      <div className="w-12 h-12 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
-                        J
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium">Jira</div>
-                        <div className="text-xs text-muted-foreground">
-                          Atlassian Jira Cloud or Server
-                        </div>
+                      <svg viewBox="0 0 24 24" className="w-8 h-8 shrink-0" fill="#2684FF"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z"/></svg>
+                      <div>
+                        <div className="font-medium text-sm">Jira</div>
+                        <div className="text-xs text-muted-foreground">Import from Atlassian Jira</div>
                       </div>
                     </button>
                     <button
                       onClick={() => setImportSource("youtrack")}
-                      className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-border hover:border-primary hover:bg-accent transition-colors"
+                      className="flex items-center gap-3 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-colors text-left"
                     >
-                      <div className="w-12 h-12 rounded-lg bg-purple-500 flex items-center justify-center text-white font-bold text-lg">
-                        Y
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium">YouTrack</div>
-                        <div className="text-xs text-muted-foreground">
-                          JetBrains YouTrack
-                        </div>
+                      <svg viewBox="0 0 24 24" className="w-8 h-8 shrink-0" fill="currentColor"><circle cx="12" cy="12" r="10" fill="#7B68EE" opacity="0.2"/><circle cx="12" cy="12" r="6" fill="#7B68EE"/></svg>
+                      <div>
+                        <div className="font-medium text-sm">YouTrack</div>
+                        <div className="text-xs text-muted-foreground">Import from JetBrains YouTrack</div>
                       </div>
                     </button>
                   </div>
                 ) : (
                   <>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="w-fit -mt-2"
+                      className="w-fit"
                       onClick={() => {
                         setImportSource(null);
                         setImportUrl("");
@@ -727,7 +719,7 @@ export default function TasksPage() {
                         setImportError(null);
                       }}
                     >
-                      ← Back to sources
+                      Change source
                     </Button>
                     <div className="space-y-2">
                       <Label htmlFor="issue-url">Issue URL</Label>
@@ -904,11 +896,11 @@ export default function TasksPage() {
                 New Task
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>Create New Task</DialogTitle>
+                <DialogTitle>New Task</DialogTitle>
                 <DialogDescription>
-                  Add a new task to be processed by AI agents.
+                  Create a task manually or import from Jira/YouTrack.
                 </DialogDescription>
               </DialogHeader>
               <DialogBody className="space-y-4 py-4">
