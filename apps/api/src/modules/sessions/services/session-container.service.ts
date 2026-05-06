@@ -250,7 +250,7 @@ export class SessionContainerService implements OnModuleInit {
       return; // already started
     }
 
-    // Start Xvfb + fluxbox + x11vnc + noVNC
+    // Start Xvfb + fluxbox + x11vnc + noVNC + Chromium
     await this.execCommand(
       containerId,
       [
@@ -259,7 +259,9 @@ export class SessionContainerService implements OnModuleInit {
         'Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 & sleep 1; ' +
           'DISPLAY=:99 fluxbox >/dev/null 2>&1 & ' +
           'x11vnc -display :99 -forever -nopw -shared -rfbport 5900 >/dev/null 2>&1 & ' +
-          '/opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 &',
+          '/opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 & ' +
+          'sleep 1; CHROME=$(find /home/executor/.cache/ms-playwright -name chrome -type f 2>/dev/null | head -1); ' +
+          'if [ -n "$CHROME" ]; then DISPLAY=:99 "$CHROME" --no-sandbox --disable-gpu --window-size=1920,1080 --start-maximized about:blank >/dev/null 2>&1 & fi',
       ],
       '/workspace',
       15000,
