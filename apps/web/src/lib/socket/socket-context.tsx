@@ -141,6 +141,19 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     };
 
     connectAndAuth();
+
+    // Reconnect when page becomes visible again (after sleep/tab switch)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && socket && !socket.connected) {
+        console.log('[WebSocket] Page visible, reconnecting...');
+        socket.connect();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [socket, orgId, getToken]);
 
   const subscribeToOrganization = useCallback(
