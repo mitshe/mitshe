@@ -222,6 +222,14 @@ export default function SessionDetailPage() {
     };
   }, [socket, sessionId, refetch]);
 
+  // Fallback polling when session is CREATING
+  const currentStatus = session?.status as string | undefined;
+  useEffect(() => {
+    if (currentStatus !== "CREATING") return;
+    const interval = setInterval(() => refetch(), 3000);
+    return () => clearInterval(interval);
+  }, [currentStatus, refetch]);
+
   // Refresh open files when terminal has output (agent may have changed files)
   const refreshDebounceRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
@@ -616,10 +624,10 @@ export default function SessionDetailPage() {
     );
   }
 
-  const currentStatus = session.status as SessionStatus;
-  const isRunning = currentStatus === "RUNNING";
-  const isPaused = currentStatus === "PAUSED";
-  const isCompleted = currentStatus === "COMPLETED";
+  const sessionStatus = session.status as SessionStatus;
+  const isRunning = sessionStatus === "RUNNING";
+  const isPaused = sessionStatus === "PAUSED";
+  const isCompleted = sessionStatus === "COMPLETED";
   const isActive = isRunning || isPaused;
 
   return (
@@ -644,14 +652,14 @@ export default function SessionDetailPage() {
                     ? "default"
                     : isPaused
                       ? "secondary"
-                      : currentStatus === "FAILED"
+                      : sessionStatus === "FAILED"
                         ? "destructive"
                         : "outline"
                 }
                 className="gap-1"
               >
                 {isRunning && <Radio className="w-3 h-3 animate-pulse" />}
-                {statusLabels[currentStatus] || currentStatus}
+                {statusLabels[sessionStatus] || sessionStatus}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">

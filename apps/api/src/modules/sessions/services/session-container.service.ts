@@ -117,9 +117,6 @@ export class SessionContainerService implements OnModuleInit {
           ...(config.localPath
             ? [`${config.localPath}:/workspace/local:rw`]
             : []),
-          ...(config.mountSsh && process.env.SSH_KEYS_PATH
-            ? [`${process.env.SSH_KEYS_PATH}:/home/executor/.ssh:ro`]
-            : []),
         ],
         PortBindings: {
           '6080/tcp': [{ HostPort: '0' }], // noVNC on random host port
@@ -240,32 +237,56 @@ export class SessionContainerService implements OnModuleInit {
    * Idempotent — safe to call multiple times.
    */
   async startBrowser(containerId: string): Promise<void> {
-    // Check if already running
-    const check = await this.execCommand(containerId, [
-      'bash',
-      '-c',
-      'pgrep -x Xvfb >/dev/null 2>&1 && echo running || echo stopped',
-    ]);
+    // Check if Xvfb already running
+    const check = await this.execCommand(
+      containerId,
+      [
+        'bash',
+        '-c',
+        'pgrep -x Xvfb >/dev/null 2>&1 && echo running || echo stopped',
+      ],
+      '/workspace',
+      5000,
+      'root',
+    );
 
     if (check.trim() === 'running') {
-      return; // already started
+      return;
     }
 
-    // Start Xvfb + fluxbox + x11vnc + noVNC + Chromium
+    // Start display server (as root — Xvfb needs it)
     await this.execCommand(
       containerId,
       [
         'bash',
         '-c',
-        'Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 & sleep 1; ' +
-          'DISPLAY=:99 fluxbox >/dev/null 2>&1 & ' +
-          'x11vnc -display :99 -forever -nopw -shared -rfbport 5900 >/dev/null 2>&1 & ' +
-          '/opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 & ' +
-          'sleep 1; CHROME=$(command -v google-chrome || command -v google-chrome-stable || find /home/executor/.cache/ms-playwright -name chrome -type f 2>/dev/null | head -1); ' +
-          'if [ -n "$CHROME" ]; then DISPLAY=:99 "$CHROME" --no-sandbox --disable-dev-shm-usage --remote-debugging-port=9222 --start-maximized >/dev/null 2>&1 & fi',
+        'Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 &' +
+          ' sleep 2 &&' +
+          ' x11vnc -display :99 -forever -nopw -shared -rfbport 5900 >/dev/null 2>&1 &' +
+          ' /opt/novnc/utils/novnc_proxy --vnc localhost:5900 --listen 6080 >/dev/null 2>&1 &',
       ],
       '/workspace',
-      15000,
+      10000,
+      'root',
+    );
+
+    // Start window manager + Chrome (as executor user)
+    await this.execCommand(
+      containerId,
+      [
+        'bash',
+        '-c',
+        'export DISPLAY=:99 &&' +
+          ' fluxbox >/dev/null 2>&1 &' +
+          ' sleep 1 &&' +
+          ' CHROME=$(which google-chrome-stable 2>/dev/null || which google-chrome 2>/dev/null || which chromium 2>/dev/null) &&' +
+          ' if [ -n "$CHROME" ]; then' +
+          '   "$CHROME" --no-sandbox --disable-dev-shm-usage --remote-debugging-port=9222 --start-maximized >/dev/null 2>&1 &' +
+          ' fi',
+      ],
+      '/workspace',
+      10000,
+      'executor',
     );
 
     this.logger.log(`Browser started in container ${containerId.slice(0, 12)}`);
@@ -544,6 +565,7 @@ export class SessionContainerService implements OnModuleInit {
     cmd: string[],
     workDir = '/workspace',
     timeoutMs = 60000,
+    user = 'executor',
   ): Promise<string> {
     const container = this.docker.getContainer(containerId);
 
@@ -551,7 +573,7 @@ export class SessionContainerService implements OnModuleInit {
       Cmd: cmd,
       AttachStdout: true,
       AttachStderr: true,
-      User: 'executor',
+      User: user,
       WorkingDir: workDir,
       Tty: false,
     });

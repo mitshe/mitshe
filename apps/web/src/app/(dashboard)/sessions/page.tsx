@@ -619,10 +619,11 @@ export default function SessionsPage() {
                 <Label>AI Agent</Label>
                 {sessionProviders.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2 border rounded-md px-3">
-                    No CLI agents configured.{" "}
+                    Claude Code is pre-installed in every session. You can log in with your Anthropic account directly in the terminal, or{" "}
                     <a href="/settings/ai" className="underline font-medium text-foreground">
-                      Add Claude Code or OpenClaw
-                    </a>
+                      add an API key
+                    </a>{" "}
+                    for automatic setup.
                   </p>
                 ) : (
                   <Select
@@ -902,25 +903,6 @@ export default function SessionsPage() {
                     </Label>
                   </div>
 
-
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="mountSsh"
-                      checked={form.mountSsh}
-                      onCheckedChange={(checked) =>
-                        setForm({ ...form, mountSsh: checked === true })
-                      }
-                      disabled={configLocked}
-                    />
-                    <Label
-                      htmlFor="mountSsh"
-                      className={`font-normal text-sm ${
-                        configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-                      }`}
-                    >
-                      Mount SSH keys (for git push/commit)
-                    </Label>
-                  </div>
 
                   <div className="flex items-center gap-2">
                     <Checkbox
