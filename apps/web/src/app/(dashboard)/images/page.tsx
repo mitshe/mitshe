@@ -31,6 +31,12 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Camera,
   Plus,
   Trash2,
@@ -141,7 +147,18 @@ export default function SnapshotsPage() {
       case "READY":
         return <Badge variant="default">Ready</Badge>;
       case "FAILED":
-        return <Badge variant="destructive">Failed</Badge>;
+        return (
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="destructive" className="cursor-help">Failed</Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-xs max-w-[200px]">Snapshot creation failed. The session may have stopped or run out of disk space. Try again from a running session.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -238,8 +255,13 @@ export default function SnapshotsPage() {
         <div className="text-center py-12">
           <Container className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">No snapshots yet</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Create a session, set it up how you want, then snapshot it to save the state.
+          <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+            Snapshots save the state of a running session — installed tools, cloned repos, and configurations — so you can reuse them as a base for new sessions.
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            <Link href="/sessions" className="underline hover:text-foreground transition-colors">
+              Start a session
+            </Link>, set it up, then come back here to snapshot it.
           </p>
         </div>
       ) : (

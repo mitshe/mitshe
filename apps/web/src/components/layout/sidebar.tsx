@@ -309,6 +309,12 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </p>
       )}
 
+      {credentials.length > 0 && !hasConversations && !isLoading && (
+        <p className="px-3 py-2 text-xs text-muted-foreground">
+          Click &ldquo;New chat&rdquo; to start a conversation with your AI provider.
+        </p>
+      )}
+
       {/* Conversations — same style as Recent sections */}
       {hasConversations && (
         <div className="mt-4 space-y-0.5">
@@ -422,6 +428,9 @@ export function Sidebar({
   collapsed: boolean;
   onToggle: () => void;
 }) {
+  const pathname = usePathname();
+  const isSettingsActive = pathname === "/settings" || pathname.startsWith("/settings/");
+
   if (collapsed) {
     return (
       <div className="hidden md:flex h-full w-12 flex-col border-r bg-sidebar items-center">
@@ -449,7 +458,12 @@ export function Sidebar({
         <div className="border-t py-2 w-full flex flex-col items-center gap-1.5 shrink-0">
           <Link
             href="/settings"
-            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            className={cn(
+              "p-2 rounded-md transition-colors",
+              isSettingsActive
+                ? "bg-secondary text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+            )}
             title="Settings"
           >
             <Settings className="h-4 w-4" />
@@ -482,7 +496,9 @@ export function Sidebar({
           href="/settings"
           className={cn(
             "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-            "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+            isSettingsActive
+              ? "bg-secondary text-foreground font-medium"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
           )}
         >
           <Settings className="h-4 w-4" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -1083,10 +1084,14 @@ export default function SessionsPage() {
           ) : filteredSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <MessageSquareCode className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Sessions</h3>
+              <h3 className="text-lg font-semibold mb-2">No sessions yet</h3>
               <p className="text-muted-foreground text-center mb-4 max-w-sm">
                 Sessions are isolated containers where AI agents work on your code.
-                Pick an AI provider and start one.
+                Create your first session or{" "}
+                <Link href="/tasks" className="underline hover:text-foreground transition-colors">
+                  import tasks from Jira
+                </Link>{" "}
+                to get started.
               </p>
               <Button onClick={openCreate}>
                 <Plus className="w-4 h-4 mr-2" />

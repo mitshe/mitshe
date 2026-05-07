@@ -593,6 +593,12 @@ export default function TasksPage() {
                 View Details
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`}>
+                <Terminal className="mr-2 h-4 w-4" />
+                Open in Session
+              </Link>
+            </DropdownMenuItem>
             {task.externalSource && (
               <DropdownMenuItem asChild>
                 <a
@@ -674,7 +680,7 @@ export default function TasksPage() {
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Download className="mr-2 h-4 w-4" />
-                Import
+                Import from Jira
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">

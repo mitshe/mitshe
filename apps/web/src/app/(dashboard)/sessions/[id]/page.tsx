@@ -125,10 +125,13 @@ export default function SessionDetailPage() {
   useEffect(() => {
     if (!session || tabs.length > 0) return;
     const hasAgent = !!session.aiCredentialId;
+    const agentTitle = hasAgent
+      ? `Agent: ${session.name}`
+      : `Terminal: ${session.name}`;
     const initialTabs: Tab[] = [
       {
         id: agentTerminalId,
-        title: hasAgent ? "Agent" : "Terminal",
+        title: agentTitle,
         type: "terminal",
         closeable: true,
         terminalId: agentTerminalId,
