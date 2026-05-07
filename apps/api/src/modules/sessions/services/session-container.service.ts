@@ -307,7 +307,7 @@ export class SessionContainerService implements OnModuleInit {
         [
           'bash',
           '-c',
-          `mkdir -p /workspace/project && if [ -d /workspace/local ]; then rsync -a --exclude='node_modules' --exclude='.git' --exclude='vendor' --exclude='.next' --exclude='dist' --exclude='build' --exclude='__pycache__' --exclude='.cache' --exclude='.venv' --exclude='target' /workspace/local/ /workspace/project/ && chown -R executor:executor /workspace/project; fi`,
+          `mkdir -p /workspace/project && if [ -d /workspace/local ]; then rsync -a --exclude='node_modules' --exclude='vendor' --exclude='__pycache__' --exclude='.venv' --exclude='target' /workspace/local/ /workspace/project/ && chown -R executor:executor /workspace/project; fi`,
         ],
         '/workspace',
         600000, // 10 min timeout for large projects
