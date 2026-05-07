@@ -75,6 +75,7 @@ import {
   useDeleteTask,
   useImportPreview,
   useImportConfirm,
+  useImportAssigned,
   useRunWorkflowOnTask,
 } from "@/lib/api/hooks";
 import { formatDistanceToNow } from "@/lib/utils";
@@ -96,6 +97,7 @@ export default function TasksPage() {
   const deleteTask = useDeleteTask();
   const importPreview = useImportPreview();
   const importConfirm = useImportConfirm();
+  const importAssigned = useImportAssigned();
   const runWorkflowOnTask = useRunWorkflowOnTask();
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -690,6 +692,7 @@ export default function TasksPage() {
               </DialogHeader>
               <DialogBody className="space-y-4 py-4">
                 {!importSource ? (
+                  <>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setImportSource("jira")}
@@ -712,6 +715,53 @@ export default function TasksPage() {
                       </div>
                     </button>
                   </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-xs text-muted-foreground mb-3">Or import all your assigned issues at once:</p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        disabled={importAssigned.isPending}
+                        onClick={async () => {
+                          try {
+                            const result = await importAssigned.mutateAsync({ source: 'JIRA' });
+                            toast.success(`Imported ${result.imported} task(s)`, {
+                              description: result.skipped > 0 ? `${result.skipped} already imported` : undefined,
+                            });
+                            if (result.imported > 0) setImportDialogOpen(false);
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : 'Import failed');
+                          }
+                        }}
+                      >
+                        {importAssigned.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+                        Import all from Jira
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        disabled={importAssigned.isPending}
+                        onClick={async () => {
+                          try {
+                            const result = await importAssigned.mutateAsync({ source: 'YOUTRACK' });
+                            toast.success(`Imported ${result.imported} task(s)`, {
+                              description: result.skipped > 0 ? `${result.skipped} already imported` : undefined,
+                            });
+                            if (result.imported > 0) setImportDialogOpen(false);
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : 'Import failed');
+                          }
+                        }}
+                      >
+                        {importAssigned.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+                        Import all from YouTrack
+                      </Button>
+                    </div>
+                  </div>
+                  </>
                 ) : (
                   <>
                     <Button

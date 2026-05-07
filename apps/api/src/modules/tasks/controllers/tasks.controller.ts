@@ -227,6 +227,21 @@ export class TasksController {
     return { preview };
   }
 
+  @Post('import/assigned')
+  @ApiOperation({ summary: 'Import all assigned issues from connected tracker' })
+  async importAssigned(
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+    @Body() body: { source: 'JIRA' | 'YOUTRACK'; projectId?: string },
+  ) {
+    return this.taskImportService.importAssigned(
+      organizationId,
+      userId,
+      body.source,
+      body.projectId,
+    );
+  }
+
   @Post('import/confirm')
   @ApiOperation({ summary: 'Import an external issue as a task' })
   @ApiResponse({

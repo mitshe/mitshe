@@ -203,6 +203,13 @@ export const api = {
         token,
       }),
 
+    importAssigned: (data: { source: 'JIRA' | 'YOUTRACK'; projectId?: string }, token: string) =>
+      request<{ imported: number; skipped: number; total: number }>("/tasks/import/assigned", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+
     refreshExternalData: (id: string, token: string) =>
       request<{ task: Task; message: string }>(`/tasks/${id}/refresh`, {
         method: "POST",

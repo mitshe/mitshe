@@ -414,6 +414,74 @@ export class TaskImportService {
   /**
    * Get Jira adapter that matches the URL's base domain
    */
+  /**
+   * Import all assigned issues from Jira (not Done/Closed), skip duplicates
+   */
+  async importAssigned(
+    organizationId: string,
+    userId: string,
+    source: 'JIRA' | 'YOUTRACK',
+    projectId?: string,
+  ): Promise<{ imported: number; skipped: number; total: number }> {
+    const adapter =
+      await this.adapterFactory.getDefaultIssueTracker(organizationId);
+
+    if (!adapter) {
+      throw new BadRequestException(
+        `No ${source} integration found. Connect it in Settings → Integrations.`,
+      );
+    }
+
+    // Search for assigned issues not in Done status
+    const result = await adapter.searchIssues({
+      assignee: 'currentUser',
+      status: source === 'JIRA' ? ['To Do', 'In Progress', 'In Review', 'Open', 'Reopened'] : undefined,
+      maxResults: 50,
+    });
+
+    // Get already imported issue IDs
+    const existingIds = new Set(
+      (
+        await this.prisma.task.findMany({
+          where: { organizationId, externalSource: source },
+          select: { externalIssueId: true },
+        })
+      ).map((t) => t.externalIssueId),
+    );
+
+    let imported = 0;
+    let skipped = 0;
+
+    for (const issue of result.issues) {
+      if (existingIds.has(issue.key)) {
+        skipped++;
+        continue;
+      }
+
+      await this.prisma.task.create({
+        data: {
+          organizationId,
+          projectId,
+          title: issue.title,
+          description: issue.description,
+          externalSource: source,
+          externalIssueId: issue.key,
+          externalIssueUrl: issue.url,
+          externalStatus: issue.status,
+          createdBy: userId,
+          agentLogs: [],
+        },
+      });
+      imported++;
+    }
+
+    this.logger.log(
+      `Imported ${imported} ${source} issues (${skipped} skipped, ${result.total} total)`,
+    );
+
+    return { imported, skipped, total: result.total };
+  }
+
   private async getJiraAdapterForUrl(
     organizationId: string,
     _baseUrl: string,

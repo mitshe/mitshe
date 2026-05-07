@@ -324,6 +324,21 @@ export function useImportConfirm() {
   });
 }
 
+export function useImportAssigned() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { source: 'JIRA' | 'YOUTRACK'; projectId?: string }) => {
+      const token = await getToken();
+      return api.tasks.importAssigned(data, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    },
+  });
+}
+
 export function useRefreshExternalData() {
   const getToken = useAuthToken();
   const queryClient = useQueryClient();
