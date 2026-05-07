@@ -114,7 +114,27 @@ export class ImagesService {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return snapshots.map((s) => this.serializeBigInt(s));
+    // Validate Docker images exist for READY snapshots
+    const validated = await Promise.all(
+      snapshots.map(async (s) => {
+        if (s.status === 'READY' && s.dockerImage) {
+          const exists = await this.containerService
+            .getImageSize(s.dockerImage)
+            .then((size) => size !== null)
+            .catch(() => false);
+          if (!exists) {
+            await this.prisma.baseImage.update({
+              where: { id: s.id },
+              data: { status: 'FAILED' },
+            });
+            return { ...s, status: 'FAILED' as const };
+          }
+        }
+        return s;
+      }),
+    );
+
+    return validated.map((s) => this.serializeBigInt(s));
   }
 
   async findOne(organizationId: string, id: string) {
