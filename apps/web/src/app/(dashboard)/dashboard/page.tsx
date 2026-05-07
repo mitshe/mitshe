@@ -139,7 +139,7 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Overview of your AI task automation
+          Your workspace at a glance
         </p>
       </div>
 
