@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { EncryptionService } from '../../../shared/encryption/encryption.service';
 import { SessionStatus, Prisma } from '@prisma/client';
@@ -84,10 +84,29 @@ export class SessionsService {
     organizationId: string,
   ): Promise<string | undefined> {
     const snapshot = await this.prisma.baseImage.findFirst({
-      where: { id: baseImageId, organizationId, status: 'READY' },
-      select: { dockerImage: true },
+      where: { id: baseImageId, organizationId },
+      select: { dockerImage: true, status: true, name: true },
     });
-    return snapshot?.dockerImage || undefined;
+
+    if (!snapshot) {
+      throw new NotFoundException(
+        `Snapshot not found. It may have been deleted.`,
+      );
+    }
+
+    if (snapshot.status !== 'READY') {
+      throw new BadRequestException(
+        `Snapshot "${snapshot.name}" is ${snapshot.status}. Only READY snapshots can be used.`,
+      );
+    }
+
+    if (!snapshot.dockerImage) {
+      throw new BadRequestException(
+        `Snapshot "${snapshot.name}" has no Docker image. Try recreating it.`,
+      );
+    }
+
+    return snapshot.dockerImage;
   }
 
   async findAll(
