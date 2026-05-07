@@ -228,7 +228,9 @@ export class TasksController {
   }
 
   @Post('import/assigned')
-  @ApiOperation({ summary: 'Import all assigned issues from connected tracker' })
+  @ApiOperation({
+    summary: 'Import all assigned issues from connected tracker',
+  })
   async importAssigned(
     @OrganizationId() organizationId: string,
     @UserId() userId: string,

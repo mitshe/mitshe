@@ -435,7 +435,10 @@ export class TaskImportService {
     // Search for assigned issues not in Done status
     const result = await adapter.searchIssues({
       assignee: 'currentUser',
-      status: source === 'JIRA' ? ['To Do', 'In Progress', 'In Review', 'Open', 'Reopened'] : undefined,
+      status:
+        source === 'JIRA'
+          ? ['To Do', 'In Progress', 'In Review', 'Open', 'Reopened']
+          : undefined,
       maxResults: 50,
     });
 
