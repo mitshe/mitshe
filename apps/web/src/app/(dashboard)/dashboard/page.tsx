@@ -30,6 +30,7 @@ import {
   Workflow,
   Play,
   Sparkles,
+  Terminal,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "@/lib/utils";
@@ -45,7 +46,7 @@ import { getTaskStatus } from "@/lib/status-config";
 
 export default function DashboardPage() {
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
-  const { isLoading: sessionsLoading } = useSessions();
+  const { data: sessions = [], isLoading: sessionsLoading } = useSessions();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: workflows = [], isLoading: workflowsLoading } = useWorkflows();
   const { data: integrations = [], isLoading: integrationsLoading } =
@@ -121,6 +122,7 @@ export default function DashboardPage() {
   const activeWorkflows = workflows.filter((w) => w.isActive).length;
 
   const recentTasks = tasks.slice(0, 5);
+  const recentSessions = sessions.slice(0, 5);
 
   if (isLoading) {
     return (
@@ -311,6 +313,41 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {recentSessions.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Recent Sessions</h2>
+            <Link href="/sessions">
+              <Button variant="outline" size="sm">
+                View all <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {recentSessions.map((session) => (
+              <div
+                key={session.id}
+                className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                onClick={() => (window.location.href = `/sessions/${session.id}`)}
+              >
+                <Terminal className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-sm">{session.name}</span>
+                </div>
+                <Badge
+                  variant={session.status === "RUNNING" ? "default" : session.status === "FAILED" ? "destructive" : "secondary"}
+                  className="text-xs"
+                >
+                  {session.status === "COMPLETED" ? "Stopped" : session.status}
+                </Badge>
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  {formatDistanceToNow(new Date(session.lastActiveAt))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
