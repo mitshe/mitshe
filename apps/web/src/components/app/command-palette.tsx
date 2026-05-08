@@ -35,7 +35,7 @@ interface CommandPaletteProps {
 const navigationItems = [
   { label: "Dashboard", path: "/dashboard", icon: Search },
   { label: "Chat", path: "/chat", icon: MessageSquare },
-  { label: "Sessions", path: "/sessions", icon: Terminal },
+  { label: "Threads", path: "/sessions", icon: Terminal },
   { label: "Tasks", path: "/tasks", icon: ListTodo },
   { label: "Workflows", path: "/workflows", icon: Workflow },
   { label: "Projects", path: "/projects", icon: FolderOpen },
@@ -114,7 +114,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const quickActions = [
     {
-      label: "New Session",
+      label: "New Thread",
       icon: Terminal,
       shortcut: "S",
       action: () => handleSelect("/sessions?newSession=1"),

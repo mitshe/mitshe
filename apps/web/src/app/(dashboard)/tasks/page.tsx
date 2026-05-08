@@ -492,7 +492,7 @@ export default function TasksPage() {
                   <DropdownMenuItem asChild>
                     <Link href={`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`}>
                       <Terminal className="mr-2 h-4 w-4" />
-                      Open in Session
+                      Open in Thread
                     </Link>
                   </DropdownMenuItem>
                   {manualWorkflows.length > 0 && (
@@ -602,7 +602,7 @@ export default function TasksPage() {
             <DropdownMenuItem asChild>
               <Link href={`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`}>
                 <Terminal className="mr-2 h-4 w-4" />
-                Open in Session
+                Open in Thread
               </Link>
             </DropdownMenuItem>
             {task.externalSource && (

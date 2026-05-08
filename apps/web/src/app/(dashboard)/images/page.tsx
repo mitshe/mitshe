@@ -172,7 +172,7 @@ export default function SnapshotsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Snapshots</h1>
           <p className="text-sm text-muted-foreground">
-            Save session state as reusable snapshots for new sessions and workflows.
+            Save thread state as reusable snapshots for new threads and workflows.
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -186,7 +186,7 @@ export default function SnapshotsPage() {
             <DialogHeader>
               <DialogTitle>Create Snapshot</DialogTitle>
               <DialogDescription>
-                Snapshot a running session to save its current state.
+                Snapshot a running thread to save its current state.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -208,18 +208,18 @@ export default function SnapshotsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Source Session</label>
+                <label className="text-sm font-medium">Source Thread</label>
                 <Select
                   value={formSessionId}
                   onValueChange={setFormSessionId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a running session" />
+                    <SelectValue placeholder="Select a running thread" />
                   </SelectTrigger>
                   <SelectContent>
                     {runningSessions.length === 0 ? (
                       <SelectItem value="_none" disabled>
-                        No running sessions
+                        No running threads
                       </SelectItem>
                     ) : (
                       runningSessions.map((s) => (
@@ -258,11 +258,11 @@ export default function SnapshotsPage() {
           <Container className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">No snapshots yet</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-            Snapshots save the state of a running session — installed tools, cloned repos, and configurations — so you can reuse them as a base for new sessions.
+            Snapshots save the state of a running thread — installed tools, cloned repos, and configurations — so you can reuse them as a base for new threads.
           </p>
           <p className="text-sm text-muted-foreground mt-2">
             <Link href="/sessions" className="underline hover:text-foreground transition-colors">
-              Start a session
+              Start a thread
             </Link>, set it up, then come back here to snapshot it.
           </p>
         </div>

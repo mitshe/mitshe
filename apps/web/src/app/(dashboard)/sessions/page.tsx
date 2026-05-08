@@ -262,7 +262,7 @@ export default function SessionsPage() {
       setForm((prev) => ({
         ...prev,
         baseImageId: urlSnapshotId,
-        name: `Session from ${(snap as { name: string }).name}`,
+        name: `Thread from ${(snap as { name: string }).name}`,
         enableDocker: (snap as { enableDocker?: boolean }).enableDocker ?? prev.enableDocker,
       }));
       setIsDialogOpen(true);
@@ -372,11 +372,11 @@ export default function SessionsPage() {
     ? configChanged
       ? "Save & Restart"
       : "Save"
-    : "Start Session";
+    : "Start Thread";
 
   const handleSubmit = async () => {
     if (!form.name.trim()) {
-      toast.error("Please enter a session name");
+      toast.error("Please enter a thread name");
       return;
     }
 
@@ -399,7 +399,7 @@ export default function SessionsPage() {
           localPath: form.localPath || undefined,
           mountSsh: form.mountSsh || undefined,
         });
-        toast.success("Session created");
+        toast.success("Thread created");
         setIsDialogOpen(false);
         setForm({
           ...emptyForm,
@@ -408,7 +408,7 @@ export default function SessionsPage() {
         router.push(`/sessions/${session.id}`);
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Failed to create session";
+          error instanceof Error ? error.message : "Failed to create thread";
         toast.error(message);
       }
       return;
@@ -422,7 +422,7 @@ export default function SessionsPage() {
 
     if (configChanged && configLocked) {
       toast.error(
-        "Stop the session first to reconfigure container settings",
+        "Stop the thread first to reconfigure container settings",
       );
       return;
     }
@@ -442,7 +442,7 @@ export default function SessionsPage() {
             instructions: form.instructions,
           },
         });
-        toast.success("Session reconfigured — restarting container");
+        toast.success("Thread reconfigured — restarting container");
       } else {
         await updateSession.mutateAsync({
           id: editingId,
@@ -452,7 +452,7 @@ export default function SessionsPage() {
             instructions: form.instructions,
           },
         });
-        toast.success("Session updated");
+        toast.success("Thread updated");
       }
       setIsDialogOpen(false);
       setEditingId(null);
@@ -460,7 +460,7 @@ export default function SessionsPage() {
       setOriginalForm(null);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to save session";
+        error instanceof Error ? error.message : "Failed to save thread";
       toast.error(message);
     }
   };
@@ -475,9 +475,9 @@ export default function SessionsPage() {
     setDeletingId(id);
     try {
       await deleteSession.mutateAsync(id);
-      toast.success("Session deleted");
+      toast.success("Thread deleted");
     } catch {
-      toast.error("Failed to delete session");
+      toast.error("Failed to delete thread");
     } finally {
       setDeletingId(null);
     }
@@ -487,9 +487,9 @@ export default function SessionsPage() {
     e.stopPropagation();
     try {
       await stopSession.mutateAsync(id);
-      toast.success("Session stopped");
+      toast.success("Thread stopped");
     } catch {
-      toast.error("Failed to stop session");
+      toast.error("Failed to stop thread");
     }
   };
 
@@ -516,7 +516,7 @@ export default function SessionsPage() {
     for (const id of selectedIds) {
       try { await deleteSession.mutateAsync(id); } catch { /* continue */ }
     }
-    toast.success(`Deleted ${count} session(s)`);
+    toast.success(`Deleted ${count} thread(s)`);
     setSelectedIds(new Set());
     setBulkDeleting(false);
     setBulkDeleteConfirm(false);
@@ -539,7 +539,7 @@ export default function SessionsPage() {
     <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Sessions</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Threads</h1>
           <p className="text-sm text-muted-foreground">
             Isolated environments for AI coding agents
           </p>
@@ -567,7 +567,7 @@ export default function SessionsPage() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setSelectMode(true)}>
                       <CheckSquare className="h-4 w-4 mr-2" />
-                      Select sessions
+                      Select threads
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -586,25 +586,25 @@ export default function SessionsPage() {
           <DialogTrigger asChild>
             <Button onClick={openCreate}>
               <Plus className="w-4 h-4 mr-2" />
-              New Session
+              New Thread
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>
-                {editingId ? "Edit Session" : "New Session"}
+                {editingId ? "Edit Thread" : "New Thread"}
               </DialogTitle>
               <DialogDescription>
                 {editingId
                   ? configLocked
-                    ? "Stop the session first to reconfigure container settings."
+                    ? "Stop the thread first to reconfigure container settings."
                     : "Configuration changes will restart the container."
                   : "Give it a name, pick an AI provider, and go."}
               </DialogDescription>
             </DialogHeader>
             <DialogBody className="space-y-4 py-4 overflow-y-auto">
               <div className="space-y-2">
-                <Label htmlFor="name">Session Name *</Label>
+                <Label htmlFor="name">Thread Name *</Label>
                 <Input
                   id="name"
                   value={form.name}
@@ -618,7 +618,7 @@ export default function SessionsPage() {
                 <Label>AI Agent</Label>
                 {sessionProviders.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2 border rounded-md px-3">
-                    Claude Code is pre-installed in every session. You can log in with your Anthropic account directly in the terminal, or{" "}
+                    Claude Code is pre-installed in every thread. You can log in with your Anthropic account directly in the terminal, or{" "}
                     <a href="/settings/ai" className="underline font-medium text-foreground">
                       add an API key
                     </a>{" "}
@@ -645,7 +645,7 @@ export default function SessionsPage() {
                   </Select>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Sessions run CLI agents (Claude Code or OpenClaw) in isolated containers
+                  Threads run CLI agents (Claude Code or OpenClaw) in isolated containers
                 </p>
               </div>
 
@@ -694,7 +694,7 @@ export default function SessionsPage() {
                         {form.localPath || "Choose folder..."}
                       </Button>
                       <p className="text-xs text-muted-foreground">
-                        Mount a local folder into the session workspace
+                        Mount a local folder into the thread workspace
                       </p>
                     </div>
                   )}
@@ -778,7 +778,7 @@ export default function SessionsPage() {
                     <Label>Integrations</Label>
                     <p className="text-xs text-muted-foreground">
                       Credentials for selected integrations will be available inside
-                      the session container
+                      the thread container
                     </p>
                     <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
                       {activeIntegrations.length === 0 ? (
@@ -847,7 +847,7 @@ export default function SessionsPage() {
                         <a href="/images" className="underline font-medium text-foreground">
                           Create one
                         </a>{" "}
-                        from a running session.
+                        from a running thread.
                       </p>
                     ) : (
                       <Select
@@ -1013,7 +1013,7 @@ export default function SessionsPage() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search sessions..."
+            placeholder="Search threads..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -1065,10 +1065,10 @@ export default function SessionsPage() {
           ) : filteredSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <MessageSquareCode className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No sessions yet</h3>
+              <h3 className="text-lg font-semibold mb-2">No threads yet</h3>
               <p className="text-muted-foreground text-center mb-4 max-w-sm">
-                Sessions are isolated containers where AI agents work on your code.
-                Create your first session or{" "}
+                Threads are isolated containers where AI agents work on your code.
+                Create your first thread or{" "}
                 <Link href="/tasks" className="underline hover:text-foreground transition-colors">
                   import tasks from Jira
                 </Link>{" "}
@@ -1076,7 +1076,7 @@ export default function SessionsPage() {
               </p>
               <Button onClick={openCreate}>
                 <Plus className="w-4 h-4 mr-2" />
-                New Session
+                New Thread
               </Button>
             </div>
           ) : (
@@ -1175,9 +1175,9 @@ export default function SessionsPage() {
       <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedIds.size} session(s)?</AlertDialogTitle>
+            <AlertDialogTitle>Delete {selectedIds.size} thread(s)?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the selected sessions and their containers. This action cannot be undone.
+              This will permanently delete the selected threads and their containers. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

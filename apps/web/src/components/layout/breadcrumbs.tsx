@@ -15,7 +15,7 @@ const pathLabels: Record<string, string> = {
   dashboard: "Dashboard",
   chat: "Chat",
   tasks: "Tasks",
-  sessions: "Sessions",
+  sessions: "Threads",
   workflows: "Workflows",
   executions: "Executions",
   projects: "Projects",

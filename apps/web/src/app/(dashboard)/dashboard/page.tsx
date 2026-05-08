@@ -89,7 +89,7 @@ export default function DashboardPage() {
     },
     {
       id: "session",
-      label: "Start a session",
+      label: "Start a thread",
       description: "Open an isolated workspace with Claude Code",
       done: hasSessions,
       href: "/sessions",
@@ -317,7 +317,7 @@ export default function DashboardPage() {
       {recentSessions.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Recent Sessions</h2>
+            <h2 className="text-lg font-semibold">Recent Threads</h2>
             <Link href="/sessions">
               <Button variant="outline" size="sm">
                 View all <ArrowRight className="ml-2 h-4 w-4" />

@@ -73,7 +73,7 @@ const workflowsNavItems: NavItem[] = [
 ];
 
 const workspaceNavItems: NavItem[] = [
-  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "sessions" },
+  { title: "Threads", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "sessions" },
   { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots" },
   { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills" },
 ];

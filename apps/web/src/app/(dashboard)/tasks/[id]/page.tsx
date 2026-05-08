@@ -399,7 +399,7 @@ export default function TaskDetailPage() {
                 }}
               >
                 <Terminal className="w-4 h-4 mr-2" />
-                Open in Session
+                Open in Thread
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
@@ -411,7 +411,7 @@ export default function TaskDetailPage() {
                 }}
               >
                 <Eye className="w-4 h-4 mr-2" />
-                Review in Session
+                Review in Thread
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

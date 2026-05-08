@@ -566,9 +566,9 @@ export default function SessionDetailPage() {
       await resumeSession.mutateAsync(sessionId);
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to resume session";
+      const msg = err instanceof Error ? err.message : "Failed to resume thread";
       if (msg.includes("no longer exists") || msg.includes("cannot be recovered")) {
-        toast.error("Container was deleted. Create a new session instead.");
+        toast.error("Container was deleted. Create a new thread instead.");
       } else {
         toast.error(msg);
       }
@@ -580,7 +580,7 @@ export default function SessionDetailPage() {
       await stopSession.mutateAsync(sessionId);
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
     } catch {
-      toast.error("Failed to stop session");
+      toast.error("Failed to stop thread");
     }
   };
 
@@ -609,9 +609,9 @@ export default function SessionDetailPage() {
       router.push("/sessions");
       await deleteSession.mutateAsync(sessionId);
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
-      toast.success("Session deleted");
+      toast.success("Thread deleted");
     } catch {
-      toast.error("Failed to delete session");
+      toast.error("Failed to delete thread");
     }
   };
 
@@ -628,7 +628,7 @@ export default function SessionDetailPage() {
   if (!session) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Session not found</p>
+        <p className="text-muted-foreground">Thread not found</p>
       </div>
     );
   }
@@ -759,7 +759,7 @@ export default function SessionDetailPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                <AlertDialogTitle>Delete Thread</AlertDialogTitle>
                 <AlertDialogDescription>
                   Are you sure you want to delete &quot;{session.name}&quot;? The
                   container and all data will be permanently removed.
@@ -898,7 +898,7 @@ export default function SessionDetailPage() {
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center">
                         <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin" />
-                        <p className="text-sm font-medium">Starting session...</p>
+                        <p className="text-sm font-medium">Starting thread...</p>
                         <p className="text-xs mt-1">Preparing the container environment</p>
                       </div>
                     </div>
@@ -906,7 +906,7 @@ export default function SessionDetailPage() {
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center">
                         <TerminalIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p className="mb-3">Session stopped</p>
+                        <p className="mb-3">Thread stopped</p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -964,15 +964,15 @@ export default function SessionDetailPage() {
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center">
                         <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin" />
-                        <p className="text-sm font-medium">Starting session...</p>
-                        <p className="text-xs mt-1">Browser will be available once the session is running</p>
+                        <p className="text-sm font-medium">Starting thread...</p>
+                        <p className="text-xs mt-1">Browser will be available once the thread is running</p>
                       </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center space-y-2">
                         <Globe className="w-10 h-10 mx-auto opacity-30" />
-                        <p className="text-sm">Session must be running to use browser</p>
+                        <p className="text-sm">Thread must be running to use browser</p>
                       </div>
                     </div>
                   )}
