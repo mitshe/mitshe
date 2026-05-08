@@ -727,10 +727,13 @@ export default function WorkflowsPage() {
 
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
+                        <Link
+                          href={`/workflows/${workflow.id}/executions`}
+                          className="flex items-center gap-1 hover:underline hover:text-foreground"
+                        >
                           <History className="h-3.5 w-3.5" />
                           <span>{workflow._count?.executions || 0}</span>
-                        </div>
+                        </Link>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5" />
                           <span>
@@ -834,7 +837,13 @@ export default function WorkflowsPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {workflow._count?.executions || 0}
+                          <Link
+                            href={`/workflows/${workflow.id}/executions`}
+                            className="hover:underline text-muted-foreground hover:text-foreground"
+                          >
+                            {workflow._count?.executions || 0}
+                            <span className="ml-1.5 text-xs">View history</span>
+                          </Link>
                         </TableCell>
                         <TableCell>
                           {formatDistanceToNow(new Date(workflow.updatedAt))}
