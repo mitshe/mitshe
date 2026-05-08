@@ -1,23 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  useAuth as useClerkAuth,
-  useUser as useClerkUser,
-  useOrganization as useClerkOrganization,
-} from "@clerk/nextjs";
 import { useAuthContext } from "./auth-context";
 import { LocalUser, LocalOrganization, LocalMembership } from "./types";
 
 const SELFHOSTED_MEMBERSHIP_EPOCH = new Date("2024-01-01T00:00:00Z");
 
-/**
- * Universal useAuth hook - works in Selfhosted and Clerk mode.
- */
 export function useAuth() {
   const context = useAuthContext();
 
-  const selfhostedValue = useMemo(
+  return useMemo(
     () => ({
       isLoaded: context.isLoaded,
       isSignedIn: context.isSignedIn,
@@ -35,30 +27,12 @@ export function useAuth() {
       context.signOut,
     ],
   );
-
-  if (context.isSelfhostedMode) {
-    return selfhostedValue;
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const clerkAuth = useClerkAuth();
-  return {
-    isLoaded: clerkAuth.isLoaded,
-    isSignedIn: clerkAuth.isSignedIn ?? false,
-    userId: clerkAuth.userId ?? null,
-    orgId: clerkAuth.orgId ?? null,
-    getToken: clerkAuth.getToken,
-    signOut: clerkAuth.signOut,
-  };
 }
 
-/**
- * Universal useUser hook - works in Selfhosted and Clerk mode.
- */
 export function useUser() {
   const context = useAuthContext();
 
-  const selfhostedValue = useMemo(() => {
+  return useMemo(() => {
     const userName = context.userName?.split(" ") || [];
     const user: LocalUser = {
       id: context.userId || "",
@@ -82,23 +56,8 @@ export function useUser() {
     context.userName,
     context.userEmail,
   ]);
-
-  if (context.isSelfhostedMode) {
-    return selfhostedValue;
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const clerkUser = useClerkUser();
-  return {
-    isLoaded: clerkUser.isLoaded,
-    isSignedIn: clerkUser.isSignedIn ?? false,
-    user: clerkUser.user,
-  };
 }
 
-/**
- * Universal useOrganization hook - works in Selfhosted and Clerk mode.
- */
 export function useOrganization(options?: {
   memberships?: { infinite: boolean };
   invitations?: { infinite: boolean };
@@ -107,7 +66,7 @@ export function useOrganization(options?: {
   const hasMemberships = !!options?.memberships;
   const hasInvitations = !!options?.invitations;
 
-  const selfhostedValue = useMemo(() => {
+  return useMemo(() => {
     const org: LocalOrganization = {
       id: context.orgId || "",
       name: context.userName ? `${context.userName}'s Workspace` : "Workspace",
@@ -155,12 +114,4 @@ export function useOrganization(options?: {
     hasMemberships,
     hasInvitations,
   ]);
-
-  if (context.isSelfhostedMode) {
-    return selfhostedValue;
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const clerkOrg = useClerkOrganization(options);
-  return clerkOrg;
 }

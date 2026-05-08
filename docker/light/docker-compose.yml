@@ -13,7 +13,6 @@ services:
       - mitshe-data:/build/data
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - AUTH_MODE=selfhosted
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       - DATABASE_URL=file:/build/data/mitshe.db
       - REDIS_URL=redis://localhost:6379

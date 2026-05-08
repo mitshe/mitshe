@@ -29,7 +29,6 @@ import {
 } from '../dto/integration.dto';
 import { AuthGuard } from '@/shared/auth';
 import { OrganizationId } from '../../../shared/decorators/organization.decorator';
-import { OrganizationService } from '../../../shared/services/organization.service';
 import { StrictRateLimit } from '../../../shared/decorators/throttle.decorator';
 import { AuditService } from '../../../shared/audit';
 
@@ -41,7 +40,6 @@ import { AuditService } from '../../../shared/audit';
 export class IntegrationsController {
   constructor(
     private readonly integrationsService: IntegrationsService,
-    private readonly organizationService: OrganizationService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -94,41 +92,15 @@ export class IntegrationsController {
     type: WebhookUrlResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getWebhookUrl(@OrganizationId() organizationId: string) {
-    const settings = await this.organizationService.getSettings(organizationId);
+  getWebhookUrl() {
     const baseUrl = process.env.API_BASE_URL || 'https://api.yourdomain.com';
 
     return {
-      webhookToken: settings.webhookToken,
       urls: {
-        jira: `${baseUrl}/webhooks/jira/${settings.webhookToken}`,
-        gitlab: `${baseUrl}/webhooks/gitlab/${settings.webhookToken}`,
-        github: `${baseUrl}/webhooks/github/${settings.webhookToken}`,
-        trello: `${baseUrl}/webhooks/trello/${settings.webhookToken}`,
-      },
-    };
-  }
-
-  @Post('webhook-url/regenerate')
-  @ApiOperation({ summary: 'Regenerate webhook token' })
-  @ApiResponse({
-    status: 200,
-    description: 'New webhook URLs generated',
-    type: WebhookUrlResponseDto,
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async regenerateWebhookUrl(@OrganizationId() organizationId: string) {
-    const newToken =
-      await this.organizationService.regenerateWebhookToken(organizationId);
-    const baseUrl = process.env.API_BASE_URL || 'https://api.yourdomain.com';
-
-    return {
-      webhookToken: newToken,
-      urls: {
-        jira: `${baseUrl}/webhooks/jira/${newToken}`,
-        gitlab: `${baseUrl}/webhooks/gitlab/${newToken}`,
-        github: `${baseUrl}/webhooks/github/${newToken}`,
-        trello: `${baseUrl}/webhooks/trello/${newToken}`,
+        jira: `${baseUrl}/webhooks/jira`,
+        gitlab: `${baseUrl}/webhooks/gitlab`,
+        github: `${baseUrl}/webhooks/github`,
+        trello: `${baseUrl}/webhooks/trello`,
       },
     };
   }

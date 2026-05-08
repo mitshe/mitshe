@@ -68,8 +68,6 @@ RUN pnpm run build
 WORKDIR /build/apps/web
 ENV NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_WS_URL=ws://localhost:3001
-ENV NEXT_PUBLIC_AUTH_MODE=selfhosted
-ENV AUTH_MODE=selfhosted
 ENV NEXT_TELEMETRY_DISABLED=1
 # Set turbopack root for monorepo builds
 ENV TURBO_ROOT=/build
@@ -134,13 +132,11 @@ RUN chmod +x /entrypoint.sh
 
 # Environment variables for light mode
 ENV NODE_ENV=production
-ENV AUTH_MODE=selfhosted
 ENV DATABASE_URL=file:/build/data/mitshe.db
 ENV REDIS_URL=redis://localhost:6379
 ENV PORT=3001
 ENV NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_WS_URL=ws://localhost:3001
-ENV NEXT_PUBLIC_AUTH_MODE=selfhosted
 
 # Volumes for persistence
 VOLUME ["/build/data"]

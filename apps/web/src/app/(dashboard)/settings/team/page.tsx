@@ -69,7 +69,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import { toast } from "sonner";
-import { useAuth, useOrganization, useAuthContext } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 
 interface TeamMember {
   id: string;
@@ -563,115 +563,6 @@ function SelfhostedTeamPage() {
   );
 }
 
-// Clerk mode version - full team management (kept for Clerk mode)
-function ClerkModeTeamPage() {
-  const { organization, memberships, invitations, isLoaded } =
-    useOrganization({
-      memberships: { infinite: true },
-      invitations: { infinite: true },
-    });
-
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"org:admin" | "org:member">("org:member");
-  const [isInviting, setIsInviting] = useState(false);
-
-  const handleInvite = async () => {
-    if (!organization || !("inviteMember" in organization)) return;
-    setIsInviting(true);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (organization as any).inviteMember({ emailAddress: inviteEmail, role: inviteRole });
-      toast.success(`Invitation sent to ${inviteEmail}`);
-      setIsInviteOpen(false);
-      setInviteEmail("");
-      if (invitations?.revalidate) await invitations.revalidate();
-    } catch {
-      toast.error("Failed to send invitation");
-    } finally {
-      setIsInviting(false);
-    }
-  };
-
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  const membersList = memberships?.data || [];
-
-  return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Team</h1>
-          <p className="text-muted-foreground">Manage team members</p>
-        </div>
-        <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" />Invite</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Invite Member</DialogTitle>
-            </DialogHeader>
-            <DialogBody className="space-y-4 py-4">
-              <Input placeholder="Email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-              <Select value={inviteRole} onValueChange={(v: "org:admin" | "org:member") => setInviteRole(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="org:admin">Admin</SelectItem>
-                  <SelectItem value="org:member">Member</SelectItem>
-                </SelectContent>
-              </Select>
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsInviteOpen(false)}>Cancel</Button>
-              <Button onClick={handleInvite} disabled={!inviteEmail || isInviting}>
-                {isInviting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Send Invitation
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-      <Card>
-        <CardHeader><CardTitle>Members</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {membersList.map((member: any) => (
-                <TableRow key={member.id}>
-                  <TableCell>{member.publicUserData?.identifier || "Unknown"}</TableCell>
-                  <TableCell><Badge variant="outline">{member.role}</Badge></TableCell>
-                  <TableCell>{member.createdAt ? formatDistanceToNow(new Date(member.createdAt)) : "-"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 export default function TeamPage() {
-  const { isSelfhostedMode } = useAuthContext();
-
-  if (isSelfhostedMode) {
-    return <SelfhostedTeamPage />;
-  }
-
-  return <ClerkModeTeamPage />;
+  return <SelfhostedTeamPage />;
 }

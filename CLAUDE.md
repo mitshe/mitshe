@@ -10,7 +10,7 @@ Nazwa projektu: mitshe
 Stack: Next.js 16 + NestJS 11 + TypeScript + Prisma + PostgreSQL/SQLite
 Architektura: Hexagonal + CQRS + Event-Driven (Monorepo)
 UI: shadcn/ui + Tailwind CSS 4
-Auth: Selfhosted (JWT) lub Clerk (optional)
+Auth: Selfhosted (JWT)
 Build: pnpm + Turborepo
 ```
 
@@ -52,14 +52,7 @@ mitshe/
 |------|----------|-------|------|----------|
 | **Light** | SQLite (embedded) | Embedded | Selfhosted | Quick start, single user |
 | **Dev** | PostgreSQL (Docker) | Docker | Selfhosted | Local development |
-| **Prod** | PostgreSQL (external) | External | Selfhosted or Clerk | Production, multi-user |
-
-### Authentication Modes
-
-| Mode | `AUTH_MODE` | Description |
-|------|-------------|-------------|
-| **Selfhosted** | `selfhosted` | Email/password JWT auth (default) |
-| **Clerk** | `clerk` | Clerk authentication, multi-user, organizations, RBAC |
+| **Prod** | PostgreSQL (external) | External | Selfhosted | Production |
 
 ---
 
@@ -248,7 +241,6 @@ throw new InternalServerError('Database connection failed');
 **Rób tutaj:**
 - UI components i pages
 - Server Actions dla prostego CRUD
-- Clerk auth integration
 - Form handling i validation
 - Optimistic UI updates
 - Real-time status display (WebSocket client)
@@ -273,7 +265,7 @@ throw new InternalServerError('Database connection failed');
 
 **NIE rób tutaj:**
 - UI rendering
-- User session management (Clerk handles it)
+- User session management
 - Simple CRUD that Next.js can handle
 
 ### 5.3 Shared Types (packages/types)
@@ -317,14 +309,6 @@ pnpm --filter @mitshe/api prisma migrate reset
 
 ### Root .env (shared)
 ```bash
-# Authentication Mode: 'selfhosted' (email/password) or 'clerk' (Clerk auth)
-AUTH_MODE=selfhosted
-NEXT_PUBLIC_AUTH_MODE=selfhosted
-
-# Clerk Authentication (required only if AUTH_MODE=clerk)
-# CLERK_SECRET_KEY=sk_test_...
-# NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-
 # Database
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mitshe
 
@@ -377,7 +361,7 @@ Klienci podają własne API keys dla AI:
 **BEZ abstrakcji dla:**
 - Database (Prisma bezpośrednio)
 - Queue (BullMQ bezpośrednio)
-- Auth (Clerk bezpośrednio)
+- Auth (JWT bezpośrednio)
 - Cache (Redis bezpośrednio)
 
 ### 9.3 Event-Driven Side Effects
@@ -414,7 +398,6 @@ class OnTaskCreated {
 
 - [README.md](./README.md) - Quick start, commands
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - Development workflow, PR guidelines
-- [Clerk Docs](https://clerk.com/docs)
 - [Prisma Docs](https://www.prisma.io/docs)
 - [NestJS CQRS](https://docs.nestjs.com/recipes/cqrs)
 - [BullMQ](https://docs.bullmq.io/)

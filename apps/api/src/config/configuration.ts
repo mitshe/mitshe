@@ -3,13 +3,6 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const authMode = process.env.AUTH_MODE || 'selfhosted';
-const isClerkMode = authMode === 'clerk';
-
-/**
- * Auto-generate and persist a secret if not provided.
- * Saves to ~/.mitshe/secrets/{name} so it survives restarts.
- */
 function getOrGenerateSecret(envVar: string, name: string): string {
   const fromEnv = process.env[envVar];
   if (fromEnv && fromEnv.length >= 32) return fromEnv;
@@ -21,7 +14,6 @@ function getOrGenerateSecret(envVar: string, name: string): string {
   );
   const secretFile = path.join(secretsDir, name);
 
-  // Read existing persisted secret
   try {
     const existing = fs.readFileSync(secretFile, 'utf-8').trim();
     if (existing.length >= 32) {
@@ -32,7 +24,6 @@ function getOrGenerateSecret(envVar: string, name: string): string {
     // File doesn't exist yet
   }
 
-  // Generate and persist
   const generated = crypto.randomBytes(32).toString('hex');
   try {
     fs.mkdirSync(secretsDir, { recursive: true, mode: 0o700 });
@@ -47,23 +38,14 @@ function getOrGenerateSecret(envVar: string, name: string): string {
   return generated;
 }
 
-// Auto-generate secrets if not set
-if (!isClerkMode && !process.env.JWT_SECRET) {
+if (!process.env.JWT_SECRET) {
   getOrGenerateSecret('JWT_SECRET', 'jwt-secret');
 }
 if (!process.env.ENCRYPTION_KEY) {
   getOrGenerateSecret('ENCRYPTION_KEY', 'encryption-key');
 }
 
-/**
- * Environment configuration schema with validation
- */
 export const configValidationSchema = Joi.object({
-  AUTH_MODE: Joi.string()
-    .valid('selfhosted', 'clerk')
-    .default('selfhosted')
-    .description('Authentication mode: selfhosted (email/password) or clerk'),
-
   DATABASE_URL: Joi.string()
     .required()
     .description('Database connection string (PostgreSQL or SQLite file:)'),
@@ -82,15 +64,6 @@ export const configValidationSchema = Joi.object({
     .description(
       'JWT secret for signing tokens (min 32 chars). Auto-generated if not set.',
     ),
-
-  CLERK_SECRET_KEY: isClerkMode
-    ? Joi.string()
-        .pattern(/^sk_(test_|live_)/)
-        .required()
-        .description('Clerk secret key')
-    : Joi.string()
-        .optional()
-        .description('Clerk secret key (not required in selfhosted mode)'),
 
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
@@ -127,10 +100,6 @@ export const configValidationSchema = Joi.object({
 export interface AppConfig {
   database: { url: string };
   security: { encryptionKey?: string };
-  auth: {
-    mode: 'selfhosted' | 'clerk';
-    clerkSecretKey?: string;
-  };
   nodeEnv: 'development' | 'production' | 'test';
   port: number;
   redis: { host: string; port: number; url?: string };
@@ -144,10 +113,6 @@ export interface AppConfig {
 export const configuration = (): AppConfig => ({
   database: { url: process.env.DATABASE_URL! },
   security: { encryptionKey: process.env.ENCRYPTION_KEY },
-  auth: {
-    mode: (process.env.AUTH_MODE as 'selfhosted' | 'clerk') || 'selfhosted',
-    clerkSecretKey: process.env.CLERK_SECRET_KEY,
-  },
   nodeEnv: (process.env.NODE_ENV as AppConfig['nodeEnv']) || 'development',
   port: parseInt(process.env.PORT || '3001', 10),
   redis: {

@@ -20,7 +20,7 @@ export class OrganizationThrottlerGuard extends ThrottlerGuard {
    */
   protected override getTracker(req: Request): Promise<string> {
     // Try to get organization ID from auth context
-    // The auth context is set by ClerkAuthGuard/OrganizationGuard
+    // The auth context is set by AuthGuard
     const auth = (req as any).auth;
     const organizationId = auth?.organizationId;
 

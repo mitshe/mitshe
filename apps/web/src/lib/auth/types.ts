@@ -1,7 +1,3 @@
-/**
- * Types for the authentication abstraction layer.
- */
-
 export interface LocalUser {
   id: string;
   firstName: string | null;
@@ -30,12 +26,7 @@ export interface LocalMembership {
   createdAt: Date;
 }
 
-export type AuthMode = "selfhosted" | "clerk";
-
 export interface AuthContextValue {
-  authMode: AuthMode;
-  isSelfhostedMode: boolean;
-  isClerkMode: boolean;
   isLoaded: boolean;
   isSignedIn: boolean;
   userId: string | null;

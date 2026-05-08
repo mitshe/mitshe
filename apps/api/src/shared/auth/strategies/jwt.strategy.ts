@@ -28,19 +28,15 @@ export class JwtAuthStrategy implements AuthStrategy {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    // JWT auth is enabled when AUTH_MODE is 'selfhosted' or when JWT_SECRET is set
-    const authMode = this.configService.get<string>('AUTH_MODE');
-    this.isEnabled =
-      authMode === 'selfhosted' ||
-      !!this.configService.get<string>('JWT_SECRET');
+    this.isEnabled = true;
 
     const secret = this.configService.get<string>('JWT_SECRET');
-    if (this.isEnabled && !secret) {
+    if (!secret) {
       throw new Error(
-        'JWT_SECRET is required for selfhosted auth mode. Generate with: openssl rand -hex 32',
+        'JWT_SECRET is required. Generate with: openssl rand -hex 32',
       );
     }
-    this.jwtSecret = secret || '';
+    this.jwtSecret = secret;
   }
 
   canHandle(context: ExecutionContext): boolean {

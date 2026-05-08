@@ -21,7 +21,7 @@ export interface TaskProcessingJob {
 }
 
 export interface WebhookProcessingJob {
-  type: 'jira' | 'gitlab' | 'github' | 'clerk' | 'trello';
+  type: 'jira' | 'gitlab' | 'github' | 'trello';
   payload: Record<string, unknown>;
   headers: Record<string, string>;
   timestamp: string;

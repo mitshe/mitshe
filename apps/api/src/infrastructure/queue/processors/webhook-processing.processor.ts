@@ -38,10 +38,6 @@ export class WebhookProcessingProcessor extends WorkerHost {
           await this.handleGitHubWebhook(payload, headers);
           break;
 
-        case 'clerk':
-          await this.handleClerkWebhook(payload, headers);
-          break;
-
         default:
           this.logger.warn(`Unknown webhook type: ${type}`);
       }
@@ -556,69 +552,6 @@ export class WebhookProcessingProcessor extends WorkerHost {
     this.logger.log(`GitHub Issue Comment: ${action}`);
 
     // TODO: Handle GitHub issue comments
-  }
-
-  private async handleClerkWebhook(
-    payload: Record<string, unknown>,
-    _headers: Record<string, string>,
-  ): Promise<void> {
-    const eventType = payload.type as string;
-
-    this.logger.log(`Processing Clerk webhook event: ${eventType}`);
-
-    switch (eventType) {
-      case 'organization.created':
-        await this.handleOrganizationCreated(
-          payload.data as Record<string, any>,
-        );
-        break;
-
-      case 'organization.deleted':
-        this.handleOrganizationDeleted(payload.data as Record<string, any>);
-        break;
-
-      case 'organizationMembership.created':
-        this.handleMembershipCreated(payload.data as Record<string, any>);
-        break;
-
-      default:
-        this.logger.log(`Unhandled Clerk event type: ${eventType}`);
-    }
-  }
-
-  private async handleOrganizationCreated(
-    data: Record<string, any>,
-  ): Promise<void> {
-    const orgId = data.id;
-    const orgName = data.name;
-
-    this.logger.log(`Organization created: ${orgName} (${orgId})`);
-
-    // Create organization record in our database
-    await this.prisma.organization.upsert({
-      where: { clerkId: orgId },
-      update: { name: orgName },
-      create: {
-        clerkId: orgId,
-        name: orgName,
-      },
-    });
-  }
-
-  private handleOrganizationDeleted(data: Record<string, any>): void {
-    const orgId = data.id;
-
-    this.logger.log(`Organization deleted: ${orgId}`);
-
-    // Soft delete or archive organization data
-    // For now, we'll just log it
-  }
-
-  private handleMembershipCreated(data: Record<string, any>): void {
-    const orgId = data.organization?.id;
-    const userId = data.public_user_data?.user_id;
-
-    this.logger.log(`User ${userId} added to organization ${orgId}`);
   }
 
   private async triggerWorkflows(

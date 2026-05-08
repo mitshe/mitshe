@@ -149,13 +149,9 @@ export class WebhookSecretsService {
    * Used by webhook controllers for signature verification
    */
   async getOrganizationWithSecret(
-    token: string,
     provider: WebhookProvider,
   ): Promise<{ organizationId: string; secret: string | null } | null> {
     const organization = await this.prisma.organization.findFirst({
-      where: {
-        OR: [{ webhookToken: token }, { slug: token }],
-      },
       select: {
         id: true,
         jiraWebhookSecret: true,

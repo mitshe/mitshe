@@ -39,7 +39,6 @@ import {
   FolderKanban,
   Copy,
   Link,
-  RotateCcw,
   ChevronDown,
   BookOpen,
 } from "lucide-react";
@@ -63,7 +62,6 @@ import {
   useTestIntegration,
   useTestIntegrationBeforeConnect,
   useWebhookUrl,
-  useRegenerateWebhookUrl,
 } from "@/lib/api/hooks";
 import { IntegrationCategory, type IntegrationType } from "@/lib/api/types";
 import { toast } from "sonner";
@@ -403,7 +401,6 @@ type TestStatus = "idle" | "testing" | "success" | "error";
 export default function IntegrationsPage() {
   const { data: connectedIntegrations = [], isLoading } = useIntegrations();
   const { data: webhookData } = useWebhookUrl();
-  const regenerateWebhookUrl = useRegenerateWebhookUrl();
   const createIntegration = useCreateIntegration();
   const deleteIntegration = useDeleteIntegration();
   const testIntegration = useTestIntegration();
@@ -635,35 +632,13 @@ export default function IntegrationsPage() {
           <CollapsibleContent>
             <div className="px-4 pb-4 space-y-3">
               <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Copy these URLs to your external services to receive events.
-                  </p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    Running locally? Use <code className="text-[10px] bg-muted px-1 rounded">ngrok http 3001</code> to get a public URL.
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      await regenerateWebhookUrl.mutateAsync();
-                      toast.success("Webhook URLs regenerated");
-                    } catch {
-                      toast.error("Failed to regenerate");
-                    }
-                  }}
-                  disabled={regenerateWebhookUrl.isPending}
-                >
-                  {regenerateWebhookUrl.isPending ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <RotateCcw className="w-3 h-3" />
-                  )}
-                  <span className="ml-1.5">Regenerate</span>
-                </Button>
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Copy these URLs to your external services to receive events.
+                </p>
+                <p className="text-xs text-muted-foreground/60 mt-0.5">
+                  Running locally? Use <code className="text-[10px] bg-muted px-1 rounded">ngrok http 3001</code> to get a public URL.
+                </p>
               </div>
               <div className="space-y-2">
                 <WebhookUrlRow

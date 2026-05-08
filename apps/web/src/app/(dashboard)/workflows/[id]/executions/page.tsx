@@ -108,17 +108,19 @@ export default function WorkflowExecutionsPage() {
           <Link href={`/workflows/${workflowId}/edit`}>
             <Button variant="outline">Edit Workflow</Button>
           </Link>
-          <Button
-            onClick={handleRunWorkflow}
-            disabled={runWorkflow.isPending || !workflow?.isActive}
-          >
-            {runWorkflow.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Play className="w-4 h-4 mr-2" />
-            )}
-            Run Now
-          </Button>
+          {workflow?.triggerType === "manual" && (
+            <Button
+              onClick={handleRunWorkflow}
+              disabled={runWorkflow.isPending || !workflow?.isActive}
+            >
+              {runWorkflow.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4 mr-2" />
+              )}
+              Run Now
+            </Button>
+          )}
         </div>
       </div>
 
@@ -167,13 +169,17 @@ export default function WorkflowExecutionsPage() {
             <div className="text-center py-12 text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-4" />
               <p className="mb-4">No executions yet</p>
-              <Button
-                onClick={handleRunWorkflow}
-                disabled={!workflow?.isActive}
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Run Workflow
-              </Button>
+              {workflow?.triggerType === "manual" ? (
+                <Button
+                  onClick={handleRunWorkflow}
+                  disabled={!workflow?.isActive}
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Run Workflow
+                </Button>
+              ) : (
+                <p className="text-sm">This workflow runs automatically via {workflow?.triggerType} trigger</p>
+              )}
             </div>
           ) : (
             <Table>

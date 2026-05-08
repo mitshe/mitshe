@@ -27,8 +27,6 @@ RUN pnpm run build
 # Build web
 WORKDIR /build/apps/web
 ENV NEXT_PUBLIC_API_URL=http://localhost:3001
-ENV NEXT_PUBLIC_AUTH_MODE=selfhosted
-ENV AUTH_MODE=selfhosted
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm run build
 

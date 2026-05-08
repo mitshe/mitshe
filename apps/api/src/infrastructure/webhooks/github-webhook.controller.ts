@@ -8,7 +8,6 @@ import {
   Logger,
   RawBodyRequest,
   Req,
-  Param,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -86,41 +85,19 @@ export class GitHubWebhookController {
     private readonly webhookSecrets: WebhookSecretsService,
   ) {}
 
-  /**
-   * Handle GitHub webhooks with organization token
-   *
-   * URL: /webhooks/github/:token
-   * The token identifies which organization this webhook belongs to.
-   * This allows each organization to have their own webhook URL.
-   *
-   * Supported events:
-   * - push
-   * - pull_request
-   * - pull_request_review
-   * - issues
-   * - issue_comment
-   * - check_run
-   * - check_suite
-   */
-  @Post(':token')
+  @Post()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
-    @Param('token') token: string,
     @Req() req: RawBodyRequest<any>,
     @Headers() headers: Record<string, string>,
     @Body() payload: GitHubWebhookPayload,
   ) {
-    // Find organization and get its webhook secret
-    const orgData = await this.webhookSecrets.getOrganizationWithSecret(
-      token,
-      'github',
-    );
+    const orgData =
+      await this.webhookSecrets.getOrganizationWithSecret('github');
 
     if (!orgData) {
-      this.logger.warn(
-        `Invalid webhook token/slug: ${token.substring(0, 8)}...`,
-      );
-      throw new NotFoundException('Invalid webhook token');
+      this.logger.warn('No organization found for GitHub webhook');
+      throw new NotFoundException('No organization configured');
     }
 
     const { organizationId, secret: webhookSecret } = orgData;

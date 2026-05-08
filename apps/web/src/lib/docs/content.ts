@@ -1678,9 +1678,6 @@ REDIS_URL=redis://localhost:6379
 ENCRYPTION_KEY=your-32-byte-hex-key
 JWT_SECRET=your-jwt-secret
 
-# Auth mode
-AUTH_MODE=selfhosted
-NEXT_PUBLIC_AUTH_MODE=selfhosted
 \`\`\`
 
 ### 3. Start infrastructure
@@ -1718,8 +1715,6 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://api:3001
-      - AUTH_MODE=selfhosted
-      - NEXT_PUBLIC_AUTH_MODE=selfhosted
     depends_on:
       - api
 
@@ -1732,7 +1727,6 @@ services:
       - REDIS_URL=redis://redis:6379
       - ENCRYPTION_KEY=\${ENCRYPTION_KEY}
       - JWT_SECRET=\${JWT_SECRET}
-      - AUTH_MODE=selfhosted
     depends_on:
       - postgres
       - redis
@@ -1790,8 +1784,6 @@ The first user to register becomes the **organization owner**.
 | \`REDIS_URL\` | Yes | Redis connection string |
 | \`ENCRYPTION_KEY\` | Yes | 32-byte hex key for credential encryption |
 | \`JWT_SECRET\` | Yes | Secret for JWT token signing |
-| \`AUTH_MODE\` | Yes | Must be \`selfhosted\` |
-| \`NEXT_PUBLIC_AUTH_MODE\` | Yes | Must be \`selfhosted\` |
 | \`NEXT_PUBLIC_API_URL\` | No | API URL (default: http://localhost:3001) |
 
 ## SSL/HTTPS

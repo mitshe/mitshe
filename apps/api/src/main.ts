@@ -56,7 +56,7 @@ async function bootstrap() {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        description: 'Enter your Clerk JWT token or API key',
+        description: 'Enter your JWT token or API key',
       },
       'bearer',
     )

@@ -3,7 +3,6 @@ import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { AuthProvider } from "@/lib/auth";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
-import type { AuthMode } from "@/lib/auth/types";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -28,21 +27,13 @@ export const metadata: Metadata = {
   description: "Workspace manager for AI coding agents",
 };
 
-function getAuthMode(): AuthMode {
-  const mode =
-    process.env.AUTH_MODE || process.env.NEXT_PUBLIC_AUTH_MODE || "selfhosted";
-  return mode === "clerk" ? "clerk" : "selfhosted";
-}
-
-const authMode = getAuthMode();
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <AuthProvider authMode={authMode}>
+    <AuthProvider>
       <html lang="en" suppressHydrationWarning>
         <body
           className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased`}

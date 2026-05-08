@@ -14,7 +14,6 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.35.5",
     "@dagrejs/dagre": "^2.0.0",
     "@mitshe/types": "workspace:*",
     "@monaco-editor/react": "^4.7.0",

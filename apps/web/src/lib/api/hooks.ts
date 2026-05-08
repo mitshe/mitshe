@@ -765,23 +765,6 @@ export function useWebhookUrl() {
   });
 }
 
-export function useRegenerateWebhookUrl() {
-  const getToken = useAuthToken();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      const token = await getToken();
-      return api.integrations.regenerateWebhookUrl(token);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...queryKeys.integrations.all, "webhook-url"],
-      });
-    },
-  });
-}
-
 export function useApiKeys() {
   const getToken = useAuthToken();
 

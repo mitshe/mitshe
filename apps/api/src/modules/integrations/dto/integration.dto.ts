@@ -105,9 +105,6 @@ export class IntegrationListResponseDto {
 }
 
 export class WebhookUrlResponseDto {
-  @ApiProperty({ description: 'Webhook token for authentication' })
-  webhookToken: string;
-
   @ApiProperty({ description: 'Webhook URLs for different integration types' })
   urls: {
     jira: string;

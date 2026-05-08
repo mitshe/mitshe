@@ -78,10 +78,6 @@
 
    Configure the following:
    ```bash
-   # Clerk Authentication
-   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
-   CLERK_SECRET_KEY=sk_...
-
    # Database
    DATABASE_URL=postgresql://...
 
@@ -124,8 +120,6 @@ docker run -d \
   -p 3000:3000 \
   -p 3001:3001 \
   -v mitshe-data:/app/data \
-  -e CLERK_SECRET_KEY=your_clerk_secret \
-  -e NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key \
   ghcr.io/mitshe/light:latest
 ```
 
@@ -192,8 +186,6 @@ Your API keys are:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk public key | Yes |
-| `CLERK_SECRET_KEY` | Clerk secret key | Yes |
 | `DATABASE_URL` | PostgreSQL connection string | Yes |
 | `NEXT_PUBLIC_API_URL` | Backend API URL | No |
 | `NEXT_PUBLIC_WS_URL` | WebSocket URL | No |

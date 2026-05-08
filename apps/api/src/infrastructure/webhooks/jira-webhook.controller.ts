@@ -8,7 +8,6 @@ import {
   Logger,
   RawBodyRequest,
   Req,
-  Param,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -81,40 +80,18 @@ export class JiraWebhookController {
     private readonly webhookSecrets: WebhookSecretsService,
   ) {}
 
-  /**
-   * Handle JIRA webhooks with organization token
-   *
-   * URL: /webhooks/jira/:token
-   * The token identifies which organization this webhook belongs to.
-   * This allows each organization to have their own webhook URL.
-   *
-   * Supported events:
-   * - jira:issue_created
-   * - jira:issue_updated
-   * - jira:issue_deleted
-   * - comment_created
-   * - comment_updated
-   * - comment_deleted
-   */
-  @Post(':token')
+  @Post()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
-    @Param('token') token: string,
     @Req() req: RawBodyRequest<any>,
     @Headers() headers: Record<string, string>,
     @Body() payload: JiraWebhookPayload,
   ) {
-    // Find organization and get its webhook secret
-    const orgData = await this.webhookSecrets.getOrganizationWithSecret(
-      token,
-      'jira',
-    );
+    const orgData = await this.webhookSecrets.getOrganizationWithSecret('jira');
 
     if (!orgData) {
-      this.logger.warn(
-        `Invalid webhook token/slug: ${token.substring(0, 8)}...`,
-      );
-      throw new NotFoundException('Invalid webhook token');
+      this.logger.warn('No organization found for JIRA webhook');
+      throw new NotFoundException('No organization configured');
     }
 
     const { organizationId, secret: webhookSecret } = orgData;

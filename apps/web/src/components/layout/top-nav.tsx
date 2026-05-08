@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Search, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,21 +15,10 @@ import { CommandPalette } from "@/components/app/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthContext } from "@/lib/auth";
 
-// Dynamically import Clerk components to avoid loading them when not needed
-const OrganizationSwitcher = dynamic(
-  () => import("@clerk/nextjs").then((mod) => mod.OrganizationSwitcher),
-  { ssr: false, loading: () => <div className="h-8 w-24 animate-pulse bg-muted rounded" /> }
-);
-
-const UserButton = dynamic(
-  () => import("@clerk/nextjs").then((mod) => mod.UserButton),
-  { ssr: false, loading: () => <div className="h-8 w-8 animate-pulse bg-muted rounded-full" /> }
-);
-
 export function TopNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
-  const { isClerkMode, userName, userEmail, signOut } = useAuthContext();
+  const { userName, userEmail, signOut } = useAuthContext();
 
   return (
     <header className="flex h-14 items-center justify-between border-b bg-background px-4">
@@ -77,37 +65,12 @@ export function TopNav() {
 
         <ThemeToggle />
 
-        {isClerkMode ? (
-          <>
-            <OrganizationSwitcher
-              appearance={{
-                elements: {
-                  rootBox: "flex items-center",
-                  organizationSwitcherTrigger:
-                    "flex items-center gap-2 rounded-md border px-2 sm:px-3 py-1.5 text-sm hover:bg-accent",
-                },
-              }}
-            />
-            <div data-tour="user-menu">
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "h-8 w-8",
-                  },
-                }}
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 rounded-md border px-2 sm:px-3 py-1.5 text-sm">
-              <span className="text-muted-foreground">{userName || userEmail}</span>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => signOut()}>
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </>
-        )}
+        <div className="flex items-center gap-2 rounded-md border px-2 sm:px-3 py-1.5 text-sm">
+          <span className="text-muted-foreground">{userName || userEmail}</span>
+        </div>
+        <Button variant="ghost" size="icon" onClick={() => signOut()}>
+          <LogOut className="h-4 w-4" />
+        </Button>
       </div>
 
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

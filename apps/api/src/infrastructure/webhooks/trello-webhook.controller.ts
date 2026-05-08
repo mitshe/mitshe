@@ -9,7 +9,6 @@ import {
   Logger,
   RawBodyRequest,
   Req,
-  Param,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -80,43 +79,25 @@ export class TrelloWebhookController {
    * Trello sends a HEAD request to verify the webhook URL exists.
    * Must respond with 200 OK.
    */
-  @Head(':token')
+  @Head()
   @HttpCode(HttpStatus.OK)
   async verifyWebhook() {
     return;
   }
 
-  /**
-   * Handle Trello webhooks with organization token
-   *
-   * URL: /webhooks/trello/:token
-   *
-   * Supported action types:
-   * - createCard
-   * - updateCard (including list changes)
-   * - deleteCard
-   * - commentCard
-   * - addLabelToCard / removeLabelFromCard
-   * - addMemberToCard / removeMemberFromCard
-   */
-  @Post(':token')
+  @Post()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
-    @Param('token') token: string,
     @Req() req: RawBodyRequest<any>,
     @Headers() headers: Record<string, string>,
     @Body() payload: TrelloWebhookPayload,
   ) {
-    const orgData = await this.webhookSecrets.getOrganizationWithSecret(
-      token,
-      'trello',
-    );
+    const orgData =
+      await this.webhookSecrets.getOrganizationWithSecret('trello');
 
     if (!orgData) {
-      this.logger.warn(
-        `Invalid webhook token/slug: ${token.substring(0, 8)}...`,
-      );
-      throw new NotFoundException('Invalid webhook token');
+      this.logger.warn('No organization found for Trello webhook');
+      throw new NotFoundException('No organization configured');
     }
 
     const { organizationId, secret: webhookSecret } = orgData;
@@ -140,7 +121,7 @@ export class TrelloWebhookController {
 
       // Trello uses HMAC-SHA1 with base64 encoding
       // The content to sign is: body + callbackURL
-      const callbackUrl = `${process.env.API_BASE_URL || 'https://api.yourdomain.com'}/webhooks/trello/${token}`;
+      const callbackUrl = `${process.env.API_BASE_URL || 'https://api.yourdomain.com'}/webhooks/trello`;
       const isValid = this.verifySignature(
         req.rawBody,
         callbackUrl,

@@ -30,7 +30,6 @@
     "docker:down": "docker-compose down"
   },
   "dependencies": {
-    "@clerk/backend": "^2.24.0",
     "@nest-lab/throttler-storage-redis": "^1.1.0",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",

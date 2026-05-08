@@ -162,7 +162,7 @@ export default function TaskDetailPage() {
     priority: "medium" as TaskPriority,
   });
 
-  const activeWorkflows = workflows.filter((w) => w.isActive);
+  const activeWorkflows = workflows.filter((w) => w.isActive && w.triggerType === "manual");
 
   const handleEditOpen = (open: boolean) => {
     if (open && task) {

@@ -13,17 +13,6 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({}),
 }));
 
-vi.mock("@clerk/nextjs", () => ({
-  useAuth: () => ({
-    getToken: vi.fn().mockResolvedValue("test-token"),
-    orgId: "org_test123",
-    userId: "user_test123",
-    isLoaded: true,
-    isSignedIn: true,
-  }),
-  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
-
 vi.mock("socket.io-client", () => ({
   io: vi.fn(() => ({
     on: vi.fn(),

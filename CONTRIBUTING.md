@@ -58,12 +58,9 @@ Backend (NestJS): Hexagonal + CQRS
 
 Frontend (Next.js): App Router + Server Components + shadcn/ui
 
-## Auth Modes
+## Auth
 
-| Mode | `AUTH_MODE` | Description |
-|------|-------------|-------------|
-| Selfhosted | `selfhosted` | Email/password JWT (default) |
-| Clerk | `clerk` | Clerk auth with organizations |
+Email/password JWT authentication (selfhosted).
 
 ## Docker Images
 

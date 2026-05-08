@@ -8,7 +8,6 @@ import {
   Logger,
   RawBodyRequest,
   Req,
-  Param,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -57,39 +56,19 @@ export class GitLabWebhookController {
     private readonly webhookSecrets: WebhookSecretsService,
   ) {}
 
-  /**
-   * Handle GitLab webhooks with organization token
-   *
-   * URL: /webhooks/gitlab/:token
-   * The token identifies which organization this webhook belongs to.
-   * This allows each organization to have their own webhook URL.
-   *
-   * Supported events:
-   * - Push Hook
-   * - Merge Request Hook
-   * - Pipeline Hook
-   * - Note Hook (comments)
-   * - Issue Hook
-   */
-  @Post(':token')
+  @Post()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
-    @Param('token') token: string,
     @Req() req: RawBodyRequest<any>,
     @Headers() headers: Record<string, string>,
     @Body() payload: GitLabWebhookPayload,
   ) {
-    // Find organization and get its webhook secret
-    const orgData = await this.webhookSecrets.getOrganizationWithSecret(
-      token,
-      'gitlab',
-    );
+    const orgData =
+      await this.webhookSecrets.getOrganizationWithSecret('gitlab');
 
     if (!orgData) {
-      this.logger.warn(
-        `Invalid webhook token/slug: ${token.substring(0, 8)}...`,
-      );
-      throw new NotFoundException('Invalid webhook token');
+      this.logger.warn('No organization found for GitLab webhook');
+      throw new NotFoundException('No organization configured');
     }
 
     const { organizationId, secret: webhookSecret } = orgData;

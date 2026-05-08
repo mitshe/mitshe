@@ -11,7 +11,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { verifyToken } from '@clerk/backend';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../persistence/prisma/prisma.service';
 import { TerminalManagerService } from '../../modules/sessions/services/terminal-manager.service';
@@ -83,9 +82,7 @@ export class EventsGateway
   server: Server;
 
   private readonly logger = new Logger(EventsGateway.name);
-  private readonly clerkSecretKey: string;
   private readonly jwtSecret: string;
-  private readonly authMode: string;
   private connectedClients = new Map<
     string,
     {
@@ -101,18 +98,7 @@ export class EventsGateway
     private readonly prisma: PrismaService,
     @Optional() private readonly terminalManager?: TerminalManagerService,
   ) {
-    this.clerkSecretKey =
-      this.configService.get<string>('CLERK_SECRET_KEY') || '';
-    const authMode =
-      this.configService.get<string>('AUTH_MODE') || 'selfhosted';
     this.jwtSecret = this.configService.get<string>('JWT_SECRET') || '';
-    this.authMode = authMode;
-
-    if (authMode === 'clerk' && !this.clerkSecretKey) {
-      this.logger.warn(
-        'CLERK_SECRET_KEY not configured - WebSocket auth will be disabled',
-      );
-    }
   }
 
   afterInit(_server: Server) {
@@ -138,7 +124,6 @@ export class EventsGateway
 
   /**
    * Authenticate and join organization room
-   * Validates Clerk JWT token and verifies organization membership
    */
   @SubscribeMessage('authenticate')
   async handleAuthenticate(
@@ -161,23 +146,12 @@ export class EventsGateway
     let verifiedOrgId: string | undefined;
 
     try {
-      if (this.authMode === 'clerk' && this.clerkSecretKey) {
-        // Clerk mode: verify with Clerk SDK
-        const payload = await verifyToken(data.token, {
-          secretKey: this.clerkSecretKey,
-        });
-        clientData.userId = payload.sub;
-        // Clerk JWT may contain org_id claim
-        verifiedOrgId = (payload as any).org_id;
-      } else {
-        // Selfhosted mode: verify JWT - orgId is in the token
-        const payload = jwt.verify(data.token, this.jwtSecret) as {
-          sub: string;
-          orgId: string;
-        };
-        clientData.userId = payload.sub;
-        verifiedOrgId = payload.orgId;
-      }
+      const payload = jwt.verify(data.token, this.jwtSecret) as {
+        sub: string;
+        orgId: string;
+      };
+      clientData.userId = payload.sub;
+      verifiedOrgId = payload.orgId;
       clientData.authenticated = true;
     } catch (error) {
       this.logger.warn(`Client ${client.id} authentication failed: ${error}`);

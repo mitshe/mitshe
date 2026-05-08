@@ -255,7 +255,7 @@ async function executeWorkflow(job: WorkflowJob): Promise<WorkflowResult> {
       const sensitiveKeys = new Set([
         'WORKFLOW_JOB', 'SESSION_CONFIG', 'ANTHROPIC_API_KEY',
         'OPENAI_API_KEY', 'ENCRYPTION_KEY', 'JWT_SECRET',
-        'CLERK_SECRET_KEY', 'CLERK_PUBLISHABLE_KEY', 'API_TOKEN',
+        'API_TOKEN',
         'XAI_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY',
         'CUSTOM_API_KEY', 'SENTRY_DSN',
       ]);

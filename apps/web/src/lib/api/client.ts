@@ -424,7 +424,6 @@ export const api = {
 
     getWebhookUrl: (token: string) =>
       request<{
-        webhookToken: string;
         urls: {
           jira: string;
           gitlab: string;
@@ -432,20 +431,6 @@ export const api = {
           trello: string;
         };
       }>("/integrations/webhook-url", { token }),
-
-    regenerateWebhookUrl: (token: string) =>
-      request<{
-        webhookToken: string;
-        urls: {
-          jira: string;
-          gitlab: string;
-          github: string;
-          trello: string;
-        };
-      }>("/integrations/webhook-url/regenerate", {
-        method: "POST",
-        token,
-      }),
   },
 
   apiKeys: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -53,6 +54,7 @@ import {
   Trash2,
   Download,
   Search,
+  Settings,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import {
@@ -326,6 +328,30 @@ export default function RepositoriesPage() {
   const activeCount = repositories.filter((r) => r.isActive).length;
   const totalCount = repositories.length;
 
+  if (!hasGitIntegration) {
+    return (
+      <div className="space-y-6 p-6">
+        <div>
+          <h1 className="text-2xl font-bold">Repositories</h1>
+          <p className="text-muted-foreground">
+            Manage Git repositories for your workflows
+          </p>
+        </div>
+        <div className="text-center py-16 text-muted-foreground">
+          <GitBranch className="w-12 h-12 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No Git integrations connected</h3>
+          <p className="mb-6 max-w-sm mx-auto">Connect GitLab or GitHub first to import and manage your repositories.</p>
+          <Button asChild>
+            <Link href="/settings/integrations">
+              <Settings className="w-4 h-4 mr-2" />
+              Go to Integrations
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -340,7 +366,7 @@ export default function RepositoriesPage() {
             <Button
               variant="outline"
               onClick={handleSync}
-              disabled={syncExisting.isPending || !hasGitIntegration}
+              disabled={syncExisting.isPending}
             >
               {syncExisting.isPending ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -352,7 +378,7 @@ export default function RepositoriesPage() {
           )}
           <Button
             onClick={handleOpenSyncDialog}
-            disabled={fetchRemoteRepos.isPending || !hasGitIntegration}
+            disabled={fetchRemoteRepos.isPending}
           >
             {fetchRemoteRepos.isPending ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -364,40 +390,25 @@ export default function RepositoriesPage() {
         </div>
       </div>
 
-      {!hasGitIntegration && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            No Git integrations connected. Please connect GitLab or GitHub in{" "}
-            <a href="/settings/integrations" className="underline font-medium">
-              Integrations
-            </a>{" "}
-            first.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {hasGitIntegration && (
-        <div className="flex items-center gap-6 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <GitBranch className="h-4 w-4" />
-            <span>Total</span>
-            <span className="font-semibold text-foreground">{totalCount}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span>Active</span>
-            <span className="font-semibold text-foreground">{activeCount}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Settings2 className="h-4 w-4" />
-            <span>Integrations</span>
-            <span className="font-semibold text-foreground">
-              {connectedIntegrations.length}
-            </span>
-          </div>
+      <div className="flex items-center gap-6 text-sm text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <GitBranch className="h-4 w-4" />
+          <span>Total</span>
+          <span className="font-semibold text-foreground">{totalCount}</span>
         </div>
-      )}
+        <div className="flex items-center gap-1.5">
+          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <span>Active</span>
+          <span className="font-semibold text-foreground">{activeCount}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Settings2 className="h-4 w-4" />
+          <span>Integrations</span>
+          <span className="font-semibold text-foreground">
+            {connectedIntegrations.length}
+          </span>
+        </div>
+      </div>
 
       {selectedIds.length > 0 && (
         <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
@@ -487,25 +498,19 @@ export default function RepositoriesPage() {
           ) : repositories.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <GitBranch className="w-12 h-12 mx-auto mb-4" />
-              <p className="mb-4">
-                {hasGitIntegration
-                  ? "No repositories found. Click Sync to fetch repositories from your Git providers."
-                  : "Connect a Git integration to see your repositories."}
-              </p>
-              {hasGitIntegration && (
-                <Button
-                  variant="outline"
-                  onClick={handleOpenSyncDialog}
-                  disabled={fetchRemoteRepos.isPending}
-                >
-                  {fetchRemoteRepos.isPending ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4 mr-2" />
-                  )}
-                  Import Repositories
-                </Button>
-              )}
+              <p className="mb-4">No repositories found. Import repositories from your Git providers.</p>
+              <Button
+                variant="outline"
+                onClick={handleOpenSyncDialog}
+                disabled={fetchRemoteRepos.isPending}
+              >
+                {fetchRemoteRepos.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Import Repositories
+              </Button>
             </div>
           ) : (
             <>

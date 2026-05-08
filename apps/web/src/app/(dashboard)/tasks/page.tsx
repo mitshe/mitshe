@@ -489,11 +489,9 @@ export default function TasksPage() {
                       View Details
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`}>
-                      <Terminal className="mr-2 h-4 w-4" />
-                      Open in Thread
-                    </Link>
+                  <DropdownMenuItem onClick={() => router.push(`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`)}>
+                    <Terminal className="mr-2 h-4 w-4" />
+                    Open in Thread
                   </DropdownMenuItem>
                   {manualWorkflows.length > 0 && (
                     <DropdownMenuSub>
@@ -599,11 +597,9 @@ export default function TasksPage() {
                 View Details
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`}>
-                <Terminal className="mr-2 h-4 w-4" />
-                Open in Thread
-              </Link>
+            <DropdownMenuItem onClick={() => router.push(`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`)}>
+              <Terminal className="mr-2 h-4 w-4" />
+              Open in Thread
             </DropdownMenuItem>
             {task.externalSource && (
               <DropdownMenuItem asChild>
