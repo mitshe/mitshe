@@ -279,7 +279,7 @@ export class SessionContainerService implements OnModuleInit {
         'export DISPLAY=:99 &&' +
           ' fluxbox >/dev/null 2>&1 &' +
           ' sleep 1 &&' +
-          ' CHROME=$(which google-chrome-stable 2>/dev/null || which google-chrome 2>/dev/null || which chromium 2>/dev/null) &&' +
+          ' CHROME=$(which google-chrome-stable 2>/dev/null || which google-chrome 2>/dev/null || which chromium 2>/dev/null || find ~/.cache/ms-playwright -name chrome -type f 2>/dev/null | head -1) &&' +
           ' if [ -n "$CHROME" ]; then' +
           '   "$CHROME" --no-sandbox --disable-dev-shm-usage --remote-debugging-port=9222 --start-maximized >/dev/null 2>&1 &' +
           ' fi',
