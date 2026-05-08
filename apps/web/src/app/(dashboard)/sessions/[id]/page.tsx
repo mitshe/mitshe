@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useSession,
   useCloseTerminal,
@@ -47,6 +48,7 @@ import {
   useDeleteSessionFile,
   useWriteSessionFile,
   usePushAndCreatePR,
+  queryKeys,
 } from "@/lib/api/hooks";
 import { useSocket } from "@/lib/socket/socket-context";
 import { toast } from "sonner";
@@ -83,6 +85,7 @@ export default function SessionDetailPage() {
   const router = useRouter();
   const sessionId = params.id as string;
 
+  const queryClient = useQueryClient();
   const { data: session, isLoading, refetch } = useSession(sessionId);
   const { data: files = [], isLoading: filesLoading } = useSessionFiles(sessionId);
   const { data: gitStatuses = [] } = useSessionGitStatus(sessionId);
@@ -561,7 +564,7 @@ export default function SessionDetailPage() {
   const handleResume = async () => {
     try {
       await resumeSession.mutateAsync(sessionId);
-      refetch();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to resume session";
       if (msg.includes("no longer exists") || msg.includes("cannot be recovered")) {
@@ -575,7 +578,7 @@ export default function SessionDetailPage() {
   const handleStop = async () => {
     try {
       await stopSession.mutateAsync(sessionId);
-      refetch();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
     } catch {
       toast.error("Failed to stop session");
     }
@@ -605,6 +608,7 @@ export default function SessionDetailPage() {
     try {
       router.push("/sessions");
       await deleteSession.mutateAsync(sessionId);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
       toast.success("Session deleted");
     } catch {
       toast.error("Failed to delete session");

@@ -74,69 +74,77 @@ export class SessionContainerService implements OnModuleInit {
 
     this.logger.log(`Creating session container: ${containerName}`);
 
-    const container = await this.docker.createContainer({
-      Image: config.image ?? this.executorImage,
-      name: containerName,
-      User: 'root',
-      Entrypoint: ['bash', '-c'],
-      Cmd: [
-        `chown -R executor:executor /home/executor 2>/dev/null; ` +
-          `if [ -d /var/lib/docker ]; then dockerd &>/var/log/dockerd.log & for i in $(seq 1 30); do docker info &>/dev/null && break || sleep 1; done; fi; ` +
-          (config.environment?.setupScript
-            ? `echo "$SETUP_SCRIPT_B64" | base64 -d > /tmp/.setup.sh && chmod +x /tmp/.setup.sh && su -s /bin/bash executor -c "bash /tmp/.setup.sh" && rm -f /tmp/.setup.sh; `
-            : '') +
-          `exec su -s /bin/bash executor -c "node /session/server.js"`,
-      ],
-      ExposedPorts: { '6080/tcp': {} },
-      Env: [
-        `SESSION_CONFIG=${sessionConfig}`,
-        'DISPLAY=:99',
-        // Setup script as base64 (decoded safely in Cmd, avoids shell injection)
-        ...(config.environment?.setupScript
-          ? [
-              `SETUP_SCRIPT_B64=${Buffer.from(config.environment.setupScript).toString('base64')}`,
-            ]
-          : []),
-        // Custom env vars from environment config
-        ...(config.environment?.variables?.map((v) => `${v.key}=${v.value}`) ||
-          []),
-      ],
-      WorkingDir: '/workspace',
-      Labels: {
-        'mitshe.type': 'session',
-        'mitshe.session-id': config.sessionId,
-        'mitshe.organization-id': config.organizationId,
-        'mitshe.created-at': new Date().toISOString(),
-      },
-      HostConfig: {
-        Binds: [
-          `mitshe-executor-home-${config.organizationId}:/home/executor`,
-          ...(config.enableDocker
-            ? [`mitshe-dind-${config.sessionId}:/var/lib/docker`]
-            : []),
-          ...(config.localPath
-            ? [`${config.localPath}:/workspace/local:rw`]
-            : []),
+    let container: Docker.Container;
+    try {
+      container = await this.docker.createContainer({
+        Image: config.image ?? this.executorImage,
+        name: containerName,
+        User: 'root',
+        Entrypoint: ['bash', '-c'],
+        Cmd: [
+          `chown -R executor:executor /home/executor 2>/dev/null; ` +
+            `if [ -d /var/lib/docker ]; then dockerd &>/var/log/dockerd.log & for i in $(seq 1 30); do docker info &>/dev/null && break || sleep 1; done; fi; ` +
+            (config.environment?.setupScript
+              ? `echo "$SETUP_SCRIPT_B64" | base64 -d > /tmp/.setup.sh && chmod +x /tmp/.setup.sh && su -s /bin/bash executor -c "bash /tmp/.setup.sh" && rm -f /tmp/.setup.sh; `
+              : '') +
+            `exec su -s /bin/bash executor -c "node /session/server.js"`,
         ],
-        PortBindings: {
-          '6080/tcp': [{ HostPort: '0' }], // noVNC on random host port
+        ExposedPorts: { '6080/tcp': {} },
+        Env: [
+          `SESSION_CONFIG=${sessionConfig}`,
+          'DISPLAY=:99',
+          // Setup script as base64 (decoded safely in Cmd, avoids shell injection)
+          ...(config.environment?.setupScript
+            ? [
+                `SETUP_SCRIPT_B64=${Buffer.from(config.environment.setupScript).toString('base64')}`,
+              ]
+            : []),
+          // Custom env vars from environment config
+          ...(config.environment?.variables?.map(
+            (v) => `${v.key}=${v.value}`,
+          ) || []),
+        ],
+        WorkingDir: '/workspace',
+        Labels: {
+          'mitshe.type': 'session',
+          'mitshe.session-id': config.sessionId,
+          'mitshe.organization-id': config.organizationId,
+          'mitshe.created-at': new Date().toISOString(),
         },
-        ShmSize: 512 * 1024 * 1024, // 512MB shared memory for Chrome
-        Memory: (config.environment?.memoryMb || 8192) * 1024 * 1024,
-        NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
-        PidsLimit: config.enableDocker ? 1024 : 512,
-        NetworkMode: process.env.DOCKER_NETWORK || 'bridge',
-        // DinD requires privileged mode to run nested Docker daemon
-        Privileged: config.enableDocker || false,
-        SecurityOpt: config.enableDocker
-          ? [] // privileged mode overrides security opts
-          : ['no-new-privileges:true'],
-        CapDrop: config.enableDocker ? [] : ['ALL'],
-        CapAdd: config.enableDocker
-          ? [] // privileged grants all capabilities
-          : ['CHOWN', 'SETUID', 'SETGID', 'DAC_OVERRIDE'],
-      },
-    });
+        HostConfig: {
+          Binds: [
+            `mitshe-executor-home-${config.organizationId}:/home/executor`,
+            ...(config.enableDocker
+              ? [`mitshe-dind-${config.sessionId}:/var/lib/docker`]
+              : []),
+            ...(config.localPath
+              ? [`${config.localPath}:/workspace/local:rw`]
+              : []),
+          ],
+          PortBindings: {
+            '6080/tcp': [{ HostPort: '0' }], // noVNC on random host port
+          },
+          ShmSize: 512 * 1024 * 1024, // 512MB shared memory for Chrome
+          Memory: (config.environment?.memoryMb || 8192) * 1024 * 1024,
+          NanoCpus: (config.environment?.cpuCores || 2) * 1e9,
+          PidsLimit: config.enableDocker ? 1024 : 512,
+          NetworkMode: process.env.DOCKER_NETWORK || 'bridge',
+          // DinD requires privileged mode to run nested Docker daemon
+          Privileged: config.enableDocker || false,
+          SecurityOpt: config.enableDocker
+            ? [] // privileged mode overrides security opts
+            : ['no-new-privileges:true'],
+          CapDrop: config.enableDocker ? [] : ['ALL'],
+          CapAdd: config.enableDocker
+            ? [] // privileged grants all capabilities
+            : ['CHOWN', 'SETUID', 'SETGID', 'DAC_OVERRIDE'],
+        },
+      });
+    } catch (err) {
+      throw new Error(
+        `Failed to create session container. Make sure Docker is running. (${(err as Error).message})`,
+      );
+    }
 
     await container.start();
 

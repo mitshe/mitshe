@@ -277,10 +277,12 @@ export default function SnapshotsPage() {
                   <span className="font-medium text-sm">{snap.name}</span>
                   {statusBadge(snap.status, snap.createdAt)}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                  {(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession && (
-                    <span>from {(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession!.name}</span>
-                  )}
+                {(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    from <span className="font-medium text-foreground/70">{(snap as Snapshot & { sourceSession?: { name: string } }).sourceSession!.name}</span>
+                  </p>
+                )}
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                   {snap.sizeBytes && <span>{formatBytes(snap.sizeBytes)}</span>}
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />

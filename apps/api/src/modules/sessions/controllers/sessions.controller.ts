@@ -507,7 +507,8 @@ export class SessionsController {
 
     await this.sessionsService.updateStatus(id, 'PAUSED');
     this.eventsGateway.emitSessionStatus(organizationId, id, 'PAUSED');
-    return { status: 'paused' };
+    const updated = await this.sessionsService.findOne(organizationId, id);
+    return { session: updated };
   }
 
   @Post(':id/resume')
@@ -547,7 +548,8 @@ export class SessionsController {
 
     await this.sessionsService.updateStatus(id, 'RUNNING');
     this.eventsGateway.emitSessionStatus(organizationId, id, 'RUNNING');
-    return { status: 'running' };
+    const updated = await this.sessionsService.findOne(organizationId, id);
+    return { session: updated };
   }
 
   @Post(':id/stop')
@@ -570,7 +572,8 @@ export class SessionsController {
 
     await this.sessionsService.updateStatus(id, 'COMPLETED');
     this.eventsGateway.emitSessionStatus(organizationId, id, 'COMPLETED');
-    return { status: 'completed' };
+    const updated = await this.sessionsService.findOne(organizationId, id);
+    return { session: updated };
   }
 
   // ─── Command Execution (non-interactive, for workflows) ────────
