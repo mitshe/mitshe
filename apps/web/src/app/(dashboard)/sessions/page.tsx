@@ -1108,6 +1108,11 @@ export default function SessionsPage() {
                           {config.label}
                         </Badge>
                       </div>
+                      {session.instructions && (
+                        <p className="text-xs text-muted-foreground truncate max-w-md">
+                          {session.instructions.split('\n')[0]}
+                        </p>
+                      )}
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                         {session.project && <span>{session.project.name}</span>}
                         {session.aiCredential && <span>{providerLabels[session.aiCredential.provider] || session.aiCredential.provider}</span>}
