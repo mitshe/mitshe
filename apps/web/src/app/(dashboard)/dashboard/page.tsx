@@ -67,41 +67,43 @@ export default function DashboardPage() {
   const hasWorkflow = workflows.length > 0;
   const hasRun = workflows.some((w) => (w._count?.executions ?? 0) > 0);
 
+  const hasSessions = sessions.length > 0;
+
   const onboardingSteps = [
     {
       id: "integration",
-      label: "Connect an integration",
-      description: "GitHub, GitLab, Jira, or Slack",
+      label: "Connect GitHub or Jira",
+      description: "Import repos and tasks",
       done: hasIntegration,
       href: "/settings/integrations",
       icon: Plug,
       required: true,
     },
     {
-      id: "workflow",
-      label: "Create a workflow",
-      description: "Build your first automation",
-      done: hasWorkflow,
-      href: "/workflows",
-      icon: Workflow,
+      id: "repository",
+      label: "Sync repositories",
+      description: "Import your Git repos",
+      done: hasRepository,
+      href: "/settings/repositories",
+      icon: GitBranch,
       required: true,
     },
     {
-      id: "run",
-      label: "Run a workflow",
-      description: "Execute and test your workflow",
-      done: hasRun,
-      href: "/workflows",
+      id: "session",
+      label: "Start a session",
+      description: "Open an isolated workspace with Claude Code",
+      done: hasSessions,
+      href: "/sessions",
       icon: Play,
       required: true,
     },
     {
-      id: "repository",
-      label: "Sync repositories",
-      description: "Optional: Import Git repos for code automation",
-      done: hasRepository,
-      href: "/settings/repositories",
-      icon: GitBranch,
+      id: "workflow",
+      label: "Create a workflow",
+      description: "Optional: automate repetitive tasks",
+      done: hasWorkflow,
+      href: "/workflows",
+      icon: Workflow,
       required: false,
     },
   ];
