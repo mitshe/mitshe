@@ -71,6 +71,15 @@ export type NodeType =
   | 'action:obsidian_create_note'
   | 'action:obsidian_update_note'
   | 'action:obsidian_append_note'
+  // Session Actions
+  | 'action:session_create'
+  | 'action:session_exec'
+  | 'action:session_agent'
+  | 'action:session_stop'
+  | 'action:session_read_file'
+  | 'action:session_write_file'
+  | 'data:session_git_diff'
+  | 'data:session_files'
   // Flow Control
   | 'control:condition'
   | 'control:switch'
