@@ -274,11 +274,13 @@ export default function SessionsPage() {
   const [taskHandled, setTaskHandled] = useState(false);
   useEffect(() => {
     if (taskHandled || !urlNewSession) return;
+    const autoSnapshot = readySnapshots.length === 1 ? readySnapshots[0].id : '';
     setForm((prev) => ({
       ...prev,
       name: urlTaskName || prev.name,
       instructions: urlTaskInstructions || prev.instructions,
       projectId: urlProjectId || prev.projectId,
+      baseImageId: autoSnapshot || prev.baseImageId,
       integrationIds: defaultGithubId ? [defaultGithubId] : prev.integrationIds,
     }));
     setIsDialogOpen(true);
