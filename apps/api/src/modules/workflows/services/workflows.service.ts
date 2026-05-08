@@ -87,6 +87,16 @@ export class WorkflowsService {
       _count: {
         select: { executions: true },
       },
+      executions: {
+        select: {
+          id: true,
+          status: true,
+          startedAt: true,
+          completedAt: true,
+        },
+        orderBy: { startedAt: 'desc' as const },
+        take: 1,
+      },
     };
 
     // Get total count and paginated data in parallel

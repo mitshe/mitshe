@@ -65,6 +65,7 @@ import {
   Search,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
+import { getExecutionStatus } from "@/lib/status-config";
 import { toast } from "sonner";
 import {
   useWorkflows,
@@ -729,10 +730,22 @@ export default function WorkflowsPage() {
                       <div className="flex items-center gap-4">
                         <Link
                           href={`/workflows/${workflow.id}/executions`}
-                          className="flex items-center gap-1 hover:underline hover:text-foreground"
+                          className="flex items-center gap-1.5 hover:underline hover:text-foreground"
                         >
-                          <History className="h-3.5 w-3.5" />
-                          <span>{workflow._count?.executions || 0}</span>
+                          {(() => {
+                            const last = workflow.executions?.[0];
+                            if (last) {
+                              const st = getExecutionStatus(last.status);
+                              return (
+                                <Badge variant="outline" className={`gap-0.5 text-[10px] px-1.5 py-0 ${st.color}`}>
+                                  {st.icon}
+                                  {st.label}
+                                </Badge>
+                              );
+                            }
+                            return <History className="h-3.5 w-3.5" />;
+                          })()}
+                          <span>{workflow._count?.executions || 0} runs</span>
                         </Link>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5" />
@@ -839,10 +852,22 @@ export default function WorkflowsPage() {
                         <TableCell>
                           <Link
                             href={`/workflows/${workflow.id}/executions`}
-                            className="hover:underline text-muted-foreground hover:text-foreground"
+                            className="flex items-center gap-2 hover:underline text-muted-foreground hover:text-foreground"
                           >
-                            {workflow._count?.executions || 0}
-                            <span className="ml-1.5 text-xs">View history</span>
+                            {(() => {
+                              const last = workflow.executions?.[0];
+                              if (last) {
+                                const st = getExecutionStatus(last.status);
+                                return (
+                                  <Badge variant="outline" className={`gap-1 ${st.color}`}>
+                                    {st.icon}
+                                    {st.label}
+                                  </Badge>
+                                );
+                              }
+                              return null;
+                            })()}
+                            <span className="text-xs">{workflow._count?.executions || 0} runs</span>
                           </Link>
                         </TableCell>
                         <TableCell>

@@ -55,6 +55,12 @@ export interface Workflow {
   _count?: {
     executions: number;
   };
+  executions?: Array<{
+    id: string;
+    status: ExecutionStatus;
+    startedAt: string;
+    completedAt: string | null;
+  }>;
 }
 
 export interface CreateWorkflowDto {

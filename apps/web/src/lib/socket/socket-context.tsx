@@ -66,8 +66,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const handleDisconnect = () => {
       setIsConnected(false);
     };
-    const handleError = (error: Error) => {
-      console.error("[Socket] Connection error:", error.message);
+    const handleError = () => {
+      // Connection errors are expected during reconnects, silenced
     };
 
     socket.on("connect", handleConnect);
@@ -85,60 +85,46 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!socket || !orgId) return;
 
-    const connectAndAuth = async () => {
-      if (!socket.connected) {
-        socket.connect();
-      }
-
-      const handleConnect = async () => {
-        try {
-          const token = await getToken();
+    const authenticate = async () => {
+      try {
+        const token = await getToken();
+        if (token) {
           socket.emit("authenticate", { organizationId: orgId, token });
-        } catch (error) {
-          console.error("[Socket] Failed to get auth token:", error);
         }
-      };
-
-      const handleAuthenticated = () => {
-        // Authenticated successfully
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const handleAuthError = (_data: { message: string }) => {
-        // Silenced — auth retries automatically on reconnect
-      };
-
-      socket.on("connect", handleConnect);
-      socket.on("authenticated", handleAuthenticated);
-      socket.on("error", handleAuthError);
-
-      if (socket.connected) {
-        try {
-          const token = await getToken();
-          socket.emit("authenticate", { organizationId: orgId, token });
-        } catch (error) {
-          console.error("[Socket] Failed to get auth token:", error);
-        }
+      } catch {
+        // Token refresh failed, will retry on next connect
       }
-
-      return () => {
-        socket.off("connect", handleConnect);
-        socket.off("authenticated", handleAuthenticated);
-        socket.off("error", handleAuthError);
-      };
     };
 
-    connectAndAuth();
+    const handleConnect = () => {
+      authenticate();
+    };
 
-    // Reconnect when page becomes visible again (after sleep/tab switch)
+    socket.on("connect", handleConnect);
+    socket.on("error", () => {
+      // Silenced — auth retries on reconnect
+    });
+
+    if (!socket.connected) {
+      socket.connect();
+    } else {
+      authenticate();
+    }
+
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && socket && !socket.connected) {
-        socket.connect();
+      if (document.visibilityState === 'visible') {
+        if (!socket.connected) {
+          socket.connect();
+        } else {
+          authenticate();
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      socket.off("connect", handleConnect);
+      socket.off("error");
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [socket, orgId, getToken]);
