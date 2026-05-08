@@ -5,6 +5,7 @@ import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import { BreadcrumbsWrapper } from "./breadcrumbs-wrapper";
 import { OnboardingTour } from "@/components/onboarding-tour";
+import { ThreadNotifications } from "@/components/thread-notifications";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -23,6 +24,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <OnboardingTour />
+      <ThreadNotifications />
     </div>
   );
 }
