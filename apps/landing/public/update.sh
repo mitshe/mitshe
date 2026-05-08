@@ -40,8 +40,11 @@ printf "  Stopping old container...\n"
 docker stop mitshe 2>/dev/null || true
 docker rm mitshe 2>/dev/null || true
 
-# Clean up dangling images left after pull
-docker image prune -f 2>/dev/null || true
+# Clean up old mitshe images (keep only latest)
+OLD_MITSHE=$(docker images ghcr.io/mitshe/mitshe -q 2>/dev/null | tail -n +2)
+OLD_EXECUTOR=$(docker images ghcr.io/mitshe/mitshe-executor -q 2>/dev/null | tail -n +2)
+if [ -n "$OLD_MITSHE" ]; then printf "$OLD_MITSHE" | xargs docker rmi 2>/dev/null || true; fi
+if [ -n "$OLD_EXECUTOR" ]; then printf "$OLD_EXECUTOR" | xargs docker rmi 2>/dev/null || true; fi
 
 # Start updated container
 printf "  Starting updated container...\n"
