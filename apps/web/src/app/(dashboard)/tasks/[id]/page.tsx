@@ -253,7 +253,7 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2 flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

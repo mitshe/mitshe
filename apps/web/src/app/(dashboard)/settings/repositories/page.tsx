@@ -330,7 +330,7 @@ export default function RepositoriesPage() {
 
   if (!hasGitIntegration) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 sm:p-6">
         <div>
           <h1 className="text-2xl font-bold">Repositories</h1>
           <p className="text-muted-foreground">
@@ -353,7 +353,7 @@ export default function RepositoriesPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Repositories</h1>
