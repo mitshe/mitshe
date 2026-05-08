@@ -76,6 +76,7 @@ import {
   useImportPreview,
   useImportConfirm,
   useImportAssigned,
+  useRefreshAllTasks,
   useRunWorkflowOnTask,
 } from "@/lib/api/hooks";
 import { formatDistanceToNow } from "@/lib/utils";
@@ -98,6 +99,7 @@ export default function TasksPage() {
   const importPreview = useImportPreview();
   const importConfirm = useImportConfirm();
   const importAssigned = useImportAssigned();
+  const refreshAllTasks = useRefreshAllTasks();
   const runWorkflowOnTask = useRunWorkflowOnTask();
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -677,10 +679,28 @@ export default function TasksPage() {
               if (!open) resetImportDialog();
             }}
           >
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={refreshAllTasks.isPending}
+              onClick={async () => {
+                try {
+                  const result = await refreshAllTasks.mutateAsync();
+                  toast.success(`Synced ${result.refreshed} task(s)`, {
+                    description: result.failed > 0 ? `${result.failed} failed to sync` : undefined,
+                  });
+                } catch {
+                  toast.error("Failed to sync tasks");
+                }
+              }}
+            >
+              {refreshAllTasks.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+              Sync
+            </Button>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Download className="mr-2 h-4 w-4" />
-                Import from Jira
+                Import
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">

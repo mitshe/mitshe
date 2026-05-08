@@ -324,6 +324,21 @@ export function useImportConfirm() {
   });
 }
 
+export function useRefreshAllTasks() {
+  const getToken = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return api.tasks.refreshAll(token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    },
+  });
+}
+
 export function useImportAssigned() {
   const getToken = useAuthToken();
   const queryClient = useQueryClient();

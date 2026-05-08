@@ -227,6 +227,12 @@ export class TasksController {
     return { preview };
   }
 
+  @Post('refresh-all')
+  @ApiOperation({ summary: 'Refresh external data for all imported tasks' })
+  async refreshAll(@OrganizationId() organizationId: string) {
+    return this.taskImportService.refreshAllExternalData(organizationId);
+  }
+
   @Post('import/assigned')
   @ApiOperation({
     summary: 'Import all assigned issues from connected tracker',

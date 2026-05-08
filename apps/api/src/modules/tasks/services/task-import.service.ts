@@ -177,6 +177,34 @@ export class TaskImportService {
   /**
    * Refresh external data for an imported task
    */
+  async refreshAllExternalData(
+    organizationId: string,
+  ): Promise<{ refreshed: number; failed: number }> {
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        organizationId,
+        externalSource: { not: null },
+        externalIssueUrl: { not: null },
+      },
+      select: { id: true },
+    });
+
+    let refreshed = 0;
+    let failed = 0;
+
+    for (const task of tasks) {
+      try {
+        await this.refreshExternalData(organizationId, task.id);
+        refreshed++;
+      } catch {
+        failed++;
+      }
+    }
+
+    this.logger.log(`Refreshed ${refreshed} tasks (${failed} failed)`);
+    return { refreshed, failed };
+  }
+
   async refreshExternalData(organizationId: string, taskId: string) {
     const task = await this.prisma.task.findFirst({
       where: { id: taskId, organizationId },
