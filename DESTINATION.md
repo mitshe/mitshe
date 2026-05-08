@@ -22,6 +22,14 @@ Every task = a thread (session). Each thread is an isolated container with its o
 5. PR created, thread can be archived or reused
 ```
 
+## Two ways to use workflows
+
+**Manual:** User triggers workflow — optionally with a task as input. Task can be imported from Jira, created manually, or anything else. No webhooks, no public URL, works anywhere.
+
+**Automatic:** External event (webhook, schedule, git push) triggers workflow. Requires public URL for webhooks (ngrok for local).
+
+Both are first-class. Mitshe must not force users to set up integrations to be useful.
+
 ## Key concepts
 
 - **Thread** = Session = isolated Docker container per task/epic
