@@ -218,12 +218,13 @@ export class SessionsController {
       Math.max(1, parseInt(limit || '20', 10) || 20),
     );
 
-    return this.sessionsService.findAll(organizationId, {
+    const result = await this.sessionsService.findAll(organizationId, {
       status,
       projectId,
       page: pageNum,
       limit: limitNum,
     });
+    return result;
   }
 
   @Get(':id')
@@ -760,6 +761,13 @@ export class SessionsController {
     }
 
     const repo = session.repositories[0];
+
+    if (!repo.repository.integrationId) {
+      throw new BadRequestException(
+        'Repository has no git integration configured. Connect a git provider in Settings.',
+      );
+    }
+
     const repoDir = `/workspace/${repo.repository.name}`;
 
     // Get current branch name
