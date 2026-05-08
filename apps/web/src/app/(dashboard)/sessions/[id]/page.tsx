@@ -562,8 +562,13 @@ export default function SessionDetailPage() {
     try {
       await resumeSession.mutateAsync(sessionId);
       refetch();
-    } catch {
-      toast.error("Failed to resume session");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to resume session";
+      if (msg.includes("no longer exists") || msg.includes("cannot be recovered")) {
+        toast.error("Container was deleted. Create a new session instead.");
+      } else {
+        toast.error(msg);
+      }
     }
   };
 
