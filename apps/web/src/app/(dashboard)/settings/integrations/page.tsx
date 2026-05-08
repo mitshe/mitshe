@@ -615,7 +615,7 @@ export default function IntegrationsPage() {
       )}
 
       {webhookData && (
-        <Collapsible className="border rounded-lg">
+        <Collapsible defaultOpen className="border rounded-lg">
           <CollapsibleTrigger asChild>
             <button className="flex items-center justify-between w-full p-4 text-left hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-3">
@@ -636,9 +636,14 @@ export default function IntegrationsPage() {
             <div className="px-4 pb-4 space-y-3">
               <Separator />
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  Copy these URLs to your external services to receive events
-                </p>
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Copy these URLs to your external services to receive events.
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">
+                    Running locally? Use <code className="text-[10px] bg-muted px-1 rounded">ngrok http 3001</code> to get a public URL.
+                  </p>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
