@@ -273,7 +273,7 @@ export default function PreferencesPage() {
               <div className="space-y-0.5">
                 <Label>Reset onboarding tour</Label>
                 <p className="text-xs text-muted-foreground">
-                  Show the welcome tour again when you visit the dashboard
+                  Show the welcome tour again when you visit Chat
                 </p>
               </div>
               <Button
@@ -281,7 +281,7 @@ export default function PreferencesPage() {
                 size="sm"
                 onClick={() => {
                   resetOnboardingTour();
-                  toast.success("Onboarding tour reset. Visit the dashboard to see it again.");
+                  toast.success("Onboarding tour reset. Visit Chat to see it again.");
                 }}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />

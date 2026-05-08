@@ -18,7 +18,6 @@ import {
   Workflow,
   Plus,
   Settings,
-  Search,
   Loader2,
   Terminal,
   MessageSquare,
@@ -33,7 +32,6 @@ interface CommandPaletteProps {
 }
 
 const navigationItems = [
-  { label: "Dashboard", path: "/dashboard", icon: Search },
   { label: "Chat", path: "/chat", icon: MessageSquare },
   { label: "Threads", path: "/sessions", icon: Terminal },
   { label: "Tasks", path: "/tasks", icon: ListTodo },

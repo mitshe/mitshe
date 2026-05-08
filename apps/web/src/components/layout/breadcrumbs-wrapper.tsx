@@ -9,17 +9,20 @@ interface BreadcrumbItem {
   href?: string;
 }
 
-// Map paths to human-readable labels
 const pathLabels: Record<string, string> = {
-  dashboard: "Dashboard",
+  chat: "Chat",
   tasks: "Tasks",
+  sessions: "Threads",
   workflows: "Workflows",
   executions: "Executions",
   projects: "Projects",
-  settings: "Organization",
+  images: "Snapshots",
+  skills: "Skills",
+  settings: "Settings",
   integrations: "Integrations",
   ai: "AI Providers",
   repositories: "Repositories",
+  organization: "Organization",
   team: "Team",
   "api-keys": "API Keys",
   preferences: "Preferences",
@@ -27,17 +30,13 @@ const pathLabels: Record<string, string> = {
   docs: "Documentation",
 };
 
-// Dynamic segment patterns (for IDs)
 function isDynamicSegment(segment: string): boolean {
-  // UUID pattern
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)) {
     return true;
   }
-  // CUID pattern (starts with c, 25+ chars)
   if (/^c[a-z0-9]{24,}$/i.test(segment)) {
     return true;
   }
-  // Prisma CUID (starts with cm)
   if (segment.startsWith("cm") && segment.length > 20) {
     return true;
   }
@@ -47,19 +46,12 @@ function isDynamicSegment(segment: string): boolean {
 export function BreadcrumbsWrapper() {
   const pathname = usePathname();
 
-  // Don't show breadcrumbs on pages with their own header
-  if (pathname === "/dashboard") {
-    return null;
-  }
-  // Workflow editor, session detail, and chat have their own navigation
   if (/^\/workflows\/[^/]+\/edit/.test(pathname) || /^\/sessions\/[^/]+$/.test(pathname) || pathname.startsWith("/chat") || pathname.endsWith("/terminal")) {
     return null;
   }
 
-  // Parse the path into segments
   const segments = pathname.split("/").filter(Boolean);
 
-  // Build breadcrumb items
   const breadcrumbs: BreadcrumbItem[] = [];
   let currentPath = "";
 
@@ -67,10 +59,8 @@ export function BreadcrumbsWrapper() {
     const segment = segments[i];
     currentPath += `/${segment}`;
 
-    // Skip dynamic segments in the middle, but include the final one
     if (isDynamicSegment(segment)) {
       if (i === segments.length - 1) {
-        // Last segment is dynamic - show as "Details" or based on previous segment
         const prevSegment = segments[i - 1];
         if (prevSegment === "tasks") {
           breadcrumbs.push({ label: "Task Details" });
@@ -106,7 +96,7 @@ export function BreadcrumbsWrapper() {
       className="flex items-center gap-1 text-sm text-muted-foreground px-6 pt-4"
     >
       <Link
-        href="/dashboard"
+        href="/chat"
         className="flex items-center hover:text-foreground transition-colors"
       >
         <Home className="h-4 w-4" />

@@ -9,31 +9,20 @@ const TOUR_COMPLETED_KEY = "onboarding-tour-completed";
 
 const tourSteps: DriveStep[] = [
   {
-    element: "[data-tour='dashboard']",
     popover: {
       title: "Welcome to mitshe!",
       description:
-        "This is your dashboard - the central hub for monitoring your AI-powered workflow automation. Let's take a quick tour!",
-      side: "bottom",
-      align: "start",
-    },
-  },
-  {
-    element: "[data-tour='getting-started']",
-    popover: {
-      title: "Getting Started Checklist",
-      description:
-        "Follow these steps to set up your workspace. Connect integrations, sync repositories, and create your first workflow.",
+        "Your workspace for AI coding agents. Each task gets its own isolated thread with terminal, browser, and Claude Code. Let's take a quick tour!",
       side: "bottom",
       align: "center",
     },
   },
   {
-    element: "[data-tour='nav-tasks']",
+    element: "[data-tour='nav-sessions']",
     popover: {
-      title: "Tasks",
+      title: "Threads",
       description:
-        "View and manage all your tasks here. Tasks can be imported from integrated issue trackers or created manually.",
+        "Isolated Docker containers where AI agents work on your code. Start a thread, watch Claude Code implement, test, and review.",
       side: "right",
       align: "start",
     },
@@ -43,27 +32,17 @@ const tourSteps: DriveStep[] = [
     popover: {
       title: "Workflows",
       description:
-        "Create powerful automation workflows with our visual builder. Connect triggers, AI actions, and integrations.",
+        "Automate repetitive tasks: Jira ticket arrives → thread opens → Claude works → you review the PR.",
       side: "right",
       align: "start",
     },
   },
   {
-    element: "[data-tour='nav-integrations']",
+    element: "[data-tour='nav-tasks']",
     popover: {
-      title: "Integrations",
+      title: "Tasks",
       description:
-        "Connect your tools: JIRA, GitLab, GitHub, Slack, and more. This is the first step to automate your workflow.",
-      side: "right",
-      align: "start",
-    },
-  },
-  {
-    element: "[data-tour='nav-ai']",
-    popover: {
-      title: "AI Providers (BYOK)",
-      description:
-        "Add your own API keys for Claude, OpenAI, or other AI providers. Your keys are encrypted and never logged.",
+        "Import tasks from Jira or create them manually. Each task can be opened in its own thread.",
       side: "right",
       align: "start",
     },
@@ -71,9 +50,9 @@ const tourSteps: DriveStep[] = [
   {
     element: "[data-tour='user-menu']",
     popover: {
-      title: "Your Account",
+      title: "Settings & Account",
       description:
-        "Access your profile, organization settings, and sign out from here. You're all set to get started!",
+        "Connect your AI provider (bring your own key), add integrations, and manage your workspace from Settings.",
       side: "bottom",
       align: "end",
     },
@@ -90,7 +69,7 @@ export function OnboardingTour() {
   }, []);
 
   useEffect(() => {
-    if (pathname !== "/dashboard") return;
+    if (pathname !== "/chat") return;
     if (!shouldShowTour) return;
 
     const timer = setTimeout(() => {

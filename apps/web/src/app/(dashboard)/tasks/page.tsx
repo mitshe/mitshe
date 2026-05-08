@@ -88,6 +88,7 @@ import {
   useImportAssigned,
   useRefreshAllTasks,
   useRunWorkflowOnTask,
+  useCreateSession,
 } from "@/lib/api/hooks";
 import { formatDistanceToNow } from "@/lib/utils";
 import { toast } from "sonner";
@@ -112,6 +113,7 @@ export default function TasksPage() {
   const importAssigned = useImportAssigned();
   const refreshAllTasks = useRefreshAllTasks();
   const runWorkflowOnTask = useRunWorkflowOnTask();
+  const createSession = useCreateSession();
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -364,6 +366,22 @@ export default function TasksPage() {
     }
   };
 
+  const openTaskInThread = async (task: Task) => {
+    try {
+      const session = await createSession.mutateAsync({
+        name: task.title,
+        projectId: task.projectId || undefined,
+        repositoryIds: [],
+        instructions: task.description || task.title,
+      });
+      toast.success("Thread created");
+      router.push(`/sessions/${session.id}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create thread";
+      toast.error(message);
+    }
+  };
+
   const resetImportDialog = () => {
     setImportSource(null);
     setImportUrl("");
@@ -504,7 +522,7 @@ export default function TasksPage() {
                       View Details
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push(`/sessions?newSession=1&taskName=${encodeURIComponent(task.title)}&taskInstructions=${encodeURIComponent(task.description || '')}&projectId=${task.projectId || ''}`)}>
+                  <DropdownMenuItem onClick={() => openTaskInThread(task)} disabled={createSession.isPending}>
                     <Terminal className="mr-2 h-4 w-4" />
                     Open in Thread
                   </DropdownMenuItem>

@@ -277,7 +277,7 @@ export default function ChatPage() {
             <div className="flex flex-wrap justify-center gap-2 text-xs sm:text-sm">
               {[
                 { text: "Connect GitHub", icon: <Plug className="h-3.5 w-3.5" /> },
-                { text: "Create a session", icon: <Terminal className="h-3.5 w-3.5" /> },
+                { text: "Start a thread", icon: <Terminal className="h-3.5 w-3.5" /> },
                 { text: "Build a workflow", icon: <Workflow className="h-3.5 w-3.5" /> },
                 { text: "Show my repos", icon: <GitBranch className="h-3.5 w-3.5" /> },
               ].map((prompt) => (

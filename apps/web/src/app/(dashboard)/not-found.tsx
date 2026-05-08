@@ -25,9 +25,9 @@ export default function NotFound() {
             </Link>
           </Button>
           <Button asChild>
-            <Link href="/dashboard">
+            <Link href="/chat">
               <Home className="mr-2 h-4 w-4" />
-              Dashboard
+              Home
             </Link>
           </Button>
         </div>

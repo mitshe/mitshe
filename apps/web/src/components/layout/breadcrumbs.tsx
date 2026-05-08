@@ -12,7 +12,6 @@ interface BreadcrumbItem {
 
 // Map paths to human-readable labels
 const pathLabels: Record<string, string> = {
-  dashboard: "Dashboard",
   chat: "Chat",
   tasks: "Tasks",
   sessions: "Threads",
@@ -51,8 +50,8 @@ function isDynamicSegment(segment: string): boolean {
 export function Breadcrumbs() {
   const pathname = usePathname();
 
-  // Don't show breadcrumbs on dashboard home
-  if (pathname === "/dashboard") {
+  // Don't show breadcrumbs on chat home
+  if (pathname === "/chat") {
     return null;
   }
 
@@ -106,7 +105,7 @@ export function Breadcrumbs() {
       className="flex items-center gap-1 text-sm text-muted-foreground mb-4"
     >
       <Link
-        href="/dashboard"
+        href="/chat"
         className="flex items-center hover:text-foreground transition-colors"
       >
         <Home className="h-4 w-4" />

@@ -70,7 +70,7 @@ export function Sidebar({ currentSlug, onSearchClick }: SidebarProps) {
 
       <div className="p-4 border-t">
         <Link
-          href="/dashboard"
+          href="/chat"
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

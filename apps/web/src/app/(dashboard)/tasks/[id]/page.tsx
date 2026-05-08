@@ -37,6 +37,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   Edit,
   Trash2,
@@ -63,6 +73,7 @@ import {
   useWorkflows,
   useRunWorkflowOnTask,
   useRefreshExternalData,
+  useCreateSession,
 } from "@/lib/api/hooks";
 import { toast } from "sonner";
 import { TaskStatus, TaskPriority } from "@/lib/api/types";
@@ -153,8 +164,10 @@ export default function TaskDetailPage() {
   const processTask = useProcessTask();
   const runWorkflow = useRunWorkflowOnTask();
   const refreshExternalData = useRefreshExternalData();
+  const createSession = useCreateSession();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
@@ -195,13 +208,14 @@ export default function TaskDetailPage() {
   };
 
   const handleDeleteTask = async () => {
-    if (!confirm("Are you sure you want to delete this task?")) return;
     try {
-      router.push("/tasks");
       await deleteTask.mutateAsync(taskId);
       toast.success("Task deleted");
+      router.push("/tasks");
     } catch {
       toast.error("Failed to delete task");
+    } finally {
+      setIsDeleteOpen(false);
     }
   };
 
@@ -220,6 +234,22 @@ export default function TaskDetailPage() {
       toast.success("Workflow started");
     } catch {
       toast.error("Failed to run workflow");
+    }
+  };
+
+  const openInThread = async (name: string, instructions: string) => {
+    try {
+      const session = await createSession.mutateAsync({
+        name,
+        projectId: task?.projectId || undefined,
+        repositoryIds: [],
+        instructions,
+      });
+      toast.success("Thread created");
+      router.push(`/sessions/${session.id}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create thread";
+      toast.error(message);
     }
   };
 
@@ -390,25 +420,21 @@ export default function TaskDetailPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onClick={() => {
-                  const params = new URLSearchParams();
-                  params.set("taskName", task.title);
-                  if (task.description) params.set("taskInstructions", task.description);
-                  if (task.projectId) params.set("projectId", task.projectId);
-                  router.push(`/sessions?newSession=1&${params.toString()}`);
-                }}
+                onClick={() => openInThread(
+                  task.title,
+                  task.description || task.title,
+                )}
+                disabled={createSession.isPending}
               >
                 <Terminal className="w-4 h-4 mr-2" />
                 Open in Thread
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => {
-                  const params = new URLSearchParams();
-                  params.set("taskName", `Review: ${task.title}`);
-                  params.set("taskInstructions", `Review this code for the following task:\n\n${task.title}\n\n${task.description || ""}\n\nCheck for: security issues, performance problems, code quality, test coverage.`);
-                  if (task.projectId) params.set("projectId", task.projectId);
-                  router.push(`/sessions?newSession=1&${params.toString()}`);
-                }}
+                onClick={() => openInThread(
+                  `Review: ${task.title}`,
+                  `Review this code for the following task:\n\n${task.title}\n\n${task.description || ""}\n\nCheck for: security issues, performance problems, code quality, test coverage.`,
+                )}
+                disabled={createSession.isPending}
               >
                 <Eye className="w-4 h-4 mr-2" />
                 Review in Thread
@@ -450,9 +476,8 @@ export default function TaskDetailPage() {
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={handleDeleteTask}
+                onClick={() => setIsDeleteOpen(true)}
                 className="text-red-600"
-                disabled={deleteTask.isPending}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Task
@@ -546,6 +571,28 @@ export default function TaskDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete &ldquo;{task.title}&rdquo;. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTask.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteTask}
+              disabled={deleteTask.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteTask.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deleteTask.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

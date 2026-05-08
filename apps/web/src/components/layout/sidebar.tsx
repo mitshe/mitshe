@@ -8,18 +8,17 @@ import {
   ListTodo,
   MessageSquareCode,
   Workflow,
-  History,
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
   MessageCircle,
   Camera,
   MessageSquarePlus,
-  Terminal,
   Trash2,
   Loader2,
   MoreHorizontal,
   Zap,
+  Boxes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -47,53 +46,45 @@ import {
   useDeleteChatConversation,
   useAICredentials,
   useSessions,
-  useWorkflows,
 } from "@/lib/api/hooks";
-
-// ─── Types ───
 
 interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   tourId: string;
-  description?: string;
+  badge?: "running-threads";
 }
 
-type SidebarMode = "chat" | "workflows" | "workspace";
-
-// ─── Nav items per mode ───
-
-const workflowsNavItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: FolderKanban, tourId: "nav-dashboard" },
-  { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows" },
-  { title: "Executions", href: "/executions", icon: History, tourId: "nav-executions" },
-  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks" },
-  { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects" },
-];
+type SidebarMode = "chat" | "workspace";
 
 const workspaceNavItems: NavItem[] = [
-  { title: "Threads", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "sessions" },
+  { title: "Threads", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", badge: "running-threads" },
+  { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows" },
+  { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks" },
+  { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects" },
   { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots" },
   { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills" },
 ];
 
-// ─── Mode config ───
-
 const MODES: { key: SidebarMode; label: string; icon: React.ComponentType<{ className?: string }>; defaultHref: string }[] = [
   { key: "chat", label: "Chat", icon: MessageCircle, defaultHref: "/chat" },
-  { key: "workflows", label: "Workflows", icon: Workflow, defaultHref: "/workflows" },
-  { key: "workspace", label: "Workspace", icon: Terminal, defaultHref: "/sessions" },
+  { key: "workspace", label: "Workspace", icon: Boxes, defaultHref: "/sessions" },
 ];
 
 function getModeFromPath(pathname: string): SidebarMode | null {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return "chat";
-  if (pathname.startsWith("/sessions") || pathname.startsWith("/images") || pathname.startsWith("/skills")) return "workspace";
-  if (pathname.startsWith("/workflows") || pathname.startsWith("/executions") || pathname.startsWith("/tasks") || pathname.startsWith("/projects") || pathname.startsWith("/dashboard")) return "workflows";
+  if (
+    pathname.startsWith("/sessions") ||
+    pathname.startsWith("/images") ||
+    pathname.startsWith("/skills") ||
+    pathname.startsWith("/workflows") ||
+    pathname.startsWith("/executions") ||
+    pathname.startsWith("/tasks") ||
+    pathname.startsWith("/projects")
+  ) return "workspace";
   return null;
 }
-
-// ─── Sidebar content ───
 
 interface SidebarContentProps {
   onNavigate?: () => void;
@@ -104,42 +95,14 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const pathMode = getModeFromPath(pathname);
   const [stickyMode, setStickyMode] = useState<SidebarMode>("chat");
 
-  // Update sticky mode when path changes to a non-settings page
   useEffect(() => {
     if (pathMode) setStickyMode(pathMode);
   }, [pathMode]);
 
   const activeMode = pathMode ?? stickyMode;
 
-  const isActive = (href: string) => {
-    if (href === "/settings") return pathname === "/settings";
-    if (href === "/executions") return pathname === "/executions" || pathname.includes("/executions");
-    return pathname === href || pathname.startsWith(href + "/");
-  };
-
-  const renderNavItems = (items: NavItem[]) =>
-    items.map((item) => (
-      <Link
-        key={item.href}
-        href={item.href}
-        onClick={onNavigate}
-        data-tour={item.tourId}
-        className={cn(
-          "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-          isActive(item.href)
-            ? "bg-secondary text-foreground font-medium"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-        )}
-      >
-        <item.icon className="h-4 w-4 shrink-0" />
-        {item.title}
-      </Link>
-    ));
-
-
   return (
     <TooltipProvider delayDuration={300}>
-      {/* Mode tabs */}
       <div className="flex items-center gap-1 mb-4">
         {MODES.map((mode) => {
           const isActiveMode = activeMode === mode.key;
@@ -161,27 +124,24 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         })}
       </div>
 
-      {/* Mode content */}
       {activeMode === "chat" && <ChatSidebarContent onNavigate={onNavigate} />}
 
-      {activeMode === "workflows" && (
-        <>
-          <div className="space-y-0.5">{renderNavItems(workflowsNavItems)}</div>
-          <RecentWorkflows />
-        </>
-      )}
-
       {activeMode === "workspace" && (
-        <WorkspaceNavContent onNavigate={onNavigate} isActive={isActive} />
+        <WorkspaceNavContent onNavigate={onNavigate} />
       )}
 
     </TooltipProvider>
   );
 }
 
-function WorkspaceNavContent({ onNavigate, isActive }: { onNavigate?: () => void; isActive: (href: string) => boolean }) {
+function WorkspaceNavContent({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
   const { data: sessions = [] } = useSessions();
   const runningCount = (sessions as { status: string }[]).filter((s) => s.status === "RUNNING").length;
+
+  const isActive = (href: string) => {
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   return (
     <>
@@ -201,7 +161,7 @@ function WorkspaceNavContent({ onNavigate, isActive }: { onNavigate?: () => void
           >
             <item.icon className="h-4 w-4 shrink-0" />
             {item.title}
-            {item.description === "sessions" && runningCount > 0 && (
+            {item.badge === "running-threads" && runningCount > 0 && (
               <span className="ml-auto rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 text-[10px] font-medium leading-none">
                 {runningCount}
               </span>
@@ -222,7 +182,7 @@ function RecentSessions() {
   return (
     <div className="mt-4 space-y-0.5">
       <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-        Recent
+        Recent threads
       </p>
       {recent.map((s: { id: string; name: string; status: string }) => (
         <Link
@@ -236,34 +196,6 @@ function RecentSessions() {
     </div>
   );
 }
-
-/* ─── Recent workflows ─── */
-
-function RecentWorkflows() {
-  const { data: workflowsData } = useWorkflows();
-  const workflows = (workflowsData as { workflows?: Array<{ id: string; name: string; isActive: boolean }> })?.workflows || [];
-  const recent = workflows.slice(0, 8);
-  if (recent.length === 0) return null;
-
-  return (
-    <div className="mt-4 space-y-0.5">
-      <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-        Recent
-      </p>
-      {recent.map((w) => (
-        <Link
-          key={w.id}
-          href={`/workflows/${w.id}/edit`}
-          className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-        >
-          <span className="truncate">{w.name}</span>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-// ─── Chat sidebar (conversations list with polished UX) ───
 
 function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -316,7 +248,6 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      {/* New chat — same style as nav items */}
       <button
         onClick={handleNew}
         disabled={createConversation.isPending || credentials.length === 0}
@@ -345,7 +276,6 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </p>
       )}
 
-      {/* Conversations — same style as Recent sections */}
       {hasConversations && (
         <div className="mt-4 space-y-0.5">
           <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
@@ -371,7 +301,6 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       )}
 
-      {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -395,8 +324,6 @@ function ChatSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     </>
   );
 }
-
-// ─── Conversation item with hover actions ───
 
 function ConversationItem({
   title,
@@ -448,8 +375,6 @@ function ConversationItem({
     </div>
   );
 }
-
-// ─── Sidebar shell ───
 
 export function Sidebar({
   collapsed,
