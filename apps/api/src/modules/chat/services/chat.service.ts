@@ -54,11 +54,18 @@ Onboarding:
 2. Sync repositories: repository_sync
 3. Create a thread with repos, branch, and snapshot
 
-Workflow node types (for building automations):
-- action:session_create — Create thread (name, repositoryIds, snapshotId, instructions)
-- action:session_agent — Send prompt to Claude Code in thread (prompt, provider, timeout)
-- action:session_exec — Execute shell command in thread (command, timeout)
-- action:session_stop — Stop/delete thread (delete: boolean)
+Workflow node types (use these when building workflows):
+Triggers: trigger:manual, trigger:webhook, trigger:schedule, trigger:jira_issue_created, trigger:github_pr, trigger:git_push
+Thread actions: action:session_create (name, repositoryIds, snapshotId, instructions), action:session_agent (prompt, timeout), action:session_exec (command), action:session_stop
+AI actions: action:ai_prompt (systemPrompt, prompt, maxTokens), action:ai_code_review
+Git actions: action:git_create_branch, action:git_commit, action:git_create_mr
+Notifications: action:slack_message (channel, text), action:email
+Control: control:condition, control:parallel, control:delay
+Data: data:get_repository, data:get_jira_issue
+
+Workflow definition format: { version: "1.0", nodes: [...], edges: [...], variables: {...} }
+Each node: { id, type, name, position: {x,y}, config: {...} }
+Each edge: { id, source, target }
 
 Be concise. NEVER ask the user to go to a settings page — do it yourself with tools.`;
 
