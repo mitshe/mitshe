@@ -46,6 +46,7 @@ import {
   Play,
 } from "lucide-react";
 import type { Snapshot } from "@mitshe/types";
+import { toast } from "sonner";
 
 function CreatingBadge({ createdAt }: { createdAt?: string }) {
   const [elapsed, setElapsed] = useState(0);
@@ -120,6 +121,7 @@ export default function SnapshotsPage() {
       sessionId: formSessionId,
     });
 
+    toast.success("Snapshot is being created...");
     setDialogOpen(false);
     setFormName("");
     setFormDescription("");
