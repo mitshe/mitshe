@@ -197,9 +197,9 @@ export default function TaskDetailPage() {
   const handleDeleteTask = async () => {
     if (!confirm("Are you sure you want to delete this task?")) return;
     try {
+      router.push("/tasks");
       await deleteTask.mutateAsync(taskId);
       toast.success("Task deleted");
-      router.push("/tasks");
     } catch {
       toast.error("Failed to delete task");
     }
