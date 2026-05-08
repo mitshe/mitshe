@@ -20,6 +20,10 @@ import {
   Settings,
   Search,
   Loader2,
+  Terminal,
+  MessageSquare,
+  Download,
+  Camera,
 } from "lucide-react";
 import { useTasks, useProjects, useWorkflows } from "@/lib/api/hooks";
 import type { Task, Project, Workflow as WorkflowType } from "@/lib/api/types";
@@ -31,13 +35,22 @@ interface CommandPaletteProps {
 
 const navigationItems = [
   { label: "Dashboard", path: "/dashboard", icon: Search },
+  { label: "Chat", path: "/chat", icon: MessageSquare },
+  { label: "Sessions", path: "/sessions", icon: Terminal },
   { label: "Tasks", path: "/tasks", icon: ListTodo },
-  { label: "Projects", path: "/projects", icon: FolderOpen },
   { label: "Workflows", path: "/workflows", icon: Workflow },
+  { label: "Projects", path: "/projects", icon: FolderOpen },
+  { label: "Snapshots", path: "/images", icon: Camera },
   { label: "Settings", path: "/settings", icon: Settings },
   { label: "Integrations", path: "/settings/integrations", icon: Settings },
-  { label: "Team", path: "/settings/team", icon: Settings },
-  { label: "Billing", path: "/settings/billing", icon: Settings },
+  { label: "AI Providers", path: "/settings/ai", icon: Settings },
+];
+
+const actionItems = [
+  { label: "New Session", path: "/sessions?newSession=1", icon: Plus },
+  { label: "New Chat", path: "/chat", icon: Plus },
+  { label: "Import Tasks", path: "/tasks", icon: Download },
+  { label: "New Workflow", path: "/workflows", icon: Plus },
 ];
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
@@ -108,16 +121,22 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const quickActions = [
     {
+      label: "New Session",
+      icon: Terminal,
+      shortcut: "S",
+      action: () => handleSelect("/sessions?newSession=1"),
+    },
+    {
+      label: "New Chat",
+      icon: MessageSquare,
+      shortcut: "C",
+      action: () => handleSelect("/chat"),
+    },
+    {
       label: "New Task",
       icon: Plus,
       shortcut: "T",
       action: () => handleSelect("/tasks?create=true"),
-    },
-    {
-      label: "New Project",
-      icon: Plus,
-      shortcut: "P",
-      action: () => handleSelect("/projects?create=true"),
     },
     {
       label: "New Workflow",
