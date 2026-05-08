@@ -670,9 +670,9 @@ export default function SessionDetailPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               {session.project?.name || "No project"}
+              {session.branch && ` · ${session.branch}`}
               {session.aiCredential &&
                 ` · ${providerLabels[session.aiCredential.provider] || session.aiCredential.provider}`}
-              {session.enableDocker && " · Docker"}
             </p>
           </div>
         </div>
