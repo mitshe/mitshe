@@ -1,3 +1,5 @@
+> DONE
+
 # 02 — Executor Lite: lightweight image without browser/GUI
 
 ## Why

@@ -28,7 +28,10 @@ stop:
     docker stop mitshe && docker rm mitshe
 
 executor-build:
-    docker build -t ghcr.io/mitshe/mitshe-executor:latest -f apps/api/docker/executor/Dockerfile apps/api/docker/executor/
+    docker build --target full -t ghcr.io/mitshe/mitshe-executor:latest -f apps/api/docker/executor/Dockerfile apps/api/docker/executor/
+
+executor-build-lite:
+    docker build --target lite -t ghcr.io/mitshe/mitshe-executor:lite -f apps/api/docker/executor/Dockerfile apps/api/docker/executor/
 
 light-build:
     docker build -t ghcr.io/mitshe/mitshe:latest -f docker/light/Dockerfile .
