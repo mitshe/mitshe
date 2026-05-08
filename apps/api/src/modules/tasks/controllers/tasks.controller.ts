@@ -220,10 +220,12 @@ export class TasksController {
     @OrganizationId() organizationId: string,
     @Body() dto: ImportPreviewDto,
   ) {
-    const preview = await this.taskImportService.getImportPreview(
-      organizationId,
-      dto.url,
-    );
+    const url = dto.url;
+    const isTrello = /trello\.com\/c\//i.test(url);
+
+    const preview = isTrello
+      ? await this.taskImportService.getTrelloImportPreview(organizationId, url)
+      : await this.taskImportService.getImportPreview(organizationId, url);
     return { preview };
   }
 
@@ -263,12 +265,22 @@ export class TasksController {
     @UserId() userId: string,
     @Body() dto: ImportConfirmDto,
   ) {
-    const task = await this.taskImportService.importFromJira(
-      organizationId,
-      userId,
-      dto.url,
-      dto.projectId,
-    );
+    const url = dto.url;
+    const isTrello = /trello\.com\/c\//i.test(url);
+
+    const task = isTrello
+      ? await this.taskImportService.importFromTrello(
+          organizationId,
+          userId,
+          url,
+          dto.projectId,
+        )
+      : await this.taskImportService.importFromJira(
+          organizationId,
+          userId,
+          url,
+          dto.projectId,
+        );
     return { task, message: 'Task imported successfully' };
   }
 

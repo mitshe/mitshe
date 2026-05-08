@@ -145,33 +145,40 @@ export class TaskImportService {
       );
     }
 
-    const { issue, raw } = await jiraAdapter.getRawIssue(issueKey);
+    try {
+      const { issue, raw } = await jiraAdapter.getRawIssue(issueKey);
 
-    // Create task with full Jira data
-    const task = await this.prisma.task.create({
-      data: {
-        organizationId,
-        projectId,
-        title: issue.title,
-        description: issue.description,
-        externalSource: 'JIRA',
-        externalIssueId: issue.key,
-        externalIssueUrl: issue.url,
-        externalData: raw as Prisma.InputJsonValue,
-        externalStatus: issue.status, // Status from Jira (e.g., "To Do", "In Progress")
-        createdBy: userId,
-        agentLogs: [],
-      },
-      include: {
-        project: {
-          select: { id: true, name: true, key: true },
+      // Create task with full Jira data
+      const task = await this.prisma.task.create({
+        data: {
+          organizationId,
+          projectId,
+          title: issue.title,
+          description: issue.description,
+          externalSource: 'JIRA',
+          externalIssueId: issue.key,
+          externalIssueUrl: issue.url,
+          externalData: raw as Prisma.InputJsonValue,
+          externalStatus: issue.status, // Status from Jira (e.g., "To Do", "In Progress")
+          createdBy: userId,
+          agentLogs: [],
         },
-      },
-    });
+        include: {
+          project: {
+            select: { id: true, name: true, key: true },
+          },
+        },
+      });
 
-    this.logger.log(`Imported Jira issue ${issueKey} as task ${task.id}`);
+      this.logger.log(`Imported Jira issue ${issueKey} as task ${task.id}`);
 
-    return task;
+      return task;
+    } catch (error) {
+      this.logger.error(
+        `Failed to import Jira issue ${issueKey}: ${error.message}`,
+      );
+      throw new BadRequestException(`Failed to import issue: ${error.message}`);
+    }
   }
 
   /**
@@ -229,22 +236,31 @@ export class TaskImportService {
         throw new BadRequestException('Jira integration no longer configured');
       }
 
-      const { issue, raw } = await jiraAdapter.getRawIssue(issueKey);
+      try {
+        const { issue, raw } = await jiraAdapter.getRawIssue(issueKey);
 
-      return this.prisma.task.update({
-        where: { id: taskId },
-        data: {
-          title: issue.title,
-          description: issue.description,
-          externalData: raw as Prisma.InputJsonValue,
-          externalStatus: issue.status, // Sync status from Jira
-        },
-        include: {
-          project: {
-            select: { id: true, name: true, key: true },
+        return this.prisma.task.update({
+          where: { id: taskId },
+          data: {
+            title: issue.title,
+            description: issue.description,
+            externalData: raw as Prisma.InputJsonValue,
+            externalStatus: issue.status, // Sync status from Jira
           },
-        },
-      });
+          include: {
+            project: {
+              select: { id: true, name: true, key: true },
+            },
+          },
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to refresh Jira issue ${issueKey}: ${error.message}`,
+        );
+        throw new BadRequestException(
+          `Failed to refresh issue: ${error.message}`,
+        );
+      }
     }
 
     if (task.externalSource === 'TRELLO') {

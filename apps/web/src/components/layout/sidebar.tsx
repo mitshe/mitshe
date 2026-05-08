@@ -73,7 +73,7 @@ const workflowsNavItems: NavItem[] = [
 ];
 
 const workspaceNavItems: NavItem[] = [
-  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions" },
+  { title: "Sessions", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", description: "sessions" },
   { title: "Snapshots", href: "/images", icon: Camera, tourId: "nav-snapshots" },
   { title: "Skills", href: "/skills", icon: Zap, tourId: "nav-skills" },
 ];
@@ -172,17 +172,47 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       )}
 
       {activeMode === "workspace" && (
-        <>
-          <div className="space-y-0.5">{renderNavItems(workspaceNavItems)}</div>
-          <RecentSessions />
-        </>
+        <WorkspaceNavContent onNavigate={onNavigate} isActive={isActive} />
       )}
 
     </TooltipProvider>
   );
 }
 
-/* ─── Recent sessions ─── */
+function WorkspaceNavContent({ onNavigate, isActive }: { onNavigate?: () => void; isActive: (href: string) => boolean }) {
+  const { data: sessions = [] } = useSessions();
+  const runningCount = (sessions as { status: string }[]).filter((s) => s.status === "RUNNING").length;
+
+  return (
+    <>
+      <div className="space-y-0.5">
+        {workspaceNavItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            data-tour={item.tourId}
+            className={cn(
+              "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors",
+              isActive(item.href)
+                ? "bg-secondary text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+            )}
+          >
+            <item.icon className="h-4 w-4 shrink-0" />
+            {item.title}
+            {item.description === "sessions" && runningCount > 0 && (
+              <span className="ml-auto rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 text-[10px] font-medium leading-none">
+                {runningCount}
+              </span>
+            )}
+          </Link>
+        ))}
+      </div>
+      <RecentSessions />
+    </>
+  );
+}
 
 function RecentSessions() {
   const { data: sessions = [] } = useSessions();

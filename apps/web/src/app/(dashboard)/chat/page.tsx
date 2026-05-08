@@ -47,7 +47,15 @@ import type { ChatToolCall } from "@mitshe/types";
 export default function ChatPage() {
   const searchParams = useSearchParams();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [inputValue, setInputValue] = useState(searchParams.get("prompt") || "");
+  const [inputValue, setInputValue] = useState(() => {
+    const prompt = searchParams.get("prompt");
+    if (prompt) return prompt;
+    try {
+      return sessionStorage.getItem("chat-draft:new") || "";
+    } catch {
+      return "";
+    }
+  });
   const [selectedCredentialId, setSelectedCredentialId] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
@@ -95,6 +103,27 @@ export default function ChatPage() {
     textareaRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const key = `chat-draft:${activeConversationId || "new"}`;
+    try {
+      if (inputValue) {
+        sessionStorage.setItem(key, inputValue);
+      } else {
+        sessionStorage.removeItem(key);
+      }
+    } catch {}
+  }, [inputValue, activeConversationId]);
+
+  useEffect(() => {
+    const key = `chat-draft:${activeConversationId || "new"}`;
+    try {
+      const saved = sessionStorage.getItem(key);
+      setInputValue(saved || "");
+    } catch {
+      setInputValue("");
+    }
+  }, [activeConversationId]);
+
   const handleSend = async () => {
     if (!inputValue.trim() || sendMessage.isPending) return;
 
@@ -111,6 +140,7 @@ export default function ChatPage() {
     setErrorMessage(null);
     const content = inputValue;
     setInputValue("");
+    try { sessionStorage.removeItem(`chat-draft:${convId}`); } catch {}
     setPendingUserMessage(content);
     if (textareaRef.current) textareaRef.current.style.height = "48px";
 
