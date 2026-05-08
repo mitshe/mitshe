@@ -103,7 +103,10 @@ export default function ChatPage() {
     textareaRef.current?.focus();
   }, []);
 
+  const hasMountedRef = useRef(false);
+
   useEffect(() => {
+    if (!hasMountedRef.current) return;
     const key = `chat-draft:${activeConversationId || "new"}`;
     try {
       if (inputValue) {
@@ -122,6 +125,7 @@ export default function ChatPage() {
     } catch {
       setInputValue("");
     }
+    hasMountedRef.current = true;
   }, [activeConversationId]);
 
   const handleSend = async () => {

@@ -154,7 +154,9 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
     category: "triggers",
     icon: "Play",
     color: "#10b981",
-    defaultConfig: {},
+    defaultConfig: {
+      requiresTask: false,
+    },
   },
   {
     type: "trigger:webhook",
