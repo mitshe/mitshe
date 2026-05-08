@@ -285,7 +285,7 @@ export default function SessionsPage() {
     }));
     setIsDialogOpen(true);
     setTaskHandled(true);
-  }, [urlNewSession, urlTaskName, urlTaskInstructions, urlProjectId, defaultGithubId, taskHandled]);
+  }, [urlNewSession, urlTaskName, urlTaskInstructions, urlProjectId, defaultGithubId, taskHandled, readySnapshots]);
 
   const openCreate = () => {
     setEditingId(null);

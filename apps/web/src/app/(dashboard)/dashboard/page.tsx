@@ -65,7 +65,6 @@ export default function DashboardPage() {
   const hasIntegration = integrations.some((i) => i.status === "CONNECTED");
   const hasRepository = repositories.length > 0;
   const hasWorkflow = workflows.length > 0;
-  const hasRun = workflows.some((w) => (w._count?.executions ?? 0) > 0);
 
   const hasSessions = sessions.length > 0;
 
