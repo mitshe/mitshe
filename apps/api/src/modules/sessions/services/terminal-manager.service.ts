@@ -54,8 +54,6 @@ export class TerminalManagerService {
       WorkingDir: '/workspace',
       Env: [
         'TERM=xterm-256color',
-        'COLUMNS=120',
-        'LINES=40',
         'HOME=/home/executor',
       ],
     });
@@ -114,6 +112,20 @@ export class TerminalManagerService {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Resize terminal PTY to match frontend dimensions.
+   */
+  async resize(terminalId: string, cols: number, rows: number): Promise<void> {
+    const terminal = this.terminals.get(terminalId);
+    if (!terminal) return;
+
+    try {
+      await terminal.exec.resize({ h: rows, w: cols });
+    } catch {
+      // Container may have stopped
     }
   }
 

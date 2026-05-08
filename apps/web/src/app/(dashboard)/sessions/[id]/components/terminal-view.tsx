@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSocket } from "@/lib/socket/socket-context";
 import { useStartTerminal } from "@/lib/api/hooks";
-import { Eraser } from "lucide-react";
 
 export function TerminalView({
   sessionId,
@@ -117,13 +116,21 @@ export function TerminalView({
     };
   }, []);
 
-  // Resize handling
+  // Resize handling — fit xterm and notify backend PTY
   useEffect(() => {
-    if (!fitRef.current || !containerRef.current) return;
+    if (!fitRef.current || !containerRef.current || !socket) return;
 
     const handleResize = () => {
       try {
         fitRef.current?.fit();
+        const term = xtermRef.current;
+        if (term) {
+          socket.emit("session:resize", {
+            terminalId,
+            cols: term.cols,
+            rows: term.rows,
+          });
+        }
       } catch {
         /* ignore */
       }
@@ -132,19 +139,27 @@ export function TerminalView({
     const observer = new ResizeObserver(handleResize);
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [terminalReady]);
+  }, [terminalReady, socket, terminalId]);
 
   // Refit when tab becomes visible
   useEffect(() => {
-    if (!isVisible || !fitRef.current) return;
+    if (!isVisible || !fitRef.current || !socket) return;
     requestAnimationFrame(() => {
       try {
         fitRef.current?.fit();
+        const term = xtermRef.current;
+        if (term) {
+          socket.emit("session:resize", {
+            terminalId,
+            cols: term.cols,
+            rows: term.rows,
+          });
+        }
       } catch {
         /* ignore */
       }
     });
-  }, [isVisible, terminalReady]);
+  }, [isVisible, terminalReady, socket, terminalId]);
 
   // Subscribe to terminal output (throttled writes to prevent artifacts)
   useEffect(() => {
@@ -218,28 +233,12 @@ export function TerminalView({
       });
   }, [terminalReady, isRunning, sessionId, terminalId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleClear = useCallback(() => {
-    if (xtermRef.current) {
-      xtermRef.current.write("\x1bc");
-    }
-  }, []);
-
   return (
     <div
       ref={containerRef}
-      style={{ width: "100%", height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}
+      style={{ width: "100%", height: "100%", overflow: "hidden" }}
     >
-      <div className="flex items-center px-2 py-0.5 bg-[#0a0a0a] border-b border-zinc-800 shrink-0">
-        <button
-          onClick={handleClear}
-          className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-zinc-500 hover:text-zinc-300 rounded hover:bg-zinc-800 transition-colors"
-          title="Clear terminal"
-        >
-          <Eraser className="w-3 h-3" />
-          <span>Clear</span>
-        </button>
-      </div>
-      <div ref={termRef} style={{ width: "100%", flex: 1, minHeight: 0 }} />
+      <div ref={termRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 }

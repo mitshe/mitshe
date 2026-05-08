@@ -689,6 +689,24 @@ export class EventsGateway
     this.terminalManager?.sendInput(data.terminalId, data.input);
   }
 
+  @SubscribeMessage('session:resize')
+  handleSessionResize(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { terminalId: string; cols: number; rows: number },
+  ) {
+    if (!this.isClientAuthenticated(client)) {
+      return { event: 'error', data: { message: 'Authentication required' } };
+    }
+
+    const sessionId = data.terminalId.split(':')[0];
+    const clientData = this.connectedClients.get(client.id);
+    if (!clientData?.rooms.has(`session:${sessionId}`)) {
+      return;
+    }
+
+    this.terminalManager?.resize(data.terminalId, data.cols, data.rows);
+  }
+
   /**
    * Emit terminal output (routed by terminalId)
    */
