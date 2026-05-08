@@ -22,7 +22,6 @@ import {
   Loader2,
   Terminal,
   MessageSquare,
-  Download,
   Camera,
 } from "lucide-react";
 import { useTasks, useProjects, useWorkflows } from "@/lib/api/hooks";
