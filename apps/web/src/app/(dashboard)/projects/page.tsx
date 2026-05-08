@@ -303,7 +303,7 @@ export default function ProjectsPage() {
                           <DropdownMenuItem asChild>
                             <Link href={`/sessions?projectId=${project.id}`}>
                               <MessageSquareCode className="w-4 h-4 mr-2" />
-                              Sessions
+                              Threads
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -405,7 +405,7 @@ export default function ProjectsPage() {
                               <DropdownMenuItem asChild>
                                 <Link href={`/sessions?projectId=${project.id}`}>
                                   <MessageSquareCode className="w-4 h-4 mr-2" />
-                                  Sessions
+                                  Threads
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />

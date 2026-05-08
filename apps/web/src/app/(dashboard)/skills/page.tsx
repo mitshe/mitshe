@@ -190,7 +190,7 @@ export default function SkillsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Skills</h1>
           <p className="text-sm text-muted-foreground">
-            Reusable instructions installed as Claude Code slash commands in sessions.
+            Reusable instructions installed as Claude Code slash commands in threads.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -350,7 +350,7 @@ export default function SkillsPage() {
               {editingSkill ? "Edit Skill" : "Create Skill"}
             </DialogTitle>
             <DialogDescription>
-              Instructions that Claude Code will follow in sessions using this
+              Instructions that Claude Code will follow in threads using this
               skill.
             </DialogDescription>
           </DialogHeader>
