@@ -51,6 +51,12 @@ Onboarding flow:
 2. Sync repositories: repository_sync
 3. Create a session with repos, branch, and skills
 
+Workflow session node types (for building workflows):
+- action:session_create — Create session (config: name, repositoryIds, snapshotId, instructions)
+- action:session_agent — Send prompt to agent in session (config: prompt, provider, timeout)
+- action:session_exec — Execute shell command in session (config: command, timeout)
+- action:session_stop — Stop/delete session (config: delete: boolean)
+
 Be concise. NEVER ask the user to go to a settings page — do it yourself with tools.`;
 
 const MAX_TOOL_ITERATIONS = 15;

@@ -603,9 +603,9 @@ export default function SessionDetailPage() {
 
   const handleDelete = async () => {
     try {
+      router.push("/sessions");
       await deleteSession.mutateAsync(sessionId);
       toast.success("Session deleted");
-      router.push("/sessions");
     } catch {
       toast.error("Failed to delete session");
     }
