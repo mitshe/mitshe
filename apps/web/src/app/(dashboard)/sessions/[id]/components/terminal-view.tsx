@@ -146,18 +146,32 @@ export function TerminalView({
     });
   }, [isVisible, terminalReady]);
 
-  // Subscribe to terminal output
+  // Subscribe to terminal output (throttled writes to prevent artifacts)
   useEffect(() => {
     if (!socket || !sessionId || !terminalReady) return;
 
     subscribeToSession(sessionId);
 
+    let buffer = "";
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flush = () => {
+      if (buffer && xtermRef.current) {
+        xtermRef.current.write(buffer);
+        buffer = "";
+      }
+      flushTimer = null;
+    };
+
     const handleOutput = (payload: {
       terminalId: string;
       data: string;
     }) => {
-      if (payload.terminalId === terminalId && xtermRef.current) {
-        xtermRef.current.write(payload.data);
+      if (payload.terminalId === terminalId) {
+        buffer += payload.data;
+        if (!flushTimer) {
+          flushTimer = setTimeout(flush, 16); // ~60fps
+        }
       }
     };
 
@@ -165,6 +179,8 @@ export function TerminalView({
 
     return () => {
       socket.off("session:output", handleOutput);
+      if (flushTimer) clearTimeout(flushTimer);
+      flush();
     };
   }, [
     socket,
