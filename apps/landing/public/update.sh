@@ -40,6 +40,9 @@ printf "  Stopping old container...\n"
 docker stop mitshe 2>/dev/null || true
 docker rm mitshe 2>/dev/null || true
 
+# Clean up dangling images left after pull
+docker image prune -f 2>/dev/null || true
+
 # Start updated container
 printf "  Starting updated container...\n"
 docker run -d \
