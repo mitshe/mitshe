@@ -46,6 +46,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   Loader2,
   MoreHorizontal,
@@ -104,6 +114,7 @@ export default function TasksPage() {
   const runWorkflowOnTask = useRunWorkflowOnTask();
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importSource, setImportSource] = useState<"jira" | "youtrack" | null>(
@@ -285,8 +296,9 @@ export default function TasksPage() {
         priority: "medium",
         projectId: "",
       });
-    } catch {
-      toast.error("Failed to create task");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create task";
+      toast.error(message);
     }
   };
 
@@ -294,9 +306,11 @@ export default function TasksPage() {
     setDeletingId(taskId);
     try {
       await deleteTask.mutateAsync(taskId);
-    } catch {
-      toast.error("Failed to delete task");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete task";
+      toast.error(message);
     } finally {
+      setDeleteTarget(null);
       setDeletingId(null);
     }
   };
@@ -344,8 +358,9 @@ export default function TasksPage() {
         taskId,
         data: { workflowId },
       });
-    } catch {
-      toast.error("Failed to run workflow");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to run workflow";
+      toast.error(message);
     }
   };
 
@@ -530,11 +545,10 @@ export default function TasksPage() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive"
-                    disabled={deletingId === task.id}
-                    onClick={() => handleDeleteTask(task.id)}
+                    onClick={() => setDeleteTarget(task.id)}
                   >
-                    {deletingId === task.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                    {deletingId === task.id ? "Deleting..." : "Delete"}
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -616,11 +630,10 @@ export default function TasksPage() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive"
-              disabled={deletingId === task.id}
-              onClick={() => handleDeleteTask(task.id)}
+              onClick={() => setDeleteTarget(task.id)}
             >
-              {deletingId === task.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-              {deletingId === task.id ? "Deleting..." : "Delete"}
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -690,8 +703,9 @@ export default function TasksPage() {
                   toast.success(`Synced ${result.refreshed} task(s)`, {
                     description: result.failed > 0 ? `${result.failed} failed to sync` : undefined,
                   });
-                } catch {
-                  toast.error("Failed to sync tasks");
+                } catch (error) {
+                  const message = error instanceof Error ? error.message : "Failed to sync tasks";
+                  toast.error(message);
                 }
               }}
             >
@@ -1198,6 +1212,28 @@ export default function TasksPage() {
           onPageChange={setCurrentPage}
         />
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && handleDeleteTask(deleteTarget)}
+              disabled={!!deletingId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingId ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deletingId ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

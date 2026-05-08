@@ -31,6 +31,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -146,6 +156,7 @@ export default function WorkflowsPage() {
   const [selectedTemplate, setSelectedTemplate] =
     useState<WorkflowTemplateMetadata | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [newWorkflow, setNewWorkflow] = useState({
     name: "",
     description: "",
@@ -249,8 +260,9 @@ export default function WorkflowsPage() {
         projectId: "",
       });
       router.push(`/workflows/${result.id}/edit`);
-    } catch {
-      toast.error("Failed to create workflow");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create workflow";
+      toast.error(message);
     }
   };
 
@@ -261,16 +273,20 @@ export default function WorkflowsPage() {
       } else {
         await activateWorkflow.mutateAsync(workflowId);
       }
-    } catch {
-      toast.error("Failed to update workflow status");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update workflow status";
+      toast.error(message);
     }
   };
 
   const handleDeleteWorkflow = async (workflowId: string) => {
     try {
       await deleteWorkflow.mutateAsync(workflowId);
-    } catch {
-      toast.error("Failed to delete workflow");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete workflow";
+      toast.error(message);
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -287,8 +303,9 @@ export default function WorkflowsPage() {
             ),
         },
       });
-    } catch {
-      toast.error("Failed to run workflow");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to run workflow";
+      toast.error(message);
     }
   };
 
@@ -680,7 +697,7 @@ export default function WorkflowsPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => handleDeleteWorkflow(workflow.id)}
+                            onClick={() => setDeleteTarget(workflow.id)}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
@@ -928,9 +945,7 @@ export default function WorkflowsPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
-                                onClick={() =>
-                                  handleDeleteWorkflow(workflow.id)
-                                }
+                                onClick={() => setDeleteTarget(workflow.id)}
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Delete
@@ -954,6 +969,28 @@ export default function WorkflowsPage() {
             </>
           )}
       </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete workflow?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will also delete all execution history.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteWorkflow.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && handleDeleteWorkflow(deleteTarget)}
+              disabled={deleteWorkflow.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteWorkflow.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deleteWorkflow.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

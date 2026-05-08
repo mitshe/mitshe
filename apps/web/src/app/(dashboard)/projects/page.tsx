@@ -29,6 +29,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -60,6 +70,7 @@ export default function ProjectsPage() {
   const deleteProject = useDeleteProject();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [newProject, setNewProject] = useState({
     name: "",
@@ -83,8 +94,9 @@ export default function ProjectsPage() {
       toast.success("Project created successfully");
       setIsCreateOpen(false);
       setNewProject({ name: "", key: "", description: "" });
-    } catch {
-      toast.error("Failed to create project");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create project";
+      toast.error(message);
     }
   };
 
@@ -92,8 +104,11 @@ export default function ProjectsPage() {
     try {
       await deleteProject.mutateAsync(id);
       toast.success("Project deleted successfully");
-    } catch {
-      toast.error("Failed to delete project");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete project";
+      toast.error(message);
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -238,9 +253,13 @@ export default function ProjectsPage() {
             <div className="text-center py-8">
               <FolderKanban className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No projects yet</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-4">
                 Create your first project to get started
               </p>
+              <Button onClick={() => setIsCreateOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Project
+              </Button>
             </div>
           ) : (
             <>
@@ -309,7 +328,7 @@ export default function ProjectsPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-red-600"
-                            onClick={() => handleDeleteProject(project.id)}
+                            onClick={() => setDeleteTarget(project.id)}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
@@ -435,6 +454,28 @@ export default function ProjectsPage() {
             </>
           )}
       </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tasks and workflows linked to this project won&apos;t be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteProject.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && handleDeleteProject(deleteTarget)}
+              disabled={deleteProject.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteProject.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deleteProject.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
