@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/KE2zm6njBf)
 
-Manage Claude Code sessions, automate workflows, and orchestrate AI coding agents — all from a single self-hosted dashboard. Each session runs in an isolated Docker container with full terminal, browser, and git access. Self-hosted, bring your own API keys.
+Every task gets its own thread — an isolated Docker container with Claude Code, terminal, browser, and git. Switch between threads like tabs. No more `git stash`, no branch switching chaos. Self-hosted, bring your own API keys.
 
 ![mitshe overview](docs/tour.gif)
 
@@ -68,12 +68,12 @@ Requires a running mitshe instance (see Install above).
 
 ## Features
 
-- **Claude Code sessions** — isolated Docker containers with terminal, browser, file editor, git
-- **Browser streaming** — live Chromium preview in sessions via noVNC (Playwright E2E testing)
-- **Branch management** — select branch when creating sessions, push & create PRs from session
-- **Workflow engine** — visual builder with triggers, AI actions, git operations, notifications
-- **Snapshots** — save a configured session state, spin up new sessions from it
-- **Skills** — reusable instructions as Claude Code slash commands, import from GitHub repos
+- **Threads** — isolated Docker containers per task, with terminal, browser, file editor, git
+- **Browser streaming** — live Chrome inside threads via noVNC, visible Playwright testing
+- **Branch management** — select branch per thread, push & create PRs directly
+- **Snapshots** — save a configured environment, reuse it as base for new threads
+- **Workflows** — automate: Jira issue → create thread → Claude Code works → notify Slack
+- **Skills** — reusable Claude Code slash commands, import from GitHub repos
 - **Integrations** — GitHub, GitLab, Jira, Slack
 - **Multi-provider** — Claude, OpenAI, OpenRouter, Gemini, Groq (BYOK)
 - **Self-hosted** — your data, your keys, single Docker container with SQLite
