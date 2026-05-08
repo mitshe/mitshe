@@ -68,8 +68,7 @@ export default function Hero() {
 
           <motion.p variants={fadeUp} initial="hidden" animate="visible" custom={2}
             className="mt-5 text-lg md:text-xl text-[var(--text-muted)] max-w-2xl mx-auto leading-relaxed">
-            Give Claude Code an isolated Docker environment with terminal, browser, and git.
-            Observe what it does, snapshot the state, automate with workflows.
+            Every task gets its own thread. An isolated workspace with Claude Code, terminal, browser, and git.
           </motion.p>
 
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={3}

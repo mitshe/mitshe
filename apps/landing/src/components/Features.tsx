@@ -47,7 +47,7 @@ function SessionMockup() {
         <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
         <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
         <div className="w-3 h-3 rounded-full bg-[#28c840]" />
-        <span className="ml-2 text-[10px] text-white/15">Session Terminal</span>
+        <span className="ml-2 text-[10px] text-white/15">Thread Terminal</span>
       </div>
       <div className="font-mono text-[12px] space-y-1.5 min-h-[130px]">
         {lines.slice(0, step + 1).map((line, i) => (
@@ -168,15 +168,15 @@ export default function Features() {
         </AnimateOnScroll>
 
         <FeatureSection
-          title="Isolated coding sessions"
-          description="Each session is a Docker container with terminal, browser, and git. Claude Code works inside with full access to your repo, tools, and integrations. Watch everything in real-time."
+          title="Isolated coding threads"
+          description="Each thread is a Docker container with terminal, browser, and git. Claude Code works inside with full access to your repo, tools, and integrations. Watch everything in real-time."
         >
           <SessionMockup />
         </FeatureSection>
 
         <FeatureSection
           title="Snapshot and reuse"
-          description="Set up an environment once — install dependencies, configure databases, prepare test data. Snapshot it. Spin up new sessions from that snapshot in seconds."
+          description="Set up an environment once — install dependencies, configure databases, prepare test data. Snapshot it. Spin up new threads from that snapshot in seconds."
           reverse
         >
           <SnapshotMockup />

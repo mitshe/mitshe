@@ -84,7 +84,7 @@ function SetupForm() {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold tracking-tight">Welcome to <span className="font-brand">mitshe</span></h1>
           <p className="text-sm text-muted-foreground mt-1.5">
-            Create your admin account to get started
+            Create your account to start managing threads
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
