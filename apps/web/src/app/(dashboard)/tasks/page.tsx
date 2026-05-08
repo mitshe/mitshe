@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,7 @@ import {
 const ITEMS_PER_PAGE = 15;
 
 export default function TasksPage() {
+  const router = useRouter();
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: workflows = [] } = useWorkflows();
@@ -428,9 +429,9 @@ export default function TasksPage() {
       </TableHeader>
       <TableBody>
         {taskList.map((task) => (
-          <TableRow key={task.id}>
+          <TableRow key={task.id} className="cursor-pointer" onClick={() => router.push(`/tasks/${task.id}`)}>
             <TableCell>
-              <Link href={`/tasks/${task.id}`} className="hover:underline">
+              <Link href={`/tasks/${task.id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>
                 <span className="font-medium">{task.title}</span>
                 {task.description && (
                   <p className="text-xs text-muted-foreground truncate max-w-md">{task.description}</p>
@@ -442,6 +443,7 @@ export default function TasksPage() {
                 <Link
                   href={`/projects/${task.projectId}`}
                   className="hover:underline text-muted-foreground"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {task.project.name}
                 </Link>
@@ -476,7 +478,7 @@ export default function TasksPage() {
             <TableCell>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -573,18 +575,20 @@ export default function TasksPage() {
   const renderTaskCard = (task: Task) => (
     <div
       key={task.id}
-      className="flex flex-col gap-3 p-4 border rounded-lg bg-card"
+      className="flex flex-col gap-3 p-4 border rounded-lg bg-card cursor-pointer hover:bg-muted/50 transition-colors"
+      onClick={() => router.push(`/tasks/${task.id}`)}
     >
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/tasks/${task.id}`}
           className="font-medium hover:underline line-clamp-2 flex-1"
+          onClick={(e) => e.stopPropagation()}
         >
           {task.title}
         </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={(e) => e.stopPropagation()}>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -645,6 +649,7 @@ export default function TasksPage() {
           <Link
             href={`/projects/${task.projectId}`}
             className="hover:underline truncate"
+            onClick={(e) => e.stopPropagation()}
           >
             {task.project.name}
           </Link>

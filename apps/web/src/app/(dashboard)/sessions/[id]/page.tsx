@@ -633,6 +633,7 @@ export default function SessionDetailPage() {
   const isRunning = sessionStatus === "RUNNING";
   const isPaused = sessionStatus === "PAUSED";
   const isCompleted = sessionStatus === "COMPLETED";
+  const isCreating = sessionStatus === "CREATING";
   const isActive = isRunning || isPaused;
 
   return (
@@ -889,6 +890,14 @@ export default function SessionDetailPage() {
                       cmd={tab.cmd}
                       isVisible={activeTabId === tab.id}
                     />
+                  ) : isCreating ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <div className="text-center">
+                        <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin" />
+                        <p className="text-sm font-medium">Starting session...</p>
+                        <p className="text-xs mt-1">Preparing the container environment</p>
+                      </div>
+                    </div>
                   ) : isCompleted ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center">
@@ -947,6 +956,14 @@ export default function SessionDetailPage() {
                 >
                   {isRunning ? (
                     <BrowserView sessionId={sessionId} />
+                  ) : isCreating ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <div className="text-center">
+                        <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin" />
+                        <p className="text-sm font-medium">Starting session...</p>
+                        <p className="text-xs mt-1">Browser will be available once the session is running</p>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center space-y-2">
