@@ -51,7 +51,7 @@ Every task = a thread (session). Each thread is an isolated container with its o
 
 ## Naming
 
-- "Session" → consider renaming to "Thread" in UI (clearer mental model)
+- "Thread" — done, renamed from "Session" in UI (API still uses "session" internally)
 - "Snapshot" → stays (good name, clear purpose)
 - "Workflow" → stays (automation, triggers, pipelines)
 - "Task" → imported from Jira/GitHub, the reason a thread exists

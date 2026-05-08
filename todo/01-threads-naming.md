@@ -1,3 +1,5 @@
+> DONE
+
 # 01 — Threads: rename sessions to threads in UI
 
 ## Why
