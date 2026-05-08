@@ -46,12 +46,6 @@ const navigationItems = [
   { label: "AI Providers", path: "/settings/ai", icon: Settings },
 ];
 
-const actionItems = [
-  { label: "New Session", path: "/sessions?newSession=1", icon: Plus },
-  { label: "New Chat", path: "/chat", icon: Plus },
-  { label: "Import Tasks", path: "/tasks", icon: Download },
-  { label: "New Workflow", path: "/workflows", icon: Plus },
-];
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
