@@ -160,9 +160,7 @@ export default function SessionsPage() {
   const activeIntegrations = connectedIntegrations.filter(
     (i) => i.status === "CONNECTED",
   );
-  const defaultGithubId = activeIntegrations.find(
-    (i) => i.type === "GITHUB",
-  )?.id;
+  const allIntegrationIds = activeIntegrations.map((i) => i.id);
   const createSession = useCreateSession();
   const updateSession = useUpdateSession();
   const recreateSession = useRecreateSession();
@@ -223,17 +221,17 @@ export default function SessionsPage() {
     editingStatus !== "COMPLETED" &&
     editingStatus !== "FAILED";
 
-  // Set default GitHub integration once data loads
+  // Default all integrations selected
   useEffect(() => {
-    if (defaultGithubId && form.integrationIds.length === 0) {
+    if (allIntegrationIds.length > 0 && form.integrationIds.length === 0) {
       setForm((prev) => ({
         ...prev,
         integrationIds: prev.integrationIds.length === 0
-          ? [defaultGithubId]
+          ? allIntegrationIds
           : prev.integrationIds,
       }));
     }
-  }, [defaultGithubId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allIntegrationIds.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open dialog when navigating with ?snapshot=id
   const [snapshotHandled, setSnapshotHandled] = useState(false);
@@ -263,11 +261,11 @@ export default function SessionsPage() {
       instructions: urlTaskInstructions || prev.instructions,
       projectId: urlProjectId || prev.projectId,
       baseImageId: autoSnapshot || prev.baseImageId,
-      integrationIds: defaultGithubId ? [defaultGithubId] : prev.integrationIds,
+      integrationIds: allIntegrationIds.length > 0 ? allIntegrationIds : prev.integrationIds,
     }));
     setIsDialogOpen(true);
     setTaskHandled(true);
-  }, [urlNewSession, urlTaskName, urlTaskInstructions, urlProjectId, defaultGithubId, taskHandled, readySnapshots]);
+  }, [urlNewSession, urlTaskName, urlTaskInstructions, urlProjectId, allIntegrationIds, taskHandled, readySnapshots]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -275,7 +273,7 @@ export default function SessionsPage() {
     setOriginalForm(null);
     setForm({
       ...emptyForm,
-      integrationIds: defaultGithubId ? [defaultGithubId] : [],
+      integrationIds: allIntegrationIds,
     });
     setIsDialogOpen(true);
   };
@@ -374,7 +372,7 @@ export default function SessionsPage() {
         setIsDialogOpen(false);
         setForm({
           ...emptyForm,
-          integrationIds: defaultGithubId ? [defaultGithubId] : [],
+          integrationIds: allIntegrationIds,
         });
         router.push(`/sessions/${session.id}`);
       } catch (error) {
