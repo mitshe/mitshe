@@ -183,11 +183,36 @@ function WorkflowEditorInner({
         },
       };
 
-      setNodes((nds) => [...nds, newNode]);
+      setNodes((nds) => {
+        const updated = [...nds, newNode];
+
+        // Auto-connect: if there's exactly one node with no outgoing edge, connect it
+        const nodesWithoutOutgoing = nds.filter(
+          (n) => !edges.some((e) => e.source === n.id),
+        );
+        if (nodesWithoutOutgoing.length === 1 && !nodeType.startsWith("trigger:")) {
+          const sourceNode = nodesWithoutOutgoing[0];
+          setEdges((eds) =>
+            addEdge(
+              {
+                id: `edge_${Date.now()}`,
+                source: sourceNode.id,
+                target: newNode.id,
+                label: undefined,
+                animated: false,
+                style: { strokeWidth: 2 },
+              },
+              eds,
+            ),
+          );
+        }
+
+        return updated;
+      });
       setSelectedNodeId(newNode.id);
       setIsDirty(true);
     },
-    [screenToFlowPosition, setNodes],
+    [screenToFlowPosition, setNodes, edges, setEdges],
   );
 
   const updateNodeData = useCallback(
@@ -381,9 +406,27 @@ function WorkflowEditorInner({
   }, [codeContent]);
 
   useEffect(() => {
-    if (editorMode === "visual" && isDirty) {
-    }
-  }, [nodes, edges, editorMode, isDirty]);
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleSave]);
+
+  const onNodesDelete = useCallback(
+    (deleted: Node[]) => {
+      for (const node of deleted) {
+        if (selectedNodeId === node.id) {
+          setSelectedNodeId(null);
+        }
+      }
+      setIsDirty(true);
+    },
+    [selectedNodeId],
+  );
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -513,10 +556,12 @@ function WorkflowEditorInner({
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onNodesDelete={onNodesDelete}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
             nodeTypes={nodeTypes}
+            deleteKeyCode={["Backspace", "Delete"]}
             fitView
             snapToGrid
             snapGrid={[20, 20]}
