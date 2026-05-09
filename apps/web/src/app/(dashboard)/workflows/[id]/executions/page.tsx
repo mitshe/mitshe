@@ -108,7 +108,7 @@ export default function WorkflowExecutionsPage() {
           <Link href={`/workflows/${workflowId}/edit`}>
             <Button variant="outline">Edit Workflow</Button>
           </Link>
-          {workflow?.triggerType === "manual" && (
+          {(workflow?.triggerType === "manual" || workflow?.triggerType === "task") && (
             <Button
               onClick={handleRunWorkflow}
               disabled={runWorkflow.isPending || !workflow?.isActive}
@@ -169,7 +169,7 @@ export default function WorkflowExecutionsPage() {
             <div className="text-center py-12 text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-4" />
               <p className="mb-4">No executions yet</p>
-              {workflow?.triggerType === "manual" ? (
+              {(workflow?.triggerType === "manual" || workflow?.triggerType === "task") ? (
                 <Button
                   onClick={handleRunWorkflow}
                   disabled={!workflow?.isActive}

@@ -13,6 +13,7 @@ export type NodeType =
   | "trigger:git_push"
   | "trigger:git_mr"
   | "trigger:manual"
+  | "trigger:task"
   | "action:ai_prompt"
   | "action:ai_chat"
   | "action:ai_analyze"
@@ -150,9 +151,18 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
   {
     type: "trigger:manual",
     label: "Manual Trigger",
-    description: "Start workflow manually",
+    description: "Start workflow manually without input",
     category: "triggers",
     icon: "Play",
+    color: "#10b981",
+    defaultConfig: {},
+  },
+  {
+    type: "trigger:task",
+    label: "Task Trigger",
+    description: "Start workflow with a task as input",
+    category: "triggers",
+    icon: "ListTodo",
     color: "#10b981",
     defaultConfig: {},
   },

@@ -645,17 +645,18 @@ function buildVariables(allNodes: Node<WorkflowNodeData>[]) {
   const triggerNode = allNodes.find((n) => (n.data as WorkflowNodeData).nodeType?.startsWith("trigger:"));
   const triggerType = (triggerNode?.data as WorkflowNodeData)?.nodeType || "";
 
-  if (triggerType === "trigger:manual") {
+  if (triggerType === "trigger:task") {
     categories.push({
-      category: "Trigger (Task)",
+      category: "Task Input",
       variables: [
         { expr: "{{trigger.task.id}}", desc: "Task ID" },
         { expr: "{{trigger.task.title}}", desc: "Task title" },
         { expr: "{{trigger.task.description}}", desc: "Task description" },
         { expr: "{{trigger.task.status}}", desc: "Task status" },
+        { expr: "{{trigger.task.externalSource}}", desc: "Source (JIRA, GitHub, etc.)" },
         { expr: "{{trigger.task.externalIssueId}}", desc: "External issue ID (e.g. PROJ-123)" },
         { expr: "{{trigger.task.externalIssueUrl}}", desc: "External issue URL" },
-        { expr: "{{trigger.jira}}", desc: "Full JIRA issue data (if imported)" },
+        { expr: "{{trigger.jira}}", desc: "Full external issue data" },
       ],
     });
   } else if (triggerType.includes("jira")) {

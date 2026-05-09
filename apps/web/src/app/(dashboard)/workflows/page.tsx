@@ -97,6 +97,7 @@ const ITEMS_PER_PAGE = 10;
 
 const triggerTypeLabels: Record<string, { label: string; color: string }> = {
   manual: { label: "Manual", color: "bg-blue-500/10 text-blue-600" },
+  task: { label: "Task", color: "bg-cyan-500/10 text-cyan-600" },
   schedule: { label: "Scheduled", color: "bg-purple-500/10 text-purple-600" },
   webhook: { label: "Webhook", color: "bg-orange-500/10 text-orange-600" },
   event: { label: "Event", color: "bg-green-500/10 text-green-600" },
@@ -297,32 +298,45 @@ export default function WorkflowsPage() {
     }
   };
 
-  const handleRunWorkflow = (workflowId: string) => {
-    setRunTarget(workflowId);
-    setRunTaskId("");
-    setTaskSearch("");
-  };
+  const handleRunWorkflow = async (workflowId: string) => {
+    const workflow = workflows.find((w) => w.id === workflowId);
+    if (workflow?.triggerType === "task") {
+      setRunTarget(workflowId);
+      setRunTaskId("");
+      setTaskSearch("");
+      return;
+    }
 
-  const executeRun = async () => {
-    if (!runTarget) return;
     try {
-      let executionId: string;
-      if (runTaskId) {
-        const result = await runWorkflowOnTask.mutateAsync({
-          taskId: runTaskId,
-          data: { workflowId: runTarget },
-        });
-        executionId = result.executionId;
-      } else {
-        const result = await runWorkflow.mutateAsync({ id: runTarget });
-        executionId = result.executionId;
-      }
+      const result = await runWorkflow.mutateAsync({ id: workflowId });
       toast.success("Workflow started", {
         action: {
           label: "View execution",
           onClick: () =>
             router.push(
-              `/workflows/${runTarget}/executions/${executionId}`,
+              `/workflows/${workflowId}/executions/${result.executionId}`,
+            ),
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to run workflow";
+      toast.error(message);
+    }
+  };
+
+  const executeRunWithTask = async () => {
+    if (!runTarget || !runTaskId) return;
+    try {
+      const result = await runWorkflowOnTask.mutateAsync({
+        taskId: runTaskId,
+        data: { workflowId: runTarget },
+      });
+      toast.success("Workflow started", {
+        action: {
+          label: "View execution",
+          onClick: () =>
+            router.push(
+              `/workflows/${runTarget}/executions/${result.executionId}`,
             ),
         },
       });
@@ -688,7 +702,7 @@ export default function WorkflowsPage() {
                               History
                             </Link>
                           </DropdownMenuItem>
-                          {workflow.triggerType === "manual" && (
+                          {(workflow.triggerType === "manual" || workflow.triggerType === "task") && (
                             <DropdownMenuItem
                               onClick={() => handleRunWorkflow(workflow.id)}
                             >
@@ -731,7 +745,7 @@ export default function WorkflowsPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {workflow.triggerType === "manual" ? (
+                      {(workflow.triggerType === "manual" || workflow.triggerType === "task") ? (
                         <Badge
                           variant="outline"
                           className="bg-blue-500/10 text-blue-600"
@@ -868,7 +882,7 @@ export default function WorkflowsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {workflow.triggerType === "manual" ? (
+                          {(workflow.triggerType === "manual" || workflow.triggerType === "task") ? (
                             <Badge
                               variant="outline"
                               className="bg-blue-500/10 text-blue-600"
@@ -936,7 +950,7 @@ export default function WorkflowsPage() {
                                   History
                                 </Link>
                               </DropdownMenuItem>
-                              {workflow.triggerType === "manual" && (
+                              {(workflow.triggerType === "manual" || workflow.triggerType === "task") && (
                                 <DropdownMenuItem
                                   onClick={() => handleRunWorkflow(workflow.id)}
                                 >
@@ -1019,66 +1033,54 @@ export default function WorkflowsPage() {
       <Dialog open={!!runTarget} onOpenChange={() => setRunTarget(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Run Workflow</DialogTitle>
+            <DialogTitle>Select Task</DialogTitle>
             <DialogDescription>
-              Optionally select a task to pass its data to the workflow.
+              Choose a task to run this workflow with.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Task (optional)</Label>
-                <Input
-                  placeholder="Search tasks..."
-                  value={taskSearch}
-                  onChange={(e) => setTaskSearch(e.target.value)}
-                  className="mb-2"
-                />
-                <div className="max-h-48 overflow-y-auto border rounded-md">
+            <Input
+              placeholder="Search tasks..."
+              value={taskSearch}
+              onChange={(e) => setTaskSearch(e.target.value)}
+              className="mb-2"
+            />
+            <div className="max-h-64 overflow-y-auto border rounded-md">
+              {tasks
+                .filter((t) =>
+                  !taskSearch || t.title.toLowerCase().includes(taskSearch.toLowerCase())
+                )
+                .slice(0, 30)
+                .map((task) => (
                   <button
+                    key={task.id}
                     type="button"
-                    onClick={() => setRunTaskId("")}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${!runTaskId ? "bg-muted font-medium" : ""}`}
+                    onClick={() => setRunTaskId(task.id)}
+                    className={`w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors border-b last:border-b-0 ${runTaskId === task.id ? "bg-muted font-medium" : ""}`}
                   >
-                    No task — run without input
+                    <span className="block truncate">{task.title}</span>
+                    {task.externalIssueId && (
+                      <span className="text-[11px] text-muted-foreground">{task.externalIssueId}</span>
+                    )}
                   </button>
-                  {tasks
-                    .filter((t) =>
-                      !taskSearch || t.title.toLowerCase().includes(taskSearch.toLowerCase())
-                    )
-                    .slice(0, 20)
-                    .map((task) => (
-                      <button
-                        key={task.id}
-                        type="button"
-                        onClick={() => setRunTaskId(task.id)}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors border-t ${runTaskId === task.id ? "bg-muted font-medium" : ""}`}
-                      >
-                        <span className="block truncate">{task.title}</span>
-                        {task.externalIssueId && (
-                          <span className="text-[11px] text-muted-foreground">{task.externalIssueId}</span>
-                        )}
-                      </button>
-                    ))}
-                  {tasks.length === 0 && (
-                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">No tasks yet</p>
-                  )}
-                </div>
-              </div>
+                ))}
+              {tasks.length === 0 && (
+                <p className="px-3 py-8 text-sm text-muted-foreground text-center">No tasks yet. Import or create a task first.</p>
+              )}
             </div>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRunTarget(null)}>Cancel</Button>
             <Button
-              onClick={executeRun}
-              disabled={runWorkflow.isPending || runWorkflowOnTask.isPending}
+              onClick={executeRunWithTask}
+              disabled={!runTaskId || runWorkflowOnTask.isPending}
             >
-              {(runWorkflow.isPending || runWorkflowOnTask.isPending) ? (
+              {runWorkflowOnTask.isPending ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Play className="w-4 h-4 mr-2" />
               )}
-              {runTaskId ? "Run with Task" : "Run"}
+              Run
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -178,7 +178,7 @@ export default function TasksPage() {
     );
   };
 
-  const manualWorkflows = workflows.filter((w) => w.triggerType === "manual");
+  const manualWorkflows = workflows.filter((w) => w.triggerType === "manual" || w.triggerType === "task");
   const isLoading = tasksLoading || projectsLoading;
 
   const filteredTasks = useMemo(() => {

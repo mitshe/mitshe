@@ -2,7 +2,7 @@
 
 import type { Project } from "./project";
 
-export type TriggerType = "manual" | "schedule" | "webhook" | "event";
+export type TriggerType = "manual" | "task" | "schedule" | "webhook" | "event";
 export type NodeType = "trigger" | "action" | "condition" | "delay" | "loop";
 export type ActionType =
   | "ai_process"
