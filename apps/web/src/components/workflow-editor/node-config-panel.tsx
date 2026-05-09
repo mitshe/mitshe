@@ -31,6 +31,7 @@ import {
   GitBranch,
 } from "lucide-react";
 import { WorkflowNodeData, NODE_DEFINITIONS, NodeProvider } from "./types";
+import { VariableInput, type VariableOption } from "./variable-input";
 import { useRepositories, useAICredentials } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 import { Bot } from "lucide-react";
@@ -102,6 +103,13 @@ export const NodeConfigPanel = memo(function NodeConfigPanel({
     onDelete(node.id);
     onClose();
   }, [node.id, onDelete, onClose]);
+
+  const variableOptions: VariableOption[] = useMemo(() => {
+    const categories = buildVariables(allNodes, allEdges, node.id);
+    return categories.flatMap((cat) =>
+      cat.variables.map((v) => ({ ...v, category: cat.category })),
+    );
+  }, [allNodes, allEdges, node.id]);
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-card/50 border-l">
@@ -183,6 +191,7 @@ export const NodeConfigPanel = memo(function NodeConfigPanel({
                 config={node.data.config}
                 defaultConfig={nodeDef.defaultConfig}
                 onChange={handleConfigChange}
+                variables={variableOptions}
               />
             )}
 
@@ -211,6 +220,7 @@ interface ConfigFieldsProps {
   config: Record<string, unknown>;
   defaultConfig: Record<string, unknown>;
   onChange: (key: string, value: unknown) => void;
+  variables: VariableOption[];
 }
 
 const RepositorySelector = memo(function RepositorySelector({
@@ -444,6 +454,7 @@ const ConfigFields = memo(function ConfigFields({
   config,
   defaultConfig,
   onChange,
+  variables,
 }: ConfigFieldsProps) {
   const renderField = (key: string, defaultValue: unknown) => {
     const value = config[key] ?? defaultValue;
@@ -505,15 +516,15 @@ const ConfigFields = memo(function ConfigFields({
             <Label htmlFor={`config-${key}`} className="text-xs">
               {label}
             </Label>
-            <textarea
-              id={`config-${key}`}
+            <VariableInput
               value={value as string}
-              onChange={(e) => onChange(key, e.target.value)}
-              className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
+              onChange={(v) => onChange(key, v)}
               placeholder={`Enter ${label.toLowerCase()}`}
+              variables={variables}
+              multiline
             />
             <p className="text-[10px] text-muted-foreground/70">
-              Variables: {"{{trigger.field}}"} or {"{{nodes.nodeId.field}}"}
+              Type {"{{" } to insert variables from previous steps
             </p>
           </div>
         );
@@ -524,12 +535,11 @@ const ConfigFields = memo(function ConfigFields({
           <Label htmlFor={`config-${key}`} className="text-xs">
             {label}
           </Label>
-          <Input
-            id={`config-${key}`}
+          <VariableInput
             value={value as string}
-            onChange={(e) => onChange(key, e.target.value)}
+            onChange={(v) => onChange(key, v)}
             placeholder={`Enter ${label.toLowerCase()}`}
-            className="h-9"
+            variables={variables}
           />
         </div>
       );

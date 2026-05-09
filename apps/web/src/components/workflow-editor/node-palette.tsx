@@ -118,10 +118,9 @@ export const NodePalette = memo(function NodePalette({
   onDragStart,
 }: NodePaletteProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  // All categories collapsed by default
   const [expandedCategories, setExpandedCategories] = useState<
     Set<NodeCategory>
-  >(new Set());
+  >(new Set(["triggers", "sessions", "ai"] as NodeCategory[]));
 
   const nodesByCategory = getNodesByCategory();
 
@@ -168,7 +167,7 @@ export const NodePalette = memo(function NodePalette({
             const nodes = filterNodes(nodesByCategory[category]);
             if (nodes.length === 0) return null;
 
-            const isExpanded = expandedCategories.has(category);
+            const isExpanded = expandedCategories.has(category) || !!searchQuery.trim();
 
             return (
               <div key={category} className="mb-1">
