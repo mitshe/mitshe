@@ -30,7 +30,6 @@ export interface ThreadFormData {
   aiCredentialId: string;
   startArguments: string;
   enableDocker: boolean;
-  mountSsh: boolean;
   baseImageId: string;
   skillIds: string[];
   instructions: string;
@@ -357,25 +356,6 @@ export function ThreadFormFields({
               }`}
             >
               Enable Docker-in-Docker
-            </Label>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="mountSsh"
-              checked={form.mountSsh}
-              onCheckedChange={(checked) =>
-                setForm({ ...form, mountSsh: checked === true })
-              }
-              disabled={configLocked}
-            />
-            <Label
-              htmlFor="mountSsh"
-              className={`font-normal text-sm ${
-                configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-              }`}
-            >
-              Copy SSH keys from host
             </Label>
           </div>
 

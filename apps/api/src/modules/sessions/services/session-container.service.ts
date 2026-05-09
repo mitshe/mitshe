@@ -31,7 +31,6 @@ export interface SessionContainerConfig {
    */
   image?: string;
   localPath?: string;
-  mountSsh?: boolean;
 }
 
 /**

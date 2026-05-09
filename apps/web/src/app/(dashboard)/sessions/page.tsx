@@ -198,7 +198,6 @@ export default function SessionsPage() {
     aiCredentialId: "",
     startArguments: "",
     enableDocker: false,
-    mountSsh: false,
     baseImageId: "",
     skillIds: [] as string[],
     instructions: "",
@@ -293,8 +292,7 @@ export default function SessionsPage() {
       aiCredentialId: session.aiCredentialId || "",
       startArguments: session.startArguments || "",
       enableDocker: session.enableDocker,
-      mountSsh: false,
-      baseImageId: session.baseImageId || "",
+        baseImageId: session.baseImageId || "",
       skillIds: [] as string[],
       instructions: session.instructions || "",
       localPath: "",
@@ -371,7 +369,6 @@ export default function SessionsPage() {
           instructions: form.instructions || undefined,
           branch: form.branch || undefined,
           localPath: form.localPath || undefined,
-          mountSsh: form.mountSsh || undefined,
         });
         toast.success("Thread created");
         setIsDialogOpen(false);
