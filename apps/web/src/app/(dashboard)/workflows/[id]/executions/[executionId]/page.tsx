@@ -363,10 +363,10 @@ export default function ExecutionDetailPage() {
 
   const definition = execution?.workflow?.definition;
   const nodes = definition?.nodes || [];
-  const edges = definition?.edges || [];
 
   // Sort nodeResults by topological order (execution flow) based on edges
   const sortedNodeResults = useMemo(() => {
+    const edges = definition?.edges || [];
     if (!edges.length || !nodeResults.length) return nodeResults;
 
     // Build adjacency: which nodes come after which
@@ -409,7 +409,7 @@ export default function ExecutionDetailPage() {
     return [...nodeResults].sort(
       (a, b) => (orderMap.get(a.nodeId) ?? 999) - (orderMap.get(b.nodeId) ?? 999)
     );
-  }, [nodeResults, edges]);
+  }, [nodeResults, definition?.edges]);
 
   // Loading state - must be after all hooks
   if (isLoading) {
