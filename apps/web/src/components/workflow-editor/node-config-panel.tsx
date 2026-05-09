@@ -666,17 +666,6 @@ function getUpstreamNodeIds(currentNodeId: string, edges: Edge[]): Set<string> {
   return upstream;
 }
 
-const SESSION_NODE_TYPES = new Set([
-  "action:session_create",
-  "action:session_exec",
-  "action:session_agent",
-  "action:session_stop",
-  "action:session_read_file",
-  "action:session_write_file",
-  "data:session_git_diff",
-  "data:session_files",
-]);
-
 function buildVariables(allNodes: Node<WorkflowNodeData>[], allEdges: Edge[], currentNodeId: string) {
   const categories: Array<{ category: string; variables: Array<{ expr: string; desc: string }> }> = [];
   const upstreamIds = getUpstreamNodeIds(currentNodeId, allEdges);
@@ -757,13 +746,28 @@ function buildVariables(allNodes: Node<WorkflowNodeData>[], allEdges: Edge[], cu
     for (const n of upstreamNodes) {
       const data = n.data as WorkflowNodeData;
       const label = data.label || n.id;
-      nodeVars.push({ expr: `{{nodes.${n.id}.output}}`, desc: `${label} — output` });
+      const id = n.id;
+      const nt = data.nodeType as string;
 
-      if (SESSION_NODE_TYPES.has(data.nodeType) && data.nodeType === "action:session_create") {
-        nodeVars.push({ expr: "{{ctx.sessionId}}", desc: `${label} — created thread ID` });
-      }
-      if (data.nodeType === "action:session_agent") {
-        nodeVars.push({ expr: `{{nodes.${n.id}.output}}`, desc: `${label} — agent response` });
+      nodeVars.push({ expr: `{{nodes.${id}.output}}`, desc: `${label} — result text` });
+
+      if (nt === "action:session_create") {
+        nodeVars.push({ expr: "{{ctx.sessionId}}", desc: `${label} — thread ID` });
+        nodeVars.push({ expr: `{{nodes.${id}.status}}`, desc: `${label} — thread status` });
+      } else if (nt === "action:session_agent" || nt === "action:session_exec") {
+        nodeVars.push({ expr: `{{nodes.${id}.exitCode}}`, desc: `${label} — exit code` });
+      } else if (nt === "action:ai_analyze") {
+        nodeVars.push({ expr: `{{nodes.${id}.analysis}}`, desc: `${label} — analysis (JSON)` });
+      } else if (nt === "action:ai_prompt" || nt === "action:ai_chat") {
+        nodeVars.push({ expr: `{{nodes.${id}.content}}`, desc: `${label} — full response` });
+      } else if (nt === "action:ai_summarize") {
+        nodeVars.push({ expr: `{{nodes.${id}.summary}}`, desc: `${label} — summary text` });
+      } else if (nt === "action:ai_translate") {
+        nodeVars.push({ expr: `{{nodes.${id}.translation}}`, desc: `${label} — translated text` });
+      } else if (nt === "action:git_create_mr") {
+        nodeVars.push({ expr: `{{nodes.${id}.mrUrl}}`, desc: `${label} — MR/PR URL` });
+      } else if (nt.startsWith("data:")) {
+        nodeVars.push({ expr: `{{nodes.${id}}}`, desc: `${label} — full data` });
       }
     }
     categories.push({ category: "Previous Steps", variables: nodeVars });

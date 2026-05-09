@@ -131,6 +131,7 @@ export class SessionExecutor extends BaseExecutor {
     }
 
     return {
+      output: `Thread created: ${session.id}`,
       sessionId: session.id,
       containerId: session.containerId || '',
       status,

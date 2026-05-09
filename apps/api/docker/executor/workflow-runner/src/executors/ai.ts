@@ -120,6 +120,7 @@ async function executeAIPrompt(
   });
 
   return {
+    output: result.content,
     content: result.content,
     model: result.model,
     provider,
@@ -184,6 +185,7 @@ Always include complete, working code. Do not use placeholders or TODO comments.
   }
 
   return {
+    output: result.content,
     content: result.content,
     files,
     provider,
@@ -223,13 +225,15 @@ ${schema || '{"summary": "string", "insights": ["string"], "recommendations": ["
   try {
     const jsonMatch = result.content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return { analysis: JSON.parse(jsonMatch[0]), provider };
+      const parsed = JSON.parse(jsonMatch[0]);
+      const summary = typeof parsed.summary === 'string' ? parsed.summary : JSON.stringify(parsed);
+      return { output: summary, analysis: parsed, provider };
     }
   } catch {
     // Fall back to raw response
   }
 
-  return { analysis: result.content, provider };
+  return { output: result.content, analysis: result.content, provider };
 }
 
 /**
@@ -259,6 +263,7 @@ async function executeAIChat(
   });
 
   return {
+    output: result.content,
     content: result.content,
     provider,
     model: result.model,
@@ -310,6 +315,7 @@ async function executeAISummarize(
   });
 
   return {
+    output: result.content,
     summary: result.content,
     originalLength: content.length,
     summaryLength: result.content.length,
@@ -361,6 +367,7 @@ async function executeAITranslate(
   });
 
   return {
+    output: result.content,
     translation: result.content,
     sourceLanguage,
     targetLanguage,
