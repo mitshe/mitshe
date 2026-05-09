@@ -168,23 +168,47 @@ function WorkspaceNavContent({ onNavigate }: { onNavigate?: () => void }) {
 
 function RecentSessions() {
   const { data: sessions = [] } = useSessions();
-  const recent = sessions.slice(0, 8);
-  if (recent.length === 0) return null;
+  const typed = sessions as Array<{ id: string; name: string; status: string }>;
+  const active = typed.filter((s) => s.status === "RUNNING" || s.status === "CREATING");
+  const stopped = typed.filter((s) => s.status !== "RUNNING" && s.status !== "CREATING");
+  const recent = stopped.slice(0, 5);
+
+  if (active.length === 0 && recent.length === 0) return null;
 
   return (
-    <div className="mt-4 space-y-0.5">
-      <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-        Recent threads
-      </p>
-      {recent.map((s: { id: string; name: string; status: string }) => (
-        <Link
-          key={s.id}
-          href={`/sessions/${s.id}`}
-          className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-        >
-          <span className="truncate">{s.name}</span>
-        </Link>
-      ))}
+    <div className="mt-4 space-y-3">
+      {active.length > 0 && (
+        <div className="space-y-0.5">
+          <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+            Active
+          </p>
+          {active.map((s) => (
+            <Link
+              key={s.id}
+              href={`/sessions/${s.id}`}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <span className="truncate">{s.name}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+      {recent.length > 0 && (
+        <div className="space-y-0.5">
+          <p className="px-3 pb-1 text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+            Recent
+          </p>
+          {recent.map((s) => (
+            <Link
+              key={s.id}
+              href={`/sessions/${s.id}`}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <span className="truncate">{s.name}</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
