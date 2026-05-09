@@ -80,11 +80,13 @@ import { toast } from "sonner";
 import {
   useWorkflows,
   useProjects,
+  useTasks,
   useCreateWorkflow,
   useActivateWorkflow,
   useDeactivateWorkflow,
   useDeleteWorkflow,
   useRunWorkflow,
+  useRunWorkflowOnTask,
   useWorkflowTemplates,
   useCreateWorkflowFromTemplate,
 } from "@/lib/api/hooks";
@@ -147,6 +149,8 @@ export default function WorkflowsPage() {
   const deactivateWorkflow = useDeactivateWorkflow();
   const deleteWorkflow = useDeleteWorkflow();
   const runWorkflow = useRunWorkflow();
+  const runWorkflowOnTask = useRunWorkflowOnTask();
+  const { data: tasks = [] } = useTasks();
 
   const [search, setSearch] = useState("");
   const [filterTrigger, setFilterTrigger] = useState("all");
@@ -157,6 +161,9 @@ export default function WorkflowsPage() {
     useState<WorkflowTemplateMetadata | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [runTarget, setRunTarget] = useState<string | null>(null);
+  const [runTaskId, setRunTaskId] = useState<string>("");
+  const [taskSearch, setTaskSearch] = useState("");
   const [newWorkflow, setNewWorkflow] = useState({
     name: "",
     description: "",
@@ -290,19 +297,36 @@ export default function WorkflowsPage() {
     }
   };
 
-  const handleRunWorkflow = async (workflowId: string) => {
+  const handleRunWorkflow = (workflowId: string) => {
+    setRunTarget(workflowId);
+    setRunTaskId("");
+    setTaskSearch("");
+  };
+
+  const executeRun = async () => {
+    if (!runTarget) return;
     try {
-      const result = await runWorkflow.mutateAsync({ id: workflowId });
+      let executionId: string;
+      if (runTaskId) {
+        const result = await runWorkflowOnTask.mutateAsync({
+          taskId: runTaskId,
+          data: { workflowId: runTarget },
+        });
+        executionId = result.executionId;
+      } else {
+        const result = await runWorkflow.mutateAsync({ id: runTarget });
+        executionId = result.executionId;
+      }
       toast.success("Workflow started", {
-        description: "Execution is now running",
         action: {
           label: "View execution",
           onClick: () =>
             router.push(
-              `/workflows/${workflowId}/executions/${result.executionId}`,
+              `/workflows/${runTarget}/executions/${executionId}`,
             ),
         },
       });
+      setRunTarget(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to run workflow";
       toast.error(message);
@@ -991,6 +1015,74 @@ export default function WorkflowsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!runTarget} onOpenChange={() => setRunTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Run Workflow</DialogTitle>
+            <DialogDescription>
+              Optionally select a task to pass its data to the workflow.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Task (optional)</Label>
+                <Input
+                  placeholder="Search tasks..."
+                  value={taskSearch}
+                  onChange={(e) => setTaskSearch(e.target.value)}
+                  className="mb-2"
+                />
+                <div className="max-h-48 overflow-y-auto border rounded-md">
+                  <button
+                    type="button"
+                    onClick={() => setRunTaskId("")}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${!runTaskId ? "bg-muted font-medium" : ""}`}
+                  >
+                    No task — run without input
+                  </button>
+                  {tasks
+                    .filter((t) =>
+                      !taskSearch || t.title.toLowerCase().includes(taskSearch.toLowerCase())
+                    )
+                    .slice(0, 20)
+                    .map((task) => (
+                      <button
+                        key={task.id}
+                        type="button"
+                        onClick={() => setRunTaskId(task.id)}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors border-t ${runTaskId === task.id ? "bg-muted font-medium" : ""}`}
+                      >
+                        <span className="block truncate">{task.title}</span>
+                        {task.externalIssueId && (
+                          <span className="text-[11px] text-muted-foreground">{task.externalIssueId}</span>
+                        )}
+                      </button>
+                    ))}
+                  {tasks.length === 0 && (
+                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">No tasks yet</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRunTarget(null)}>Cancel</Button>
+            <Button
+              onClick={executeRun}
+              disabled={runWorkflow.isPending || runWorkflowOnTask.isPending}
+            >
+              {(runWorkflow.isPending || runWorkflowOnTask.isPending) ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4 mr-2" />
+              )}
+              {runTaskId ? "Run with Task" : "Run"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

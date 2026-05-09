@@ -154,9 +154,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
     category: "triggers",
     icon: "Play",
     color: "#10b981",
-    defaultConfig: {
-      requiresTask: false,
-    },
+    defaultConfig: {},
   },
   {
     type: "trigger:webhook",
@@ -705,11 +703,11 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
     defaultConfig: { expression: "" },
   },
 
-  // ─── Sessions ────────────────────────────────────────────────
+  // ─── Threads ─────────────────────────────────────────────────
   {
     type: "action:session_create",
-    label: "Create Session",
-    description: "Create and start a new agent session with repositories",
+    label: "Create Thread",
+    description: "Create and start a new agent thread with repositories",
     category: "sessions",
     icon: "Plus",
     color: "#06b6d4",
@@ -724,7 +722,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
   {
     type: "action:session_exec",
     label: "Run Command",
-    description: "Execute a shell command in a session container",
+    description: "Execute a shell command in a thread container",
     category: "sessions",
     icon: "Terminal",
     color: "#06b6d4",
@@ -747,8 +745,8 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
   },
   {
     type: "action:session_stop",
-    label: "Stop Session",
-    description: "Stop and optionally delete a session",
+    label: "Stop Thread",
+    description: "Stop and optionally delete a thread",
     category: "sessions",
     icon: "Square",
     color: "#06b6d4",
@@ -757,7 +755,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
   {
     type: "action:session_read_file",
     label: "Read File",
-    description: "Read file content from a session container",
+    description: "Read file content from a thread container",
     category: "sessions",
     icon: "FileText",
     color: "#06b6d4",
@@ -766,7 +764,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
   {
     type: "action:session_write_file",
     label: "Write File",
-    description: "Write content to a file in a session container",
+    description: "Write content to a file in a thread container",
     category: "sessions",
     icon: "FileEdit",
     color: "#06b6d4",
@@ -775,7 +773,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
   {
     type: "data:session_git_diff",
     label: "Get Git Diff",
-    description: "Get git diff from session workspace",
+    description: "Get git diff from thread workspace",
     category: "sessions",
     icon: "GitBranch",
     color: "#06b6d4",
@@ -784,7 +782,7 @@ export const NODE_DEFINITIONS: NodeDefinition[] = [
   {
     type: "data:session_files",
     label: "List Files",
-    description: "List files in session workspace",
+    description: "List files in thread workspace",
     category: "sessions",
     icon: "FolderTree",
     color: "#06b6d4",
@@ -802,7 +800,7 @@ export const CATEGORY_LABELS: Record<NodeCategory, string> = {
   git: "Git",
   tasks: "Tasks",
   notifications: "Notifications",
-  sessions: "Sessions",
+  sessions: "Threads",
   control: "Control Flow",
   transform: "Transform",
   utility: "Utility",
