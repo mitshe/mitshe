@@ -362,6 +362,25 @@ export function ThreadFormFields({
 
           <div className="flex items-center gap-2">
             <Checkbox
+              id="mountSsh"
+              checked={form.mountSsh}
+              onCheckedChange={(checked) =>
+                setForm({ ...form, mountSsh: checked === true })
+              }
+              disabled={configLocked}
+            />
+            <Label
+              htmlFor="mountSsh"
+              className={`font-normal text-sm ${
+                configLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+              }`}
+            >
+              Copy SSH keys from host
+            </Label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
               id="autoAccept"
               checked={form.startArguments?.includes("--dangerously-skip-permissions") ?? false}
               onCheckedChange={(checked) => {
