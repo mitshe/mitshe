@@ -68,15 +68,7 @@ const statusLabels: Record<string, string> = {
   FAILED: "Failed",
 };
 
-const providerLabels: Record<string, string> = {
-  CLAUDE: "Claude",
-  OPENAI: "OpenAI",
-  OPENROUTER: "OpenRouter",
-  GEMINI: "Gemini",
-  GROQ: "Groq",
-  CLAUDE_CODE_LOCAL: "Claude Code",
-  OPENCLAW: "OpenClaw",
-};
+import { providerLabels } from "@/lib/status-config";
 
 let terminalCounter = 0;
 

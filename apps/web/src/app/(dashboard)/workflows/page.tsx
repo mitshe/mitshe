@@ -75,7 +75,7 @@ import {
   Search,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
-import { getExecutionStatus } from "@/lib/status-config";
+import { getExecutionStatus, triggerTypeLabels } from "@/lib/status-config";
 import { toast } from "sonner";
 import {
   useWorkflows,
@@ -95,24 +95,6 @@ import type { WorkflowTemplateMetadata } from "@/lib/api/types";
 
 const ITEMS_PER_PAGE = 10;
 
-const triggerTypeLabels: Record<string, { label: string; color: string }> = {
-  manual: { label: "Manual", color: "bg-blue-500/10 text-blue-600" },
-  task: { label: "Task", color: "bg-cyan-500/10 text-cyan-600" },
-  schedule: { label: "Scheduled", color: "bg-purple-500/10 text-purple-600" },
-  webhook: { label: "Webhook", color: "bg-orange-500/10 text-orange-600" },
-  event: { label: "Event", color: "bg-green-500/10 text-green-600" },
-  jira_issue: { label: "JIRA Issue", color: "bg-blue-500/10 text-blue-600" },
-  jira_component_added: {
-    label: "JIRA Component",
-    color: "bg-blue-500/10 text-blue-600",
-  },
-  jira_label_added: {
-    label: "JIRA Label",
-    color: "bg-blue-500/10 text-blue-600",
-  },
-  git_push: { label: "Git Push", color: "bg-orange-500/10 text-orange-600" },
-  git_mr: { label: "Merge Request", color: "bg-orange-500/10 text-orange-600" },
-};
 
 const categoryStyles: Record<string, { icon: React.ReactNode; color: string }> =
   {

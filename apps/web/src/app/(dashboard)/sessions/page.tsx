@@ -91,15 +91,7 @@ import { isDesktopApp, selectLocalFolder } from "@/lib/desktop";
 import { queryKeys } from "@/lib/api/hooks";
 import type { AgentSession, SessionStatus } from "@/lib/api/types";
 
-const providerLabels: Record<string, string> = {
-  CLAUDE: "Claude",
-  OPENAI: "OpenAI",
-  OPENROUTER: "OpenRouter",
-  GEMINI: "Gemini",
-  GROQ: "Groq",
-  CLAUDE_CODE_LOCAL: "Claude Code",
-  OPENCLAW: "OpenClaw",
-};
+import { providerLabels } from "@/lib/status-config";
 
 const statusConfig: Record<
   SessionStatus,
