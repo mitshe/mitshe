@@ -118,7 +118,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               )}
             >
               <mode.icon className="h-4 w-4" />
-              {isActiveMode && <span>{mode.label}</span>}
+              <span>{mode.label}</span>
             </Link>
           );
         })}

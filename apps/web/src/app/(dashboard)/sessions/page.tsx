@@ -149,6 +149,7 @@ export default function SessionsPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
@@ -470,16 +471,17 @@ export default function SessionsPage() {
     openEdit(session);
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    setDeletingId(id);
+  const handleDeleteConfirmed = async () => {
+    if (!deleteTarget) return;
+    setDeletingId(deleteTarget.id);
     try {
-      await deleteSession.mutateAsync(id);
+      await deleteSession.mutateAsync(deleteTarget.id);
       toast.success("Thread deleted");
     } catch {
       toast.error("Failed to delete thread");
     } finally {
       setDeletingId(null);
+      setDeleteTarget(null);
     }
   };
 
@@ -648,6 +650,45 @@ export default function SessionsPage() {
                   Threads run CLI agents (Claude Code or OpenClaw) in isolated containers
                 </p>
               </div>
+
+              {readySnapshots.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Snapshot</Label>
+                  <Select
+                    value={form.baseImageId || "none"}
+                    onValueChange={(v) => {
+                      const actualValue = v === "none" ? "" : v;
+                      const snap = readySnapshots.find((s: { id: string }) => s.id === actualValue);
+                      setForm({
+                        ...form,
+                        baseImageId: actualValue,
+                        enableDocker: (snap as { enableDocker?: boolean })?.enableDocker ?? form.enableDocker,
+                      });
+                    }}
+                    disabled={configLocked}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No snapshot (fresh container)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No snapshot (fresh container)</SelectItem>
+                      {readySnapshots.map((snap: { id: string; name: string; description?: string | null }) => (
+                        <SelectItem key={snap.id} value={snap.id}>
+                          {snap.name}
+                          {snap.description && (
+                            <span className="text-muted-foreground ml-2">
+                              - {snap.description}
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Start from a saved environment with pre-installed tools and repos
+                  </p>
+                </div>
+              )}
 
               <Collapsible>
                 <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1 group w-full">
@@ -837,50 +878,6 @@ export default function SessionsPage() {
                       className="font-mono text-sm"
                       disabled={configLocked}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Snapshot</Label>
-                    {readySnapshots.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-2 border rounded-md px-3">
-                        No snapshots available.{" "}
-                        <a href="/images" className="underline font-medium text-foreground">
-                          Create one
-                        </a>{" "}
-                        from a running thread.
-                      </p>
-                    ) : (
-                      <Select
-                        value={form.baseImageId || "none"}
-                        onValueChange={(v) => {
-                          const actualValue = v === "none" ? "" : v;
-                          const snap = readySnapshots.find((s: { id: string }) => s.id === actualValue);
-                          setForm({
-                            ...form,
-                            baseImageId: actualValue,
-                            enableDocker: (snap as { enableDocker?: boolean })?.enableDocker ?? form.enableDocker,
-                          });
-                        }}
-                        disabled={configLocked}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="No snapshot (fresh container)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No snapshot (fresh container)</SelectItem>
-                          {readySnapshots.map((snap: { id: string; name: string; description?: string | null }) => (
-                            <SelectItem key={snap.id} value={snap.id}>
-                              {snap.name}
-                              {snap.description && (
-                                <span className="text-muted-foreground ml-2">
-                                  - {snap.description}
-                                </span>
-                              )}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1161,9 +1158,9 @@ export default function SessionsPage() {
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" disabled={deletingId === session.id} onClick={(e) => handleDelete(e as unknown as React.MouseEvent, session.id)}>
-                              {deletingId === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                              {deletingId === session.id ? "Deleting..." : "Delete"}
+                            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget({ id: session.id, name: session.name })}>
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1175,6 +1172,28 @@ export default function SessionsPage() {
             </div>
           )}
       </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete thread?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete &ldquo;{deleteTarget?.name}&rdquo; and its container. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirmed}
+              disabled={!!deletingId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingId ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deletingId ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Bulk delete confirmation */}
       <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
