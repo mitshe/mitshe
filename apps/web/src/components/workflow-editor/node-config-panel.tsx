@@ -55,6 +55,7 @@ const PROVIDER_CONFIG: Record<
 
 interface NodeConfigPanelProps {
   node: Node<WorkflowNodeData>;
+  allNodes?: Node<WorkflowNodeData>[];
   onUpdate: (nodeId: string, data: Partial<WorkflowNodeData>) => void;
   onDelete: (nodeId: string) => void;
   onClose: () => void;
@@ -62,6 +63,7 @@ interface NodeConfigPanelProps {
 
 export const NodeConfigPanel = memo(function NodeConfigPanel({
   node,
+  allNodes = [],
   onUpdate,
   onDelete,
   onClose,
@@ -182,7 +184,7 @@ export const NodeConfigPanel = memo(function NodeConfigPanel({
               />
             )}
 
-            <VariablesPanel />
+            <VariablesPanel allNodes={allNodes} />
           </div>
         </ScrollArea>
       </div>
@@ -637,51 +639,77 @@ function formatLabel(key: string): string {
     .trim();
 }
 
-const EXPRESSION_VARIABLES = [
-  {
-    category: "Shortcuts",
-    variables: [
-      { expr: "{{branch}}", desc: "Current branch name" },
-      { expr: "{{repo}}", desc: "Repository path (org/repo)" },
-      { expr: "{{files}}", desc: "Files from AI task" },
-      { expr: "{{issue}}", desc: "JIRA issue key" },
-      { expr: "{{task}}", desc: "Task description" },
-    ],
-  },
-  {
-    category: "Merge Request",
-    variables: [
-      { expr: "{{mr.url}}", desc: "MR/PR URL" },
-      { expr: "{{mr.id}}", desc: "MR/PR ID" },
-    ],
-  },
-  {
-    category: "Repository",
-    variables: [
-      { expr: "{{repo.name}}", desc: "Repository name" },
-      { expr: "{{repo.url}}", desc: "Repository web URL" },
-      { expr: "{{repo.branch}}", desc: "Default branch" },
-    ],
-  },
-  {
-    category: "Issue",
-    variables: [
-      { expr: "{{issue.key}}", desc: "JIRA issue key" },
-      { expr: "{{issue.url}}", desc: "JIRA issue URL" },
-    ],
-  },
-  {
-    category: "Full Paths",
-    variables: [
-      { expr: "{{trigger.field}}", desc: "Trigger data field" },
-      { expr: "{{vars.name}}", desc: "Workflow variable" },
-      { expr: "{{nodes.nodeId.field}}", desc: "Node output field" },
-      { expr: "{{ctx.field}}", desc: "Workflow context" },
-    ],
-  },
-];
+function buildVariables(allNodes: Node<WorkflowNodeData>[]) {
+  const categories: Array<{ category: string; variables: Array<{ expr: string; desc: string }> }> = [];
 
-const VariablesPanel = memo(function VariablesPanel() {
+  const triggerNode = allNodes.find((n) => (n.data as WorkflowNodeData).nodeType?.startsWith("trigger:"));
+  const triggerType = (triggerNode?.data as WorkflowNodeData)?.nodeType || "";
+
+  if (triggerType === "trigger:manual") {
+    categories.push({
+      category: "Trigger (Task)",
+      variables: [
+        { expr: "{{trigger.task.id}}", desc: "Task ID" },
+        { expr: "{{trigger.task.title}}", desc: "Task title" },
+        { expr: "{{trigger.task.description}}", desc: "Task description" },
+        { expr: "{{trigger.task.status}}", desc: "Task status" },
+        { expr: "{{trigger.task.externalIssueId}}", desc: "External issue ID (e.g. PROJ-123)" },
+        { expr: "{{trigger.task.externalIssueUrl}}", desc: "External issue URL" },
+        { expr: "{{trigger.jira}}", desc: "Full JIRA issue data (if imported)" },
+      ],
+    });
+  } else if (triggerType.includes("jira")) {
+    categories.push({
+      category: "Trigger (JIRA)",
+      variables: [
+        { expr: "{{trigger.issueKey}}", desc: "JIRA issue key" },
+        { expr: "{{trigger.summary}}", desc: "Issue summary" },
+        { expr: "{{trigger.description}}", desc: "Issue description" },
+        { expr: "{{trigger.status}}", desc: "Issue status" },
+        { expr: "{{trigger.assignee}}", desc: "Assignee name" },
+        { expr: "{{trigger.labels}}", desc: "Issue labels" },
+        { expr: "{{trigger.projectKey}}", desc: "JIRA project key" },
+      ],
+    });
+  } else if (triggerType.includes("git")) {
+    categories.push({
+      category: "Trigger (Git)",
+      variables: [
+        { expr: "{{trigger.ref}}", desc: "Git ref (branch)" },
+        { expr: "{{trigger.repository}}", desc: "Repository name" },
+        { expr: "{{trigger.commits}}", desc: "Commit list" },
+      ],
+    });
+  }
+
+  const otherNodes = allNodes.filter((n) => {
+    const nt = (n.data as WorkflowNodeData).nodeType || "";
+    return !nt.startsWith("trigger:") && (n.data as WorkflowNodeData).label;
+  });
+  if (otherNodes.length > 0) {
+    categories.push({
+      category: "Node Outputs",
+      variables: otherNodes.map((n) => ({
+        expr: `{{nodes.${n.id}.output}}`,
+        desc: (n.data as WorkflowNodeData).label || n.id,
+      })),
+    });
+  }
+
+  categories.push({
+    category: "Context",
+    variables: [
+      { expr: "{{ctx.sessionId}}", desc: "Active thread ID (set by Create Thread)" },
+      { expr: "{{ctx.executionId}}", desc: "Current execution ID" },
+      { expr: "{{vars.name}}", desc: "Workflow variable" },
+      { expr: "{{env.KEY}}", desc: "Environment variable" },
+    ],
+  });
+
+  return categories;
+}
+
+const VariablesPanel = memo(function VariablesPanel({ allNodes }: { allNodes: Node<WorkflowNodeData>[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -709,7 +737,7 @@ const VariablesPanel = memo(function VariablesPanel() {
 
       {isOpen && (
         <div className="pt-2 space-y-3">
-          {EXPRESSION_VARIABLES.map((category) => (
+          {buildVariables(allNodes).map((category) => (
             <div key={category.category}>
               <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-1.5">
                 {category.category}

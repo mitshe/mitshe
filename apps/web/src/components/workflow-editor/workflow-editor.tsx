@@ -603,6 +603,7 @@ function WorkflowEditorInner({
         <div className="w-80 shrink-0 h-full flex flex-col">
           <NodeConfigPanel
             node={selectedNode}
+            allNodes={nodes}
             onUpdate={updateNodeData}
             onDelete={deleteNode}
             onClose={() => setSelectedNodeId(null)}
