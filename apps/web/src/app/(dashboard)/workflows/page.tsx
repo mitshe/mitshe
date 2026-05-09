@@ -1038,14 +1038,14 @@ export default function WorkflowsPage() {
               Choose a task to run this workflow with.
             </DialogDescription>
           </DialogHeader>
-          <DialogBody>
+          <DialogBody className="overflow-hidden">
             <Input
               placeholder="Search tasks..."
               value={taskSearch}
               onChange={(e) => setTaskSearch(e.target.value)}
               className="mb-2"
             />
-            <div className="max-h-64 overflow-y-auto border rounded-md">
+            <div className="max-h-[40vh] overflow-y-auto border rounded-md">
               {tasks
                 .filter((t) =>
                   !taskSearch || t.title.toLowerCase().includes(taskSearch.toLowerCase())
