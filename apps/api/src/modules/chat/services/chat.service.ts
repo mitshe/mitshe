@@ -67,6 +67,19 @@ Workflow definition format: { version: "1.0", nodes: [...], edges: [...], variab
 Each node: { id, type, name, position: {x,y}, config: {...} }
 Each edge: { id, source, target }
 
+When creating workflows, follow these patterns:
+1. SIMPLE (most common): trigger:manual → action:session_create → action:session_agent → action:session_stop
+   This is the bread-and-butter: user triggers, thread opens, Claude Code works, thread stops.
+2. WITH NOTIFICATION: ...same as above, but add action:slack_message or action:email after session_agent
+3. JIRA AUTOMATION: trigger:jira_issue_created → action:session_create (with repos) → action:session_agent (prompt references {{trigger.summary}}) → action:git_create_mr → action:slack_message
+4. CODE REVIEW: trigger:github_pr → action:session_create → action:session_agent (review prompt) → action:slack_message
+
+Layout tips for visual editor:
+- Place nodes vertically, ~150px apart on Y axis
+- Start trigger at y:50, each subsequent node +150
+- Keep x centered around 250
+- Use descriptive names: "Analyze PR", "Notify Team", not "Node 1"
+
 Be concise. NEVER ask the user to go to a settings page — do it yourself with tools.`;
 
 const MAX_TOOL_ITERATIONS = 15;

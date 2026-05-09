@@ -595,6 +595,21 @@ function WorkflowEditorInner({
             >
               {nodes.length} nodes • {edges.length} connections
             </Panel>
+
+            {nodes.length === 0 && (
+              <Panel
+                position="top-center"
+                className="mt-16 text-center"
+              >
+                <div className="bg-card/90 backdrop-blur-sm border rounded-xl shadow-lg px-8 py-6 max-w-sm">
+                  <Blocks className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
+                  <p className="text-sm font-medium mb-1">Start building</p>
+                  <p className="text-xs text-muted-foreground">
+                    Drag nodes from the left panel onto the canvas, then connect them to build your workflow.
+                  </p>
+                </div>
+              </Panel>
+            )}
           </ReactFlow>
         )}
       </div>

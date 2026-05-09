@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -35,6 +35,7 @@ const emptyDefinition: WorkflowDefinition = {
 
 export default function WorkflowEditPage() {
   const params = useParams();
+  const router = useRouter();
   const workflowId = params.id as string;
   const isNew = workflowId === "new";
 
@@ -78,11 +79,19 @@ export default function WorkflowEditPage() {
   const handleRun = useCallback(async () => {
     try {
       const result = await runWorkflow.mutateAsync({ id: workflowId });
-      toast.success(`Workflow execution started (ID: ${result.executionId})`);
+      toast.success("Workflow started", {
+        action: {
+          label: "View execution",
+          onClick: () =>
+            router.push(
+              `/workflows/${workflowId}/executions/${result.executionId}`,
+            ),
+        },
+      });
     } catch {
       toast.error("Failed to run workflow");
     }
-  }, [workflowId, runWorkflow]);
+  }, [workflowId, runWorkflow, router]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
@@ -94,12 +103,12 @@ export default function WorkflowEditPage() {
         </Link>
         <div>
           <h1 className="text-lg font-semibold">
-            {isNew ? "New Workflow" : "Edit Workflow"}
+            {isNew ? "New Workflow" : workflow?.name || "Edit Workflow"}
           </h1>
           <p className="text-sm text-muted-foreground">
             {isNew
               ? "Create a new automated workflow"
-              : `Editing workflow ${workflowId}`}
+              : workflow?.description || "Visual workflow editor"}
           </p>
         </div>
       </div>
