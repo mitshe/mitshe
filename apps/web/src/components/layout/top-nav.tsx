@@ -21,7 +21,7 @@ export function TopNav() {
   const { userName, userEmail, signOut } = useAuthContext();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-background px-4">
+    <header className="flex h-14 items-center justify-between border-b px-4">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"

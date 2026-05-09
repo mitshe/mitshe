@@ -445,7 +445,7 @@ export function Sidebar({
   }
 
   return (
-    <div className="flex h-full w-64 flex-col bg-sidebar rounded-xl">
+    <div className="flex h-full w-64 flex-col bg-sidebar border-1 border-border rounded-xl">
       <div className="flex h-14 items-center justify-between px-3 shrink-0">
         <Link href="/chat" className="flex items-center gap-2 font-semibold">
           <img src="/logo.svg" alt="mitshe" className="h-7 w-7" />
