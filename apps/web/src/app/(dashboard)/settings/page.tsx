@@ -1,6 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import pkg from "../../../../package.json";
+
+const webVersion = pkg.version;
 import {
   Plug,
   Bot,
@@ -100,6 +104,33 @@ export default function SettingsPage() {
         <SettingsGroup label="Setup" items={setupLinks} />
         <SettingsGroup label="Administration" items={adminLinks} />
       </div>
+
+      <VersionInfo />
+    </div>
+  );
+}
+
+function VersionInfo() {
+  const [apiVersion, setApiVersion] = useState<string | null>(null);
+  const [desktopVersion, setDesktopVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    fetch(`${apiUrl}/health`)
+      .then((r) => r.json())
+      .then((d) => setApiVersion(d.version))
+      .catch(() => {});
+
+    if (typeof window !== "undefined" && window.mitsheDesktop?.getVersion) {
+      window.mitsheDesktop.getVersion().then((v: string) => setDesktopVersion(v)).catch(() => {});
+    }
+  }, []);
+
+  return (
+    <div className="pt-4 border-t text-xs text-muted-foreground/60 flex flex-wrap gap-x-4 gap-y-1">
+      <span>Web v{webVersion}</span>
+      {apiVersion && <span>API v{apiVersion}</span>}
+      {desktopVersion && <span>Desktop v{desktopVersion}</span>}
     </div>
   );
 }
