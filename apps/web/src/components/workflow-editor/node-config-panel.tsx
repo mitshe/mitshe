@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
-import { Node } from "@xyflow/react";
+import { memo, useCallback, useMemo, useState } from "react";
+import { Node, Edge } from "@xyflow/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +56,7 @@ const PROVIDER_CONFIG: Record<
 interface NodeConfigPanelProps {
   node: Node<WorkflowNodeData>;
   allNodes?: Node<WorkflowNodeData>[];
+  allEdges?: Edge[];
   onUpdate: (nodeId: string, data: Partial<WorkflowNodeData>) => void;
   onDelete: (nodeId: string) => void;
   onClose: () => void;
@@ -64,6 +65,7 @@ interface NodeConfigPanelProps {
 export const NodeConfigPanel = memo(function NodeConfigPanel({
   node,
   allNodes = [],
+  allEdges = [],
   onUpdate,
   onDelete,
   onClose,
@@ -184,7 +186,7 @@ export const NodeConfigPanel = memo(function NodeConfigPanel({
               />
             )}
 
-            <VariablesPanel allNodes={allNodes} />
+            <VariablesPanel allNodes={allNodes} allEdges={allEdges} currentNodeId={node.id} />
           </div>
         </ScrollArea>
       </div>
@@ -639,68 +641,127 @@ function formatLabel(key: string): string {
     .trim();
 }
 
-function buildVariables(allNodes: Node<WorkflowNodeData>[]) {
+function getUpstreamNodeIds(currentNodeId: string, edges: Edge[]): Set<string> {
+  const upstream = new Set<string>();
+  const queue = [currentNodeId];
+  while (queue.length > 0) {
+    const nodeId = queue.shift()!;
+    for (const edge of edges) {
+      if (edge.target === nodeId && !upstream.has(edge.source)) {
+        upstream.add(edge.source);
+        queue.push(edge.source);
+      }
+    }
+  }
+  return upstream;
+}
+
+const SESSION_NODE_TYPES = new Set([
+  "action:session_create",
+  "action:session_exec",
+  "action:session_agent",
+  "action:session_stop",
+  "action:session_read_file",
+  "action:session_write_file",
+  "data:session_git_diff",
+  "data:session_files",
+]);
+
+function buildVariables(allNodes: Node<WorkflowNodeData>[], allEdges: Edge[], currentNodeId: string) {
   const categories: Array<{ category: string; variables: Array<{ expr: string; desc: string }> }> = [];
+  const upstreamIds = getUpstreamNodeIds(currentNodeId, allEdges);
 
   const triggerNode = allNodes.find((n) => (n.data as WorkflowNodeData).nodeType?.startsWith("trigger:"));
   const triggerType = (triggerNode?.data as WorkflowNodeData)?.nodeType || "";
+  const hasTriggerUpstream = triggerNode && upstreamIds.has(triggerNode.id);
 
-  if (triggerType === "trigger:task") {
-    categories.push({
-      category: "Task Input",
-      variables: [
-        { expr: "{{trigger.task.id}}", desc: "Task ID" },
-        { expr: "{{trigger.task.title}}", desc: "Task title" },
-        { expr: "{{trigger.task.description}}", desc: "Task description" },
-        { expr: "{{trigger.task.status}}", desc: "Task status" },
-        { expr: "{{trigger.task.externalSource}}", desc: "Source (JIRA, GitHub, etc.)" },
-        { expr: "{{trigger.task.externalIssueId}}", desc: "External issue ID (e.g. PROJ-123)" },
-        { expr: "{{trigger.task.externalIssueUrl}}", desc: "External issue URL" },
-        { expr: "{{trigger.jira}}", desc: "Full external issue data" },
-      ],
-    });
-  } else if (triggerType.includes("jira")) {
-    categories.push({
-      category: "Trigger (JIRA)",
-      variables: [
-        { expr: "{{trigger.issueKey}}", desc: "JIRA issue key" },
-        { expr: "{{trigger.summary}}", desc: "Issue summary" },
-        { expr: "{{trigger.description}}", desc: "Issue description" },
-        { expr: "{{trigger.status}}", desc: "Issue status" },
-        { expr: "{{trigger.assignee}}", desc: "Assignee name" },
-        { expr: "{{trigger.labels}}", desc: "Issue labels" },
-        { expr: "{{trigger.projectKey}}", desc: "JIRA project key" },
-      ],
-    });
-  } else if (triggerType.includes("git")) {
-    categories.push({
-      category: "Trigger (Git)",
-      variables: [
-        { expr: "{{trigger.ref}}", desc: "Git ref (branch)" },
-        { expr: "{{trigger.repository}}", desc: "Repository name" },
-        { expr: "{{trigger.commits}}", desc: "Commit list" },
-      ],
-    });
+  if (hasTriggerUpstream || triggerNode?.id === currentNodeId) {
+    if (triggerType === "trigger:task") {
+      categories.push({
+        category: "Task Input",
+        variables: [
+          { expr: "{{trigger.task.id}}", desc: "Task ID" },
+          { expr: "{{trigger.task.title}}", desc: "Task title" },
+          { expr: "{{trigger.task.description}}", desc: "Task description" },
+          { expr: "{{trigger.task.status}}", desc: "Task status" },
+          { expr: "{{trigger.task.externalSource}}", desc: "Source (JIRA, GitHub, etc.)" },
+          { expr: "{{trigger.task.externalIssueId}}", desc: "External issue ID (e.g. PROJ-123)" },
+          { expr: "{{trigger.task.externalIssueUrl}}", desc: "External issue URL" },
+          { expr: "{{trigger.jira}}", desc: "Full external issue data" },
+        ],
+      });
+    } else if (triggerType.includes("jira")) {
+      categories.push({
+        category: "Trigger (JIRA)",
+        variables: [
+          { expr: "{{trigger.issueKey}}", desc: "JIRA issue key" },
+          { expr: "{{trigger.summary}}", desc: "Issue summary" },
+          { expr: "{{trigger.description}}", desc: "Issue description" },
+          { expr: "{{trigger.status}}", desc: "Issue status" },
+          { expr: "{{trigger.assignee}}", desc: "Assignee name" },
+          { expr: "{{trigger.labels}}", desc: "Issue labels" },
+          { expr: "{{trigger.projectKey}}", desc: "JIRA project key" },
+        ],
+      });
+    } else if (triggerType.includes("git")) {
+      categories.push({
+        category: "Trigger (Git)",
+        variables: [
+          { expr: "{{trigger.ref}}", desc: "Git ref (branch)" },
+          { expr: "{{trigger.repository}}", desc: "Repository name" },
+          { expr: "{{trigger.commits}}", desc: "Commit list" },
+        ],
+      });
+    } else if (triggerType === "trigger:manual") {
+      categories.push({
+        category: "Trigger (Manual)",
+        variables: [
+          { expr: "{{trigger.input}}", desc: "User-provided input text" },
+        ],
+      });
+    } else if (triggerType === "trigger:webhook") {
+      categories.push({
+        category: "Trigger (Webhook)",
+        variables: [
+          { expr: "{{trigger.body}}", desc: "Request body (JSON)" },
+          { expr: "{{trigger.headers}}", desc: "Request headers" },
+        ],
+      });
+    } else if (triggerType === "trigger:schedule") {
+      categories.push({
+        category: "Trigger (Schedule)",
+        variables: [
+          { expr: "{{trigger.scheduledAt}}", desc: "Scheduled execution time" },
+        ],
+      });
+    }
   }
 
-  const otherNodes = allNodes.filter((n) => {
+  const upstreamNodes = allNodes.filter((n) => {
     const nt = (n.data as WorkflowNodeData).nodeType || "";
-    return !nt.startsWith("trigger:") && (n.data as WorkflowNodeData).label;
+    return upstreamIds.has(n.id) && !nt.startsWith("trigger:") && n.id !== currentNodeId;
   });
-  if (otherNodes.length > 0) {
-    categories.push({
-      category: "Node Outputs",
-      variables: otherNodes.map((n) => ({
-        expr: `{{nodes.${n.id}.output}}`,
-        desc: (n.data as WorkflowNodeData).label || n.id,
-      })),
-    });
+
+  if (upstreamNodes.length > 0) {
+    const nodeVars: Array<{ expr: string; desc: string }> = [];
+    for (const n of upstreamNodes) {
+      const data = n.data as WorkflowNodeData;
+      const label = data.label || n.id;
+      nodeVars.push({ expr: `{{nodes.${n.id}.output}}`, desc: `${label} — output` });
+
+      if (SESSION_NODE_TYPES.has(data.nodeType) && data.nodeType === "action:session_create") {
+        nodeVars.push({ expr: "{{ctx.sessionId}}", desc: `${label} — created thread ID` });
+      }
+      if (data.nodeType === "action:session_agent") {
+        nodeVars.push({ expr: `{{nodes.${n.id}.output}}`, desc: `${label} — agent response` });
+      }
+    }
+    categories.push({ category: "Previous Steps", variables: nodeVars });
   }
 
   categories.push({
     category: "Context",
     variables: [
-      { expr: "{{ctx.sessionId}}", desc: "Active thread ID (set by Create Thread)" },
       { expr: "{{ctx.executionId}}", desc: "Current execution ID" },
       { expr: "{{vars.name}}", desc: "Workflow variable" },
       { expr: "{{env.KEY}}", desc: "Environment variable" },
@@ -710,15 +771,22 @@ function buildVariables(allNodes: Node<WorkflowNodeData>[]) {
   return categories;
 }
 
-const VariablesPanel = memo(function VariablesPanel({ allNodes }: { allNodes: Node<WorkflowNodeData>[] }) {
-  const [isOpen, setIsOpen] = useState(false);
+const VariablesPanel = memo(function VariablesPanel({ allNodes, allEdges, currentNodeId }: { allNodes: Node<WorkflowNodeData>[]; allEdges: Edge[]; currentNodeId: string }) {
+  const [isOpen, setIsOpen] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
+
+  const variables = useMemo(
+    () => buildVariables(allNodes, allEdges, currentNodeId),
+    [allNodes, allEdges, currentNodeId],
+  );
 
   const handleCopy = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(text);
     setTimeout(() => setCopied(null), 1500);
   }, []);
+
+  if (variables.length === 0) return null;
 
   return (
     <div className="pt-3 border-t mt-3">
@@ -738,7 +806,7 @@ const VariablesPanel = memo(function VariablesPanel({ allNodes }: { allNodes: No
 
       {isOpen && (
         <div className="pt-2 space-y-3">
-          {buildVariables(allNodes).map((category) => (
+          {variables.map((category) => (
             <div key={category.category}>
               <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-1.5">
                 {category.category}

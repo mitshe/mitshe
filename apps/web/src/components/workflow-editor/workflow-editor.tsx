@@ -619,6 +619,7 @@ function WorkflowEditorInner({
           <NodeConfigPanel
             node={selectedNode}
             allNodes={nodes}
+            allEdges={edges}
             onUpdate={updateNodeData}
             onDelete={deleteNode}
             onClose={() => setSelectedNodeId(null)}
