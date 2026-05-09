@@ -53,13 +53,12 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   tourId: string;
-  badge?: "running-threads";
 }
 
 type SidebarMode = "chat" | "workspace";
 
 const workspaceNavItems: NavItem[] = [
-  { title: "Threads", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions", badge: "running-threads" },
+  { title: "Threads", href: "/sessions", icon: MessageSquareCode, tourId: "nav-sessions" },
   { title: "Workflows", href: "/workflows", icon: Workflow, tourId: "nav-workflows" },
   { title: "Tasks", href: "/tasks", icon: ListTodo, tourId: "nav-tasks" },
   { title: "Projects", href: "/projects", icon: FolderKanban, tourId: "nav-projects" },
@@ -136,8 +135,6 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 
 function WorkspaceNavContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { data: sessions = [] } = useSessions();
-  const runningCount = (sessions as { status: string }[]).filter((s) => s.status === "RUNNING").length;
 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(href + "/");
@@ -161,11 +158,6 @@ function WorkspaceNavContent({ onNavigate }: { onNavigate?: () => void }) {
           >
             <item.icon className="h-4 w-4 shrink-0" />
             {item.title}
-            {item.badge === "running-threads" && runningCount > 0 && (
-              <span className="ml-auto rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 text-[10px] font-medium leading-none">
-                {runningCount}
-              </span>
-            )}
           </Link>
         ))}
       </div>
