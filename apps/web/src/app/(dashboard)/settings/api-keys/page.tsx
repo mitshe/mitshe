@@ -46,6 +46,16 @@ import {
   EyeOff,
   Loader2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "@/lib/utils";
 import { useApiKeys, useCreateApiKey, useDeleteApiKey } from "@/lib/api/hooks";
 import { toast } from "sonner";
@@ -56,6 +66,7 @@ export default function ApiKeysPage() {
   const deleteApiKey = useDeleteApiKey();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
@@ -269,7 +280,7 @@ export default function ApiKeysPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             className="text-red-600"
-                            onClick={() => handleDeleteKey(key.id)}
+                            onClick={() => setRevokeTarget({ id: key.id, name: key.name })}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Revoke
@@ -284,6 +295,32 @@ export default function ApiKeysPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!revokeTarget} onOpenChange={() => setRevokeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke API key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently revoke &ldquo;{revokeTarget?.name}&rdquo;. Any applications using this key will stop working immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteApiKey.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (revokeTarget) {
+                  handleDeleteKey(revokeTarget.id);
+                  setRevokeTarget(null);
+                }
+              }}
+              disabled={deleteApiKey.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Revoke
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

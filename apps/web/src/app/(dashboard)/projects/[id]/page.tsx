@@ -34,13 +34,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   CheckCircle2,
   Edit,
   ListTodo,
   Loader,
   Plus,
-  Settings,
+  Workflow,
   Trash2,
   Loader2,
 } from "lucide-react";
@@ -71,6 +81,7 @@ export default function ProjectDetailPage() {
   const deleteProject = useDeleteProject();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -112,6 +123,8 @@ export default function ProjectDetailPage() {
       router.push("/projects");
     } catch {
       toast.error("Failed to delete project");
+    } finally {
+      setIsDeleteOpen(false);
     }
   };
 
@@ -244,7 +257,7 @@ export default function ProjectDetailPage() {
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Settings className="h-4 w-4" />
+          <Workflow className="h-4 w-4" />
           <span>Active Workflows</span>
           <span className="font-semibold text-foreground">
             {workflows.filter((w) => w.isActive).length}
@@ -332,7 +345,7 @@ export default function ProjectDetailPage() {
             <CardContent className="p-0">
               {workflows.length === 0 ? (
                 <div className="text-center py-8">
-                  <Settings className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <Workflow className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">No workflows yet</p>
                 </div>
               ) : (
@@ -424,14 +437,9 @@ export default function ProjectDetailPage() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={handleDeleteProject}
-                  disabled={deleteProject.isPending}
+                  onClick={() => setIsDeleteOpen(true)}
                 >
-                  {deleteProject.isPending ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4 mr-2" />
-                  )}
+                  <Trash2 className="w-4 h-4 mr-2" />
                   Delete
                 </Button>
               </div>
@@ -439,6 +447,28 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete &ldquo;{project.name}&rdquo;. Tasks and workflows linked to this project will not be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteProject.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteProject}
+              disabled={deleteProject.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteProject.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deleteProject.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

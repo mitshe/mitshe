@@ -19,15 +19,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Save, Loader2, Building2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useOrganization } from "@/lib/auth";
@@ -45,7 +36,6 @@ export default function OrganizationSettingsPage() {
   const { organization, isLoaded } = useOrganization();
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settings, setSettings] = useState({
     organizationName: "",
     timezone: "Europe/Warsaw",
@@ -186,40 +176,9 @@ export default function OrganizationSettingsPage() {
                   Permanently delete your organization, all workflows, tasks, and data
                 </p>
               </div>
-              <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    Delete Organization
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Delete Organization</DialogTitle>
-                    <DialogDescription>
-                      Are you sure you want to delete this organization? This action
-                      cannot be undone. All workflows, tasks, integrations, and data
-                      will be permanently deleted.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setDeleteDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        toast.error("Organization deletion is not yet implemented");
-                        setDeleteDialogOpen(false);
-                      }}
-                    >
-                      Delete Forever
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button variant="destructive" size="sm" disabled>
+                Delete Organization
+              </Button>
             </div>
           </CardContent>
         </Card>
