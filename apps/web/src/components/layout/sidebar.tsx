@@ -404,8 +404,8 @@ export function Sidebar({
 
   if (collapsed) {
     return (
-      <div className="hidden md:flex h-full w-12 flex-col border-r bg-sidebar items-center">
-        <div className="flex h-14 items-center justify-center border-b w-full shrink-0">
+      <div className="flex h-full w-12 flex-col bg-sidebar rounded-xl items-center">
+        <div className="flex h-14 items-center justify-center w-full shrink-0">
           <button
             onClick={onToggle}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -426,7 +426,7 @@ export function Sidebar({
             </Link>
           ))}
         </div>
-        <div className="border-t py-2 w-full flex flex-col items-center gap-1.5 shrink-0">
+        <div className="py-2 w-full flex flex-col items-center gap-1.5 shrink-0">
           <Link
             href="/settings"
             className={cn(
@@ -445,8 +445,8 @@ export function Sidebar({
   }
 
   return (
-    <div className="hidden md:flex h-full w-64 flex-col border-r bg-sidebar">
-      <div className="flex h-14 items-center justify-between border-b px-4 shrink-0">
+    <div className="flex h-full w-64 flex-col bg-sidebar rounded-xl">
+      <div className="flex h-14 items-center justify-between px-4 shrink-0">
         <Link href="/chat" className="flex items-center gap-2 font-semibold">
           <img src="/logo.svg" alt="mitshe" className="h-7 w-7" />
           <span className="font-brand text-sm">mitshe</span>
@@ -462,7 +462,7 @@ export function Sidebar({
       <div className="flex-1 overflow-y-auto px-3 py-4">
         <SidebarContent />
       </div>
-      <div className="border-t px-3 py-2 shrink-0">
+      <div className="px-3 py-2 shrink-0">
         <Link
           href="/settings"
           className={cn(
