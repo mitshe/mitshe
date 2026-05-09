@@ -67,18 +67,34 @@ Workflow definition format: { version: "1.0", nodes: [...], edges: [...], variab
 Each node: { id, type, name, position: {x,y}, config: {...} }
 Each edge: { id, source, target }
 
-When creating workflows, follow these patterns:
-1. SIMPLE (most common): trigger:manual → action:session_create → action:session_agent → action:session_stop
-   This is the bread-and-butter: user triggers, thread opens, Claude Code works, thread stops.
-2. WITH NOTIFICATION: ...same as above, but add action:slack_message or action:email after session_agent
-3. JIRA AUTOMATION: trigger:jira_issue_created → action:session_create (with repos) → action:session_agent (prompt references {{trigger.summary}}) → action:git_create_mr → action:slack_message
-4. CODE REVIEW: trigger:github_pr → action:session_create → action:session_agent (review prompt) → action:slack_message
+Node config reference (key fields for each node type):
+- trigger:manual — config: {} (no config needed, user triggers from UI)
+- trigger:task — config: { requiresTask: true } (runs with task data, variables: {{trigger.task.title}}, {{trigger.task.description}})
+- trigger:jira_issue_created — config: { projectKey: "PROJ", events: ["created"] } (variables: {{trigger.issueKey}}, {{trigger.summary}}, {{trigger.description}})
+- trigger:webhook — config: { path: "/my-hook" } (variables: {{trigger.body}}, {{trigger.headers}})
+- trigger:schedule — config: { cron: "0 9 * * 1-5" } (variables: {{trigger.scheduledAt}})
+- trigger:github_pr — config: { events: ["opened"] } (variables: {{trigger.pr.title}}, {{trigger.pr.body}})
+- action:session_create — config: { name: "Thread name", repositoryIds: ["repo-id"], instructions: "task for agent", snapshotId: "" }
+  After this node: {{ctx.sessionId}} is available for subsequent session nodes
+- action:session_agent — config: { sessionId: "{{ctx.sessionId}}", prompt: "Do X", timeout: 300000 }
+  Output: {{nodes.nodeId.output}} contains agent's response
+- action:session_exec — config: { sessionId: "{{ctx.sessionId}}", command: "npm test", timeout: 60000 }
+- action:session_stop — config: { sessionId: "{{ctx.sessionId}}", delete: false }
+- action:ai_prompt — config: { prompt: "Analyze: {{trigger.summary}}", systemPrompt: "You are...", maxTokens: 4096 }
+- action:git_create_branch — config: { sessionId: "{{ctx.sessionId}}", branchName: "feature/{{trigger.issueKey}}" }
+- action:git_commit — config: { sessionId: "{{ctx.sessionId}}", message: "fix: {{trigger.summary}}" }
+- action:git_create_mr — config: { sessionId: "{{ctx.sessionId}}", title: "{{trigger.summary}}", targetBranch: "main" }
+- action:slack_message — config: { channel: "#engineering", message: "Done: {{trigger.summary}}" }
+- control:condition — config: { expression: "{{nodes.prevNode.output}}", operator: "contains", value: "success" }
 
-Layout tips for visual editor:
-- Place nodes vertically, ~150px apart on Y axis
-- Start trigger at y:50, each subsequent node +150
-- Keep x centered around 250
-- Use descriptive names: "Analyze PR", "Notify Team", not "Node 1"
+When creating workflows, follow these patterns:
+1. SIMPLE: trigger:manual → action:session_create → action:session_agent → action:session_stop
+2. WITH NOTIFICATION: add action:slack_message after session_agent
+3. JIRA AUTOMATION: trigger:jira_issue_created → action:session_create (repos + instructions with {{trigger.summary}}) → action:session_agent → action:git_create_mr → action:slack_message
+4. CODE REVIEW: trigger:github_pr → action:session_create → action:session_agent (review prompt with {{trigger.pr.body}}) → action:slack_message
+5. TASK-BASED: trigger:task → action:session_create (name: {{trigger.task.title}}, instructions: {{trigger.task.description}}) → action:session_agent → action:session_stop
+
+Layout: place nodes vertically ~150px apart, x=250, start trigger at y=50. Use descriptive names.
 
 Be concise. NEVER ask the user to go to a settings page — do it yourself with tools.`;
 

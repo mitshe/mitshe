@@ -37,6 +37,8 @@ import {
   AlertCircle,
   Copy,
   Check,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -113,6 +115,59 @@ function WorkflowEditorInner({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
+  type Snapshot = { nodes: typeof initialNodes; edges: typeof initialEdges };
+  const historyRef = useRef<{ past: Snapshot[]; future: Snapshot[] }>({ past: [], future: [] });
+  const isUndoRedoRef = useRef(false);
+  const MAX_HISTORY = 50;
+
+  const pushHistory = useCallback(() => {
+    if (isUndoRedoRef.current) return;
+    const snap: Snapshot = {
+      nodes: nodes.map((n) => ({ ...n, data: { ...n.data } })),
+      edges: edges.map((e) => ({ ...e })),
+    };
+    historyRef.current.past.push(snap);
+    if (historyRef.current.past.length > MAX_HISTORY) historyRef.current.past.shift();
+    historyRef.current.future = [];
+  }, [nodes, edges]);
+
+  const undo = useCallback(() => {
+    const { past, future } = historyRef.current;
+    if (past.length === 0) return;
+    const current: Snapshot = {
+      nodes: nodes.map((n) => ({ ...n, data: { ...n.data } })),
+      edges: edges.map((e) => ({ ...e })),
+    };
+    future.push(current);
+    const prev = past.pop()!;
+    isUndoRedoRef.current = true;
+    setNodes(prev.nodes);
+    setEdges(prev.edges);
+    setSelectedNodeId(null);
+    setIsDirty(true);
+    requestAnimationFrame(() => { isUndoRedoRef.current = false; });
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const redo = useCallback(() => {
+    const { past, future } = historyRef.current;
+    if (future.length === 0) return;
+    const current: Snapshot = {
+      nodes: nodes.map((n) => ({ ...n, data: { ...n.data } })),
+      edges: edges.map((e) => ({ ...e })),
+    };
+    past.push(current);
+    const next = future.pop()!;
+    isUndoRedoRef.current = true;
+    setNodes(next.nodes);
+    setEdges(next.edges);
+    setSelectedNodeId(null);
+    setIsDirty(true);
+    requestAnimationFrame(() => { isUndoRedoRef.current = false; });
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const canUndo = historyRef.current.past.length > 0;
+  const canRedo = historyRef.current.future.length > 0;
+
   const selectedNode = useMemo(() => {
     if (!selectedNodeId) return null;
     return nodes.find((n) => n.id === selectedNodeId) as
@@ -122,6 +177,7 @@ function WorkflowEditorInner({
 
   const onConnect = useCallback(
     (params: Connection) => {
+      pushHistory();
       setEdges((eds) =>
         addEdge(
           {
@@ -134,7 +190,7 @@ function WorkflowEditorInner({
       );
       setIsDirty(true);
     },
-    [setEdges],
+    [setEdges, pushHistory],
   );
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -183,10 +239,10 @@ function WorkflowEditorInner({
         },
       };
 
+      pushHistory();
       setNodes((nds) => {
         const updated = [...nds, newNode];
 
-        // Auto-connect: if there's exactly one node with no outgoing edge, connect it
         const nodesWithoutOutgoing = nds.filter(
           (n) => !edges.some((e) => e.source === n.id),
         );
@@ -212,7 +268,7 @@ function WorkflowEditorInner({
       setSelectedNodeId(newNode.id);
       setIsDirty(true);
     },
-    [screenToFlowPosition, setNodes, edges, setEdges],
+    [screenToFlowPosition, setNodes, edges, setEdges, pushHistory],
   );
 
   const updateNodeData = useCallback(
@@ -235,13 +291,14 @@ function WorkflowEditorInner({
 
   const deleteNode = useCallback(
     (nodeId: string) => {
+      pushHistory();
       setNodes((nds) => nds.filter((node) => node.id !== nodeId));
       setEdges((eds) =>
         eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
       );
       setIsDirty(true);
     },
-    [setNodes, setEdges],
+    [setNodes, setEdges, pushHistory],
   );
 
   const toWorkflowDefinition = useCallback((): WorkflowDefinition => {
@@ -407,17 +464,25 @@ function WorkflowEditorInner({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "s") {
         e.preventDefault();
         handleSave();
+      } else if (e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((e.key === "z" && e.shiftKey) || e.key === "y") {
+        e.preventDefault();
+        redo();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleSave]);
+  }, [handleSave, undo, redo]);
 
   const onNodesDelete = useCallback(
     (deleted: Node[]) => {
+      pushHistory();
       for (const node of deleted) {
         if (selectedNodeId === node.id) {
           setSelectedNodeId(null);
@@ -425,7 +490,7 @@ function WorkflowEditorInner({
       }
       setIsDirty(true);
     },
-    [selectedNodeId],
+    [selectedNodeId, pushHistory],
   );
 
   return (
@@ -600,6 +665,28 @@ function WorkflowEditorInner({
             />
 
             <Panel position="top-right" className="flex gap-2">
+              <div className="flex gap-0.5 bg-card shadow-sm border rounded-md">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={undo}
+                  disabled={!canUndo}
+                  className="h-8 w-8 p-0"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={redo}
+                  disabled={!canRedo}
+                  className="h-8 w-8 p-0"
+                  title="Redo (Ctrl+Shift+Z)"
+                >
+                  <Redo2 className="w-4 h-4" />
+                </Button>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
