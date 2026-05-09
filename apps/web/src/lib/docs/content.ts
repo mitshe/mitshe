@@ -2068,12 +2068,12 @@ curl -X POST http://localhost:3001/api/v1/workflows/wf_123/run \\
   // ─── Workspace ──────────────────────────────────────────────────
   "workspace": `# Workspace
 
-The Workspace module provides interactive AI agent sessions with isolated Docker environments. Work directly with AI agents like Claude Code or OpenClaw in a browser-based terminal, edit files with a Monaco-powered code editor, and manage your codebase - all from mitshe.
+The Workspace module provides interactive AI agent threads with isolated Docker environments. Work directly with AI agents like Claude Code or OpenClaw in a browser-based terminal, edit files with a Monaco-powered code editor, and manage your codebase - all from mitshe.
 
 ## Key Features
 
 <cards>
-<card title="Interactive Sessions" icon="terminal" href="/docs/workspace/sessions">
+<card title="Threads" icon="terminal" href="/docs/workspace/sessions">
 Launch isolated Docker containers with your repositories and work with AI agents in real-time through a browser terminal.
 </card>
 <card title="Presets" icon="sliders" href="/docs/workspace/presets">
@@ -2086,7 +2086,7 @@ Configure container resources, environment variables, and setup scripts for cons
 
 ## How It Works
 
-1. **Create a Session** - select repositories, optionally choose a preset and environment
+1. **Create a Thread** - select repositories, optionally choose a snapshot
 2. **Agent Terminal** - a Docker container starts with your repos cloned, and the AI agent launches automatically
 3. **Code Editor** - click any file to open it in the built-in Monaco editor with syntax highlighting
 4. **File Browser** - navigate your workspace files with git status indicators
@@ -2099,29 +2099,28 @@ Configure container resources, environment variables, and setup scripts for cons
 | Claude Code | \`claude\` | \`CLAUDE.md\` | OAuth (configure in terminal) |
 | OpenClaw | \`openclaw tui\` | \`SOUL.md\` | \`openclaw onboard\` (configure in terminal) |
 
-Both agents are CLI-based providers that manage their own authentication. Configure them once in a terminal session - credentials persist across all future sessions via shared Docker volumes.
+Both agents are CLI-based providers that manage their own authentication. Configure them once in a terminal thread - credentials persist across all future threads via shared Docker volumes.
 `,
 
-  "workspace/sessions": `# Sessions
+  "workspace/sessions": `# Threads
 
-Sessions are interactive workspaces where you work with AI agents in isolated Docker containers.
+Threads are interactive workspaces where you work with AI agents in isolated Docker containers.
 
-## Creating a Session
+## Creating a Thread
 
-1. Go to **Workspace > Sessions**
-2. Click **New Session**
+1. Go to **Workspace > Threads**
+2. Click **New Thread**
 3. Configure:
-   - **Preset** (optional) - select a predefined agent configuration
-   - **Session Name** - descriptive name for the session
+   - **Thread Name** - descriptive name for the thread
+   - **AI Agent** (optional) - Claude Code, OpenClaw, or none for plain bash
    - **Project** (optional) - associate with a project
    - **Repositories** - select repos to clone into the workspace
-   - **AI Provider** (optional) - Claude Code, OpenClaw, or none for plain bash
+   - **Snapshot** (optional) - start from a saved environment
    - **Start Arguments** (optional) - CLI flags for the agent
-   - **Environment** (optional) - container configuration
    - **Instructions** (optional) - system prompt for the agent
-4. Click **Start Session**
+4. Click **Start Thread**
 
-## Session Lifecycle
+## Thread Lifecycle
 
 \`\`\`
 Creating -> Running <-> Paused -> Completed
@@ -2137,7 +2136,7 @@ Creating -> Running <-> Paused -> Completed
 - **Agent Terminal** - launches the AI agent (Claude Code or OpenClaw) with bash fallback after exit
 - **Additional Terminals** - open new bash terminals via the + button
 - **Keyboard Input** - full terminal emulation with arrow keys, Ctrl+C, function keys
-- **Output Buffer** - reconnecting to a session restores terminal history
+- **Output Buffer** - reconnecting to a thread restores terminal history
 
 ## Code Editor
 
@@ -2159,7 +2158,7 @@ Click any file in the file browser to open it in the Monaco editor:
 
   "workspace/presets": `# Presets
 
-Presets are reusable agent configurations that pre-fill session creation fields. Define once, use many times.
+Presets are reusable agent configurations that pre-fill thread creation fields. Define once, use many times.
 
 ## Creating a Preset
 
@@ -2172,12 +2171,12 @@ Presets are reusable agent configurations that pre-fill session creation fields.
    - **Start Arguments** - CLI flags (e.g., \`--dangerously-skip-permissions --model opus\`)
    - **Default Project** - pre-selected project
    - **Default Repositories** - pre-selected repos
-   - **Max Session Duration** - auto-stop after N hours
+   - **Max Duration** - auto-stop after N hours
    - **Instructions** - system prompt for the agent
 
 ## Using a Preset
 
-When creating a new session, select a preset from the dropdown. All fields are pre-filled but remain editable - you can override any setting before starting.
+When creating a new thread, select a preset from the dropdown. All fields are pre-filled but remain editable - you can override any setting before starting.
 
 ## Example Presets
 
@@ -2210,7 +2209,7 @@ Environments define container configurations - resource limits, environment vari
 
 ## Setup Script
 
-The setup script runs on container start before the session begins. Use it to install additional tools:
+The setup script runs on container start before the thread begins. Use it to install additional tools:
 
 \`\`\`bash
 pip install pytest black
@@ -2224,62 +2223,62 @@ Variables are passed to the container as standard environment variables. Mark se
 
 ## Usage
 
-Select an environment when creating a session or preset. Resource limits and env vars are applied to the Docker container automatically.
+Select an environment when creating a thread. Resource limits and env vars are applied to the Docker container automatically.
 `,
 
-  // ─── Workflow Session Nodes ─────────────────────────────────────
-  "workflows/session-nodes": `# Session Nodes
+  // ─── Workflow Thread Nodes ──────────────────────────────────────
+  "workflows/session-nodes": `# Thread Nodes
 
-Session nodes allow workflows to create and interact with Workspace sessions programmatically. This bridges automation (Workflows) with interactive agent work (Workspace).
+Thread nodes allow workflows to create and interact with threads programmatically. This bridges automation (Workflows) with interactive agent work (Workspace).
 
 ## Use Cases
 
-- **JIRA ticket -> Agent session** - automatically create a session when a ticket is assigned, run the agent, and post results back
-- **Scheduled code review** - daily workflow creates a session, agent reviews code, sends diff to Slack
-- **GitLab MR -> Analysis** - webhook triggers session, agent analyzes changes, comments on MR
+- **JIRA ticket -> Agent thread** - automatically create a thread when a ticket is assigned, run the agent, and post results back
+- **Scheduled code review** - daily workflow creates a thread, agent reviews code, sends diff to Slack
+- **GitLab MR -> Analysis** - webhook triggers thread, agent analyzes changes, comments on MR
 
 ## Available Nodes
 
 ### Actions
 
 <nodelist>
-<node type="action" name="Create Session" desc="Create and start a new agent session with repositories. Stores sessionId in workflow context." />
-<node type="action" name="Run Command" desc="Execute a shell command in a session container. Returns stdout and exit code." />
+<node type="action" name="Create Thread" desc="Create and start a new agent thread with repositories. Stores sessionId in workflow context." />
+<node type="action" name="Run Command" desc="Execute a shell command in a thread container. Returns stdout and exit code." />
 <node type="action" name="Run Agent Task" desc="Start AI agent (Claude/OpenClaw) with a prompt in print mode. Waits for completion." />
-<node type="action" name="Stop Session" desc="Stop and optionally delete a session." />
-<node type="action" name="Read File" desc="Read file content from a session container." />
-<node type="action" name="Write File" desc="Write content to a file in a session container." />
+<node type="action" name="Stop Thread" desc="Stop and optionally delete a thread." />
+<node type="action" name="Read File" desc="Read file content from a thread container." />
+<node type="action" name="Write File" desc="Write content to a file in a thread container." />
 </nodelist>
 
 ### Data
 
 <nodelist>
-<node type="data" name="Get Git Diff" desc="Get git diff from session workspace with additions/deletions count." />
-<node type="data" name="List Files" desc="List all files in session workspace." />
+<node type="data" name="Get Git Diff" desc="Get git diff from thread workspace with additions/deletions count." />
+<node type="data" name="List Files" desc="List all files in thread workspace." />
 </nodelist>
 
 ## Example Workflow
 
 \`\`\`
 Manual Trigger
-  -> Create Session (repos: my-app, instructions: "Fix bugs")
+  -> Create Thread (repos: my-app, instructions: "Fix bugs")
   -> Run Agent Task (prompt: "Find and fix the login bug described in JIRA-123")
   -> Get Git Diff
-  -> Stop Session
+  -> Stop Thread
   -> Slack Message (send diff summary)
 \`\`\`
 
 ## Context Variables
 
-The **Create Session** node automatically stores \`sessionId\` in the workflow context. Subsequent session nodes use it via \`{{ctx.sessionId}}\`.
+The **Create Thread** node automatically stores \`sessionId\` in the workflow context. Subsequent thread nodes use it via \`{{ctx.sessionId}}\`.
 
-You can also pass a specific \`sessionId\` in the node config to target a different session.
+You can also pass a specific \`sessionId\` in the node config to target a different thread.
 `,
 
   // ─── AI Agent Integrations ──────────────────────────────────────
   "integrations/claude-code": `# Claude Code
 
-Claude Code is Anthropic's official CLI for AI-assisted development. In mitshe, it runs inside isolated Docker containers as part of Workspace sessions.
+Claude Code is Anthropic's official CLI for AI-assisted development. In mitshe, it runs inside isolated Docker containers as part of Workspace threads.
 
 ## Setup
 
@@ -2287,19 +2286,19 @@ Claude Code is Anthropic's official CLI for AI-assisted development. In mitshe, 
 2. Click **Add Provider** and select **Claude Code (Local)**
 3. No API key needed - Claude Code manages its own authentication
 
-## First Session
+## First Thread
 
-When you create your first session with Claude Code:
+When you create your first thread with Claude Code:
 1. The agent terminal opens with \`claude\` command
 2. Claude Code will prompt you to log in via OAuth
 3. After logging in, your credentials are stored in a shared Docker volume
-4. All future sessions reuse the credentials automatically
+4. All future threads reuse the credentials automatically
 
 ## Configuration
 
 ### Start Arguments
 
-Pass CLI flags via the Start Arguments field in session creation or presets:
+Pass CLI flags via the Start Arguments field in thread creation:
 
 - \`--dangerously-skip-permissions\` - skip permission prompts (sandboxed environment)
 - \`--model opus\` or \`--model sonnet\` - select model
@@ -2317,7 +2316,7 @@ Use the **Run Agent Task** workflow node with \`provider: claude\` to run Claude
 
   "integrations/openclaw": `# OpenClaw
 
-OpenClaw is an open-source AI agent platform supporting 50+ AI providers. In mitshe, it runs inside isolated Docker containers as part of Workspace sessions.
+OpenClaw is an open-source AI agent platform supporting 50+ AI providers. In mitshe, it runs inside isolated Docker containers as part of Workspace threads.
 
 ## Setup
 
@@ -2325,13 +2324,13 @@ OpenClaw is an open-source AI agent platform supporting 50+ AI providers. In mit
 2. Click **Add Provider** and select **OpenClaw**
 3. No API key needed - OpenClaw manages its own provider configuration
 
-## First Session
+## First Thread
 
-When you create your first session with OpenClaw:
+When you create your first thread with OpenClaw:
 1. The agent terminal opens with \`openclaw tui\` command
 2. Run \`openclaw onboard\` to configure your preferred AI provider and API keys
 3. Configuration is stored in a shared Docker volume (\`~/.openclaw/\`)
-4. All future sessions reuse the configuration automatically
+4. All future threads reuse the configuration automatically
 
 ## Supported Providers
 
@@ -2347,7 +2346,7 @@ OpenClaw supports 50+ AI providers including:
 
 ### Start Arguments
 
-Pass flags via Start Arguments in session creation or presets. Refer to the [OpenClaw CLI Reference](https://docs.openclaw.ai/start/wizard-cli-reference) for available flags.
+Pass flags via Start Arguments in thread creation. Refer to the [OpenClaw CLI Reference](https://docs.openclaw.ai/start/wizard-cli-reference) for available flags.
 
 ### Instructions
 

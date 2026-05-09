@@ -26,38 +26,10 @@ const WorkflowEditor = dynamic(
   },
 );
 
-const mockDefinition: WorkflowDefinition = {
+const emptyDefinition: WorkflowDefinition = {
   version: "1.0",
-  nodes: [
-    {
-      id: "trigger_1",
-      type: "trigger:jira_issue",
-      name: "JIRA Issue Created",
-      position: { x: 250, y: 50 },
-      config: { projectKey: "PROJ", events: ["created"] },
-    },
-    {
-      id: "ai_1",
-      type: "action:ai_analyze",
-      name: "Analyze Issue",
-      position: { x: 250, y: 200 },
-      config: { content: "{{trigger.summary}}", schema: "" },
-    },
-    {
-      id: "slack_1",
-      type: "action:slack_message",
-      name: "Notify Team",
-      position: { x: 250, y: 350 },
-      config: {
-        channel: "#engineering",
-        message: "New issue: {{trigger.key}}",
-      },
-    },
-  ],
-  edges: [
-    { id: "e1", source: "trigger_1", target: "ai_1" },
-    { id: "e2", source: "ai_1", target: "slack_1" },
-  ],
+  nodes: [],
+  edges: [],
   variables: {},
 };
 
@@ -154,7 +126,7 @@ export default function WorkflowEditPage() {
                         (workflow.definition as WorkflowDefinition).variables ||
                         {},
                     }
-                  : mockDefinition
+                  : emptyDefinition
             }
             onSave={handleSave}
             onRun={handleRun}

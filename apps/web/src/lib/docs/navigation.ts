@@ -47,7 +47,7 @@ export const docsNav: DocNavSection[] = [
         icon: Code,
       },
       {
-        title: "Session Nodes",
+        title: "Thread Nodes",
         slug: "workflows/session-nodes",
         icon: MessageSquareCode,
       },
@@ -62,7 +62,7 @@ export const docsNav: DocNavSection[] = [
         icon: Terminal,
       },
       {
-        title: "Sessions",
+        title: "Threads",
         slug: "workspace/sessions",
         icon: MessageSquareCode,
       },

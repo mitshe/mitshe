@@ -234,8 +234,18 @@ export default function WorkflowExecutionsPage() {
                             </Button>
                           </Link>
                           {execution.status === "failed" && (
-                            <Button variant="ghost" size="icon">
-                              <RotateCcw className="w-4 h-4" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={handleRunWorkflow}
+                              disabled={runWorkflow.isPending}
+                              title="Retry workflow"
+                            >
+                              {runWorkflow.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <RotateCcw className="w-4 h-4" />
+                              )}
                             </Button>
                           )}
                         </div>
