@@ -217,7 +217,7 @@ export default function AICredentialsPage() {
         <div>
           <h1 className="text-2xl font-bold">AI Providers</h1>
           <p className="text-muted-foreground">
-            Manage API keys for AI providers used in workflows
+            Manage API keys for AI providers used in threads and workflows
           </p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -357,7 +357,7 @@ export default function AICredentialsPage() {
           <Bot className="w-12 h-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No AI Providers</h3>
           <p className="text-muted-foreground text-center mb-4">
-            Add an AI provider to enable AI-powered features in your workflows
+            Add an AI provider to power threads and workflows
           </p>
           <Button onClick={() => setIsAddOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />

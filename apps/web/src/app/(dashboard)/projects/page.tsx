@@ -50,7 +50,6 @@ import {
   ListTodo,
   Workflow,
   MessageSquareCode,
-  Settings,
   Loader2,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
@@ -240,7 +239,7 @@ export default function ProjectsPage() {
           <span className="font-semibold text-foreground">{totalTasks}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Settings className="h-4 w-4" />
+          <Workflow className="h-4 w-4" />
           <span>Workflows</span>
           <span className="font-semibold text-foreground">
             {totalWorkflows}
@@ -343,7 +342,7 @@ export default function ProjectsPage() {
                         <span>{project._count?.tasks || 0} tasks</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Settings className="h-4 w-4" />
+                        <Workflow className="h-4 w-4" />
                         <span>{project._count?.workflows || 0} workflows</span>
                       </div>
                     </div>
@@ -430,7 +429,7 @@ export default function ProjectsPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-red-600"
-                                onClick={() => handleDeleteProject(project.id)}
+                                onClick={() => setDeleteTarget(project.id)}
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Delete

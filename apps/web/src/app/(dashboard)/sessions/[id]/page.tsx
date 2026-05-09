@@ -606,10 +606,10 @@ export default function SessionDetailPage() {
 
   const handleDelete = async () => {
     try {
-      router.push("/sessions");
       await deleteSession.mutateAsync(sessionId);
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
       toast.success("Thread deleted");
+      router.push("/sessions");
     } catch {
       toast.error("Failed to delete thread");
     }

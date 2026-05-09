@@ -46,6 +46,16 @@ import {
   Play,
 } from "lucide-react";
 import type { Snapshot } from "@mitshe/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 function CreatingBadge({ createdAt }: { createdAt?: string }) {
@@ -90,6 +100,7 @@ export default function SnapshotsPage() {
     (s) => s.status === "RUNNING" || s.status === "PAUSED",
   );
 
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingSnap, setEditingSnap] = useState<{ id: string; name: string; description: string } | null>(null);
@@ -309,7 +320,7 @@ export default function SnapshotsPage() {
                   size="icon"
                   variant="ghost"
                   className="h-7 w-7"
-                  onClick={() => deleteSnapshot.mutate(snap.id)}
+                  onClick={() => setDeleteTarget({ id: snap.id, name: snap.name })}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -318,6 +329,31 @@ export default function SnapshotsPage() {
           ))}
         </div>
       )}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete snapshot?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete &ldquo;{deleteTarget?.name}&rdquo;. Threads using this snapshot will not be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteSnapshot.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTarget) {
+                  deleteSnapshot.mutate(deleteTarget.id);
+                  setDeleteTarget(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
