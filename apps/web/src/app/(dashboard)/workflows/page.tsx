@@ -21,16 +21,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -48,8 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Plus,
   MoreHorizontal,
@@ -67,11 +55,6 @@ import {
   Loader2,
   Workflow as WorkflowIcon,
   History,
-  Code2,
-  GitPullRequest,
-  MessageSquare,
-  FileText,
-  Sparkles,
   Search,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
@@ -79,79 +62,32 @@ import { getExecutionStatus, triggerTypeLabels } from "@/lib/status-config";
 import { toast } from "sonner";
 import {
   useWorkflows,
-  useProjects,
-  useTasks,
-  useCreateWorkflow,
   useActivateWorkflow,
   useDeactivateWorkflow,
   useDeleteWorkflow,
   useRunWorkflow,
-  useRunWorkflowOnTask,
-  useWorkflowTemplates,
-  useCreateWorkflowFromTemplate,
 } from "@/lib/api/hooks";
 import { Pagination } from "@/components/ui/pagination";
-import type { WorkflowTemplateMetadata } from "@/lib/api/types";
+import { CreateWorkflowDialog } from "./components/create-workflow-dialog";
+import { RunWorkflowDialog } from "./components/run-workflow-dialog";
 
 const ITEMS_PER_PAGE = 10;
-
-
-const categoryStyles: Record<string, { icon: React.ReactNode; color: string }> =
-  {
-    "AI Development": {
-      icon: <Sparkles className="w-5 h-5" />,
-      color: "bg-purple-500",
-    },
-    "Code Review": {
-      icon: <Code2 className="w-5 h-5" />,
-      color: "bg-blue-500",
-    },
-    "Git Automation": {
-      icon: <GitPullRequest className="w-5 h-5" />,
-      color: "bg-green-500",
-    },
-    Notifications: {
-      icon: <MessageSquare className="w-5 h-5" />,
-      color: "bg-orange-500",
-    },
-    Documentation: {
-      icon: <FileText className="w-5 h-5" />,
-      color: "bg-yellow-500",
-    },
-  };
 
 export default function WorkflowsPage() {
   const router = useRouter();
   const { data: workflows = [], isLoading } = useWorkflows();
-  const { data: projects = [] } = useProjects();
-  const { data: templates = [], isLoading: templatesLoading } =
-    useWorkflowTemplates();
-  const createWorkflow = useCreateWorkflow();
-  const createFromTemplate = useCreateWorkflowFromTemplate();
   const activateWorkflow = useActivateWorkflow();
   const deactivateWorkflow = useDeactivateWorkflow();
   const deleteWorkflow = useDeleteWorkflow();
   const runWorkflow = useRunWorkflow();
-  const runWorkflowOnTask = useRunWorkflowOnTask();
-  const { data: tasks = [] } = useTasks();
 
   const [search, setSearch] = useState("");
   const [filterTrigger, setFilterTrigger] = useState("all");
   const [filterActive, setFilterActive] = useState("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [createMode, setCreateMode] = useState<"blank" | "template">("blank");
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<WorkflowTemplateMetadata | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [runTarget, setRunTarget] = useState<string | null>(null);
-  const [runTaskId, setRunTaskId] = useState<string>("");
-  const [taskSearch, setTaskSearch] = useState("");
-  const [newWorkflow, setNewWorkflow] = useState({
-    name: "",
-    description: "",
-    projectId: "",
-  });
 
   type SortField = "name" | "triggerType" | "isActive" | "executions" | "updatedAt";
   type SortDirection = "asc" | "desc";
@@ -178,7 +114,6 @@ export default function WorkflowsPage() {
     );
   };
 
-  // Filter workflows by search + trigger + status
   const filteredWorkflows = workflows.filter((w) => {
     if (search) {
       const s = search.toLowerCase();
@@ -220,42 +155,6 @@ export default function WorkflowsPage() {
     currentPage * ITEMS_PER_PAGE,
   );
 
-  const handleCreateWorkflow = async () => {
-    if (!newWorkflow.name.trim()) return;
-
-    try {
-      let result;
-
-      if (selectedTemplate) {
-        result = await createFromTemplate.mutateAsync({
-          templateId: selectedTemplate.id,
-          name: newWorkflow.name,
-          description: newWorkflow.description || undefined,
-          projectId: newWorkflow.projectId || undefined,
-        });
-      } else {
-        result = await createWorkflow.mutateAsync({
-          name: newWorkflow.name,
-          description: newWorkflow.description || undefined,
-          projectId: newWorkflow.projectId || undefined,
-        });
-      }
-
-      setCreateDialogOpen(false);
-      setCreateMode("blank");
-      setSelectedTemplate(null);
-      setNewWorkflow({
-        name: "",
-        description: "",
-        projectId: "",
-      });
-      router.push(`/workflows/${result.id}/edit`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create workflow";
-      toast.error(message);
-    }
-  };
-
   const handleToggleActive = async (workflowId: string, isActive: boolean) => {
     try {
       if (isActive) {
@@ -284,8 +183,6 @@ export default function WorkflowsPage() {
     const workflow = workflows.find((w) => w.id === workflowId);
     if (workflow?.triggerType === "task") {
       setRunTarget(workflowId);
-      setRunTaskId("");
-      setTaskSearch("");
       return;
     }
 
@@ -300,29 +197,6 @@ export default function WorkflowsPage() {
             ),
         },
       });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to run workflow";
-      toast.error(message);
-    }
-  };
-
-  const executeRunWithTask = async () => {
-    if (!runTarget || !runTaskId) return;
-    try {
-      const result = await runWorkflowOnTask.mutateAsync({
-        taskId: runTaskId,
-        data: { workflowId: runTarget },
-      });
-      toast.success("Workflow started", {
-        action: {
-          label: "View execution",
-          onClick: () =>
-            router.push(
-              `/workflows/${runTarget}/executions/${result.executionId}`,
-            ),
-        },
-      });
-      setRunTarget(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to run workflow";
       toast.error(message);
@@ -355,210 +229,11 @@ export default function WorkflowsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-        <Dialog
-          open={createDialogOpen}
-          onOpenChange={(open) => {
-            setCreateDialogOpen(open);
-            if (!open) {
-              setCreateMode("blank");
-              setSelectedTemplate(null);
-              setNewWorkflow({ name: "", description: "", projectId: "" });
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              New Workflow
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedTemplate
-                  ? `Create from Template: ${selectedTemplate.name}`
-                  : "Create New Workflow"}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedTemplate
-                  ? selectedTemplate.description
-                  : "Create a blank workflow or start from a template."}
-              </DialogDescription>
-            </DialogHeader>
-
-            {!selectedTemplate && (
-              <div className="flex gap-2 border-b pb-4">
-                <Button
-                  variant={createMode === "blank" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCreateMode("blank")}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Blank Workflow
-                </Button>
-                <Button
-                  variant={createMode === "template" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCreateMode("template")}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  From Template
-                </Button>
-              </div>
-            )}
-
-            {createMode === "template" && !selectedTemplate && (
-              <DialogBody className="py-4">
-                {templatesLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : templates.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No templates available
-                  </div>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2 max-h-[400px] overflow-y-auto pr-1">
-                    {templates.map((template) => {
-                      const style = categoryStyles[template.category] || {
-                        icon: <WorkflowIcon className="w-5 h-5" />,
-                        color: "bg-gray-500",
-                      };
-                      return (
-                        <button
-                          key={template.id}
-                          onClick={() => {
-                            setSelectedTemplate(template);
-                            setNewWorkflow({
-                              ...newWorkflow,
-                              name: template.name,
-                              description: template.description,
-                            });
-                          }}
-                          className="flex flex-col items-start p-4 rounded-lg border bg-card hover:bg-accent hover:border-accent-foreground/20 transition-colors text-left"
-                        >
-                          <div
-                            className={`w-10 h-10 rounded-lg ${style.color} flex items-center justify-center text-white mb-3`}
-                          >
-                            {style.icon}
-                          </div>
-                          <h5 className="font-medium mb-1">{template.name}</h5>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {template.description}
-                          </p>
-                          <div className="flex gap-1 mt-2 flex-wrap">
-                            {template.tags.slice(0, 2).map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </DialogBody>
-            )}
-
-            {(createMode === "blank" || selectedTemplate) && (
-              <>
-                {selectedTemplate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-fit"
-                    onClick={() => {
-                      setSelectedTemplate(null);
-                      setNewWorkflow({
-                        name: "",
-                        description: "",
-                        projectId: "",
-                      });
-                    }}
-                  >
-                    ← Back to templates
-                  </Button>
-                )}
-                <DialogBody className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Workflow name"
-                      value={newWorkflow.name}
-                      onChange={(e) =>
-                        setNewWorkflow({ ...newWorkflow, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Describe the workflow..."
-                      value={newWorkflow.description}
-                      onChange={(e) =>
-                        setNewWorkflow({
-                          ...newWorkflow,
-                          description: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="project">Project (optional)</Label>
-                    <Select
-                      value={newWorkflow.projectId}
-                      onValueChange={(value) =>
-                        setNewWorkflow({ ...newWorkflow, projectId: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </DialogBody>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCreateDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateWorkflow}
-                    disabled={
-                      createWorkflow.isPending || createFromTemplate.isPending
-                    }
-                  >
-                    {createWorkflow.isPending ||
-                    createFromTemplate.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Workflow"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+          <CreateWorkflowDialog
+            open={createDialogOpen}
+            onOpenChange={setCreateDialogOpen}
+            onCreated={(id) => router.push(`/workflows/${id}/edit`)}
+          />
         </div>
       </div>
 
@@ -1012,61 +687,19 @@ export default function WorkflowsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!runTarget} onOpenChange={() => setRunTarget(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Select Task</DialogTitle>
-            <DialogDescription>
-              Choose a task to run this workflow with.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody className="overflow-hidden">
-            <Input
-              placeholder="Search tasks..."
-              value={taskSearch}
-              onChange={(e) => setTaskSearch(e.target.value)}
-              className="mb-2"
-            />
-            <div className="max-h-[40vh] overflow-y-auto border rounded-md">
-              {tasks
-                .filter((t) =>
-                  !taskSearch || t.title.toLowerCase().includes(taskSearch.toLowerCase())
-                )
-                .slice(0, 30)
-                .map((task) => (
-                  <button
-                    key={task.id}
-                    type="button"
-                    onClick={() => setRunTaskId(task.id)}
-                    className={`w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors border-b last:border-b-0 ${runTaskId === task.id ? "bg-muted font-medium" : ""}`}
-                  >
-                    <span className="block truncate">{task.title}</span>
-                    {task.externalIssueId && (
-                      <span className="text-[11px] text-muted-foreground">{task.externalIssueId}</span>
-                    )}
-                  </button>
-                ))}
-              {tasks.length === 0 && (
-                <p className="px-3 py-8 text-sm text-muted-foreground text-center">No tasks yet. Import or create a task first.</p>
-              )}
-            </div>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRunTarget(null)}>Cancel</Button>
-            <Button
-              onClick={executeRunWithTask}
-              disabled={!runTaskId || runWorkflowOnTask.isPending}
-            >
-              {runWorkflowOnTask.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4 mr-2" />
-              )}
-              Run
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RunWorkflowDialog
+        workflowId={runTarget}
+        onClose={() => setRunTarget(null)}
+        onRun={(wfId, execId) => {
+          toast.success("Workflow started", {
+            action: {
+              label: "View execution",
+              onClick: () =>
+                router.push(`/workflows/${wfId}/executions/${execId}`),
+            },
+          });
+        }}
+      />
     </div>
   );
 }
