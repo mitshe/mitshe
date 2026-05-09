@@ -23,7 +23,11 @@ fi
 
 printf "  ${GREEN}✓${NC} Docker is running\n"
 
-# Pull latest image
+# Save old image IDs before pull
+OLD_MITSHE_ID=$(docker images ghcr.io/mitshe/mitshe:latest -q 2>/dev/null)
+OLD_EXECUTOR_ID=$(docker images ghcr.io/mitshe/mitshe-executor:latest -q 2>/dev/null)
+
+# Pull latest images
 printf "  Pulling latest images...\n"
 docker pull ghcr.io/mitshe/mitshe:latest
 docker pull ghcr.io/mitshe/mitshe-executor:latest 2>/dev/null || true
@@ -40,11 +44,15 @@ printf "  Stopping old container...\n"
 docker stop mitshe 2>/dev/null || true
 docker rm mitshe 2>/dev/null || true
 
-# Clean up old mitshe images (keep only latest)
-OLD_MITSHE=$(docker images ghcr.io/mitshe/mitshe -q 2>/dev/null | tail -n +2)
-OLD_EXECUTOR=$(docker images ghcr.io/mitshe/mitshe-executor -q 2>/dev/null | tail -n +2)
-if [ -n "$OLD_MITSHE" ]; then printf "$OLD_MITSHE" | xargs docker rmi 2>/dev/null || true; fi
-if [ -n "$OLD_EXECUTOR" ]; then printf "$OLD_EXECUTOR" | xargs docker rmi 2>/dev/null || true; fi
+# Remove old images (now dangling after pull replaced the tag)
+NEW_MITSHE_ID=$(docker images ghcr.io/mitshe/mitshe:latest -q 2>/dev/null)
+NEW_EXECUTOR_ID=$(docker images ghcr.io/mitshe/mitshe-executor:latest -q 2>/dev/null)
+if [ -n "$OLD_MITSHE_ID" ] && [ "$OLD_MITSHE_ID" != "$NEW_MITSHE_ID" ]; then
+    docker rmi "$OLD_MITSHE_ID" 2>/dev/null || true
+fi
+if [ -n "$OLD_EXECUTOR_ID" ] && [ "$OLD_EXECUTOR_ID" != "$NEW_EXECUTOR_ID" ]; then
+    docker rmi "$OLD_EXECUTOR_ID" 2>/dev/null || true
+fi
 
 # Start updated container
 printf "  Starting updated container...\n"
