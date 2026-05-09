@@ -186,7 +186,7 @@ function RecentSessions() {
             <Link
               key={s.id}
               href={`/sessions/${s.id}`}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-2.5 px-3 py-1 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             >
               <span className="truncate">{s.name}</span>
             </Link>
@@ -202,7 +202,7 @@ function RecentSessions() {
             <Link
               key={s.id}
               href={`/sessions/${s.id}`}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-2.5 px-3 py-1 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             >
               <span className="truncate">{s.name}</span>
             </Link>
@@ -355,7 +355,7 @@ function ConversationItem({
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-colors",
+        "group relative flex items-center gap-2.5 px-3 py-1 rounded-md text-sm cursor-pointer transition-colors",
         isActive
           ? "bg-secondary text-foreground"
           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
