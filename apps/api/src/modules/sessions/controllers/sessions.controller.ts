@@ -147,7 +147,6 @@ export class SessionsController {
           enableDocker: session.enableDocker,
           enableBrowser: session.enableBrowser,
           localPath: dto.localPath,
-          mountSsh: dto.mountSsh,
           environment: envConfig,
           integrations:
             integrationConfigs.length > 0 ? integrationConfigs : undefined,
