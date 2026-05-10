@@ -52,10 +52,7 @@ export class TerminalManagerService {
       Tty: true,
       User: 'executor',
       WorkingDir: '/workspace',
-      Env: [
-        'TERM=xterm-256color',
-        'HOME=/home/executor',
-      ],
+      Env: ['TERM=xterm-256color', 'HOME=/home/executor'],
     });
 
     const stream: Duplex = await new Promise((resolve, reject) => {

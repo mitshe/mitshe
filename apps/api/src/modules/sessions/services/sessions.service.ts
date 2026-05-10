@@ -447,8 +447,12 @@ export class SessionsService {
         if (sr.repository.provider === 'GITLAB') {
           url.username = 'oauth2';
           url.password = token;
+        } else if (sr.repository.provider === 'GITHUB') {
+          url.username = token;
+          url.password = 'x-oauth-basic';
         } else {
           url.username = token;
+          url.password = 'x-oauth-basic';
         }
         cloneUrl = url.toString();
       }
